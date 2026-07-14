@@ -1,0 +1,263 @@
+# 默认忽略所有
+*
+!.gitignore
+!.npmrc
+!README.md
+!README.zh-CN.md
+
+# ── Docs assets ──
+!docs/
+!docs/assets/
+!docs/assets/**
+
+# 允许特定文件和目录
+!.local/
+!.local/bin
+!.local/bin/wl-paste
+!.local/bin/wl-copy
+!.local/bin/open-nvim
+!.local/bin/qs-popup
+!.local/bin/check-pkgbuild
+!.local/bin/sunshine-fix
+
+# !.config/ — 取消忽略 .config 目录本身
+!.config/
+# .config/* — 再忽略 .config 下的所有内容（避免其他配置泄露）
+.config/*
+
+# ── Mise ──
+!.config/mise/
+!.config/mise/config.toml
+
+# 输入法配置（fcitx5 + Rime）
+!.config/environment.d/
+!.config/environment.d/fcitx.conf
+!.config/fcitx5
+!.config/fcitx5/config
+!.config/fcitx5/profile
+!.config/fcitx5/conf/
+!.config/fcitx5/conf/classicui.conf
+!.config/fcitx5/conf/keyboard.conf
+!.config/fcitx5/conf/pinyin.conf
+!.config/fcitx5/conf/rime.conf
+!.config/fcitx5/conf/punctuation.conf
+!.config/fcitx5/conf/chttrans.conf
+!.local/share/
+!.local/share/fcitx5/
+!.local/share/fcitx5/rime/
+!.local/share/fcitx5/rime/default.custom.yaml
+
+
+# ── Yazi ──
+# !.config/yazi/ — 只放行 yazi
+!.config/yazi/
+!.config/yazi/**
+
+# ── Zsh ──
+!.zshrc
+!.zsh/
+!.zsh/**
+
+# ── Neovim ──
+!.config/nvim/
+!.config/nvim/**
+# vendors/ 目录下除 tokyonight.nvim 和管理脚本外全部忽略
+.config/nvim/vendors/*
+!.config/nvim/vendors/tokyonight.nvim/
+!.config/nvim/vendors/tokyonight.nvim/**
+!.config/nvim/vendors/clone-all.sh
+!.config/nvim/vendors/pull-all.sh
+
+# ── Neovide ──
+!.config/neovide/
+!.config/neovide/config.toml
+
+# ── Kitty ──
+!.config/kitty/
+!.config/kitty/**
+
+# ── Ghostty ──
+!.config/ghostty/
+!.config/ghostty/**
+
+# ── Wezterm ──
+!.config/wezterm
+!.config/wezterm/**
+
+# ── tmux ──
+!.config/tmux/
+!.config/tmux/**
+.config/tmux/plugins
+.config/tmux/plugins/**
+
+# ── Karabiner ──
+!.config/karabiner/
+!.config/karabiner/karabiner.json
+
+# ── Hammerspoon（macOS 窗口/快捷键自动化）──
+!.hammerspoon/
+!.hammerspoon/init.lua
+
+# ── Starship ──
+!.config/starship.toml
+
+
+# -- Niri
+!.config/niri/
+!.config/niri/**
+
+# -- Fontconfig（CJK 回退等字体规则）
+!.config/fontconfig/
+!.config/fontconfig/fonts.conf
+
+# -- Mako（通知）
+!.config/mako/
+!.config/mako/config
+
+# -- Firefox --
+!.config/mozilla/
+!.config/mozilla/firefox/
+.config/mozilla/firefox/*
+!.config/mozilla/firefox/*.default-release/
+.config/mozilla/firefox/*.default-release/*
+!.config/mozilla/firefox/*.default-release/user.js
+
+# -- Hyprlock（锁屏）
+!.config/hypr/
+!.config/hypr/hyprlock.conf
+
+# -- Mark Shot（截图标注 + 贴图）
+!.config/mark-shot/
+!.config/mark-shot/**
+
+# -- Quickshell（剪贴板组件）
+!.config/quickshell/
+!.config/quickshell/**
+# Common/Colors.qml 提交进仓库（内含 Catppuccin 兜底，FileView 读取 colors.json）
+# colors.json 由 matugen 按壁纸生成、与机器相关，不跟踪（缺失时自动回退 Catppuccin）
+.config/quickshell/Common/colors.json
+# qmlls 的 LSP 配置由 Quickshell 自动生成、与机器相关，不跟踪
+.config/quickshell/.qmlls.ini
+
+# -- Waybar（状态栏）
+!.config/waybar/
+!.config/waybar/**
+# matugen 自动生成，不跟踪
+.config/waybar/colors.css
+.config/niri/colors.kdl
+.config/mako/colors.conf
+.config/cava/themes/matugen
+.local/share/fcitx5/themes/Matugen/theme.conf
+.config/kitty/themes/matugen.conf
+.config/kitty/current-theme.conf
+.config/ghostty/modules/matugen-colors.config
+.config/tmux/conf/matugen-colors.conf
+
+# -- dprint --
+!.config/dprint/
+!.config/dprint/dprint.json
+
+# -- SwayOSD（音量/亮度 OSD）
+!.config/swayosd/
+!.config/swayosd/style.css
+.config/swayosd/colors.css
+
+# -- Fuzzel（应用启动器）
+!.config/fuzzel/
+!.config/fuzzel/fuzzel.ini
+
+# -- Cava（音频频谱）
+!.config/cava/
+!.config/cava/config
+
+# -- Clipse（剪贴板）
+!.config/clipse/
+!.config/clipse/config.json
+!.config/clipse/custom_theme.json
+
+# -- Matugen（Material You 壁纸配色）
+!.config/matugen/
+!.config/matugen/config.toml
+!.config/matugen/templates/
+!.config/matugen/templates/**
+
+# -- GTK / 默认应用 / Autostart --
+
+!/.config/autostart/
+!/.config/autostart/lock-on-start.desktop
+
+# GTK 3 主题设置（Firefox 等 GTK 应用外观）
+!.config/gtk-3.0/
+!.config/gtk-3.0/settings.ini
+!.config/gtk-3.0/gtk.css
+!.config/gtk-3.0/colors-fallback.css
+.config/gtk-3.0/colors.css
+# GTK 4 主题设置
+!.config/gtk-4.0/
+!.config/gtk-4.0/settings.ini
+!.config/gtk-4.0/gtk.css
+!.config/gtk-4.0/colors-fallback.css
+.config/gtk-4.0/colors.css
+# 默认应用关联
+!.config/mimeapps.list
+
+# ── ClaudeCode ──
+!.claude/
+!.claude/hooks
+!.claude/hooks/**
+!.claude/CLAUDE.md
+!.claude/settings.json
+
+!.claude/skills/
+!.claude/skills/**
+# lark-* skills 不纳入版本管理（符号链接，去尾斜杠才能匹配）
+.claude/skills/lark-*
+!.claude/agents/
+!.claude/agents/**
+
+# ── ccstatusline ──
+!.config/ccstatusline/
+!.config/ccstatusline/settings.json
+
+# -- OpenCode --
+!.config/opencode/
+!.config/opencode/opencode.jsonc
+!.config/opencode/plugins
+!.config/opencode/plugins/**
+
+# -- Codex --
+!.codex/
+.codex/**
+!.codex/hooks.json
+!.codex/config.toml
+
+# -- one click config --
+!one-click-config/
+!one-click-config/**
+!one-click-config/lib/
+!one-click-config/lib/**
+
+# -- vim --
+!/.vimrc
+!.vim/
+!.vim/**
+# 排除 Vim 自动生成的缓存和历史文件
+.vim/.netrwhist
+.vim/view/
+.vim/undo/
+.vim/swap/
+.vim/backup/
+*.swp
+*.swo
+*~
+
+# ── Scripts ──
+!scripts/
+!scripts/**
+
+# -- others --
+!/AGENTS.md
+!/README.md
+!/.config/btop/
+!/.config/btop/btop.conf
+.config/niri/nvidia.kdl
