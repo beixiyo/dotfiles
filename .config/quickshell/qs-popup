@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Launch a quickshell popup component
+# 用法: qs-popup <component-name>   # 默认 clipboard
+#
+# 全部组件共用同一个 config root（~/.config/quickshell/shell.qml），
+# 通过 QS_COMPONENT 告诉入口本次要加载哪个组件。统一 root 是为了让各组件
+# 都能 `import qs.Common` 复用公共库（Quickshell 会拦截 config root 之外的 import）。
+
+COMPONENT="${1:-clipboard}"
+QS_ROOT="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell"
+COMPONENT_DIR="$QS_ROOT/$COMPONENT"
+
+if [ ! -d "$COMPONENT_DIR" ]; then
+  echo "qs-popup: component '$COMPONENT' not found at $COMPONENT_DIR" >&2
+  exit 1
+fi
+
+exec env QS_COMPONENT="$COMPONENT" qs -p "$QS_ROOT/shell.qml" -n

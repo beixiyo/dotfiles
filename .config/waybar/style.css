@@ -1,0 +1,179 @@
+@import "colors.css";
+
+* {
+  border: none;
+  border-radius: 0;
+  font-family: "Maple Mono NF", "Noto Sans CJK SC", "Symbols Nerd Font";
+  font-size: 14px;
+  opacity: 1;
+}
+
+window#waybar {
+  background: alpha(@surface, 0.8);
+  color: @on_surface;
+}
+
+tooltip {
+  background: alpha(@surface_container, 0.95);
+  border: 1px solid @outline;
+  border-radius: 8px;
+}
+
+tooltip label {
+  color: @on_surface;
+}
+
+/* 左侧 — 工作区（照抄 shorin-niri/dotfiles） */
+#workspaces button {
+  padding: 0 0.1em;
+  background: @surface;
+  color: @tertiary_container;
+}
+
+#workspaces button:hover {
+  background: @on_tertiary;
+}
+
+#workspaces button.active {
+  color: @primary;
+}
+
+#window {
+  padding: 0 12px;
+  color: @on_surface_variant;
+}
+
+/* ◣ 工作区块(@surface) 的斜切右边，收进透明 bar */
+#custom-div-right.ws {
+  color: @surface;
+  background: transparent;
+}
+
+
+/* ── 中间 Powerline 胶囊 ── */
+
+/* 胶囊 1：工具组 */
+#idle_inhibitor,
+#custom-colorpicker,
+#custom-screenshot,
+#custom-clipboard {
+  padding: 0 8px;
+  background: @surface_container_high;
+  color: @on_surface_variant;
+}
+
+#idle_inhibitor.activated {
+  color: @tertiary;
+}
+
+/* Powerline 分隔符公共样式 */
+#custom-div-left,
+#custom-div-right {
+  font-size: 1.39em;
+  padding: 0;
+  margin: 0;
+}
+
+/* ◀ bar→工具组（左端开口） */
+#custom-div-left.tools {
+  color: @surface_container_high;
+  background: transparent;
+}
+
+/* 胶囊 2 时钟 */
+#clock {
+  padding: 0 12px;
+  background: @secondary;
+  color: @on_secondary;
+  font-weight: bold;
+}
+
+/* ◀ 工具组→时钟（双色过渡） */
+#custom-div-left.clock {
+  color: @secondary;
+  background: @surface_container_high;
+}
+
+/* ▶ 时钟→频谱（双色过渡） */
+#custom-div-right.clock {
+  color: @secondary;
+  background: @surface_container_high;
+}
+
+/* 胶囊 3 频谱 */
+#custom-cava {
+  padding: 0 8px;
+  background: @surface_container_high;
+  color: @primary;
+  letter-spacing: 1px;
+}
+
+/* ▶ 频谱→bar（右端收口） */
+#custom-div-right.cava {
+  color: @surface_container_high;
+  background: transparent;
+}
+
+/* 右侧 */
+#tray {
+  padding: 0 8px;
+}
+
+#pulseaudio {
+  padding: 0 8px;
+  color: @secondary;
+}
+
+#pulseaudio.muted {
+  color: @outline;
+}
+
+#backlight {
+  padding: 0 8px;
+  color: @tertiary;
+}
+
+#bluetooth {
+  padding: 0 8px;
+  color: @primary;
+}
+
+#bluetooth.disabled {
+  color: @outline;
+}
+
+#network {
+  padding: 0 8px;
+  color: @tertiary;
+}
+
+#network.disconnected {
+  color: @outline;
+}
+
+#custom-battery {
+  padding: 0 8px;
+  color: @secondary;
+}
+
+#custom-battery.charging {
+  color: @tertiary;
+}
+
+#custom-battery.critical:not(.charging) {
+  color: @error;
+  animation: blink 1s steps(12) infinite alternate;
+}
+
+@keyframes blink {
+  to { color: @outline; }
+}
+
+#custom-power {
+  padding: 0 12px 0 8px;
+  color: @error;
+}
+
+#custom-power:hover {
+  color: @on_error_container;
+}

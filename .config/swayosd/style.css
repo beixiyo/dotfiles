@@ -1,0 +1,67 @@
+@import url("colors.css");
+
+/* 最外层窗口（整个 OSD 浮窗） */
+window#osd {
+  background: alpha(@secondary_container, 0.85);  /* 浮窗背景色+透明度 */
+  border-radius: 999px;  /* 药丸形圆角，改小数值变方角 */
+  border: none;
+  padding: 0.2em;  /* 内容与浮窗边缘的间距 */
+  font-size: 12px;  /* 基准字号，所有 em 单位以此为基准，改这个缩放整体 */
+}
+
+/* 内部容器（包裹图标+进度条） */
+#container {
+  margin: 12px;  /* 容器与窗口边缘的间距，控制整体大小 */
+}
+
+/* 图标（喇叭/亮度/大写锁定） */
+image {
+  color: @on_surface;
+  /* -gtk-icon-transform: scale(0.8); */  /* 取消注释可缩放图标 */
+}
+
+/* 静音/禁用时图标和进度条变暗 */
+progressbar:disabled,
+image:disabled {
+  opacity: 0.5;
+}
+
+/* 文字标签（百分比数字等） */
+label {
+  color: @on_surface;
+}
+
+/* 进度条和分段进度条（大写锁定）的外框 */
+progressbar,
+segmentedprogress {
+  min-height: 6px;  /* 进度条粗细 */
+  border-radius: 999px;
+  background: transparent;
+  border: none;
+}
+
+/* 进度条轨道（底槽） */
+trough,
+segment {
+  min-height: inherit;
+  border-radius: inherit;
+  border: none;
+  background: alpha(@on_surface, 0.3);  /* 底槽颜色+透明度 */
+}
+
+/* 进度条填充 / 大写锁定激活的分段 */
+progress,
+segment.active {
+  min-height: inherit;
+  border-radius: inherit;
+  border: none;
+  background: @on_surface;  /* 填充颜色 */
+}
+
+/* 大写锁定分段间距 */
+segment {
+  margin-left: 8px;
+}
+segment:first-child {
+  margin-left: 0;
+}

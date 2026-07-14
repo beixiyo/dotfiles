@@ -1,0 +1,11 @@
+{
+  "annotation": {
+    "defaultTool": "move"
+  },
+  "shortcuts": {
+    "actions": {
+      "pin": "F3",
+      "copy": "Return"
+    }
+  }
+}

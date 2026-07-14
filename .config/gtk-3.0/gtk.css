@@ -1,0 +1,3 @@
+/* 先加载提交的 Catppuccin 兜底,再用 matugen 输出覆盖(colors.css 缺失时 GTK 静默忽略) */
+@import "colors-fallback.css";
+@import "colors.css";

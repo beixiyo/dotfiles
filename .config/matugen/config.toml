@@ -1,0 +1,65 @@
+[config]
+
+[templates.waybar]
+input_path = '~/.config/matugen/templates/colors.css'
+output_path = '~/.config/waybar/colors.css'
+post_hook = 'pkill -SIGUSR2 waybar'
+
+[templates.mako]
+input_path = '~/.config/matugen/templates/mako-colors.conf'
+output_path = '~/.config/mako/colors.conf'
+post_hook = 'makoctl reload &'
+
+[templates.niri]
+input_path = '~/.config/matugen/templates/niri-colors.kdl'
+output_path = '~/.config/niri/colors.kdl'
+
+[templates.fcitx5]
+input_path = '~/.config/matugen/templates/fcitx5-theme.conf'
+output_path = '~/.local/share/fcitx5/themes/Matugen/theme.conf'
+post_hook = 'im=$(dbus-send --session --print-reply --dest=org.fcitx.Fcitx5 /controller org.fcitx.Fcitx.Controller1.CurrentInputMethod 2>/dev/null | grep string | sed "s/.*\"\(.*\)\"/\1/"); dbus-send --session --type=method_call --dest=org.fcitx.Fcitx5 /controller org.fcitx.Fcitx.Controller1.ReloadAddonConfig string:classicui; [ -n "$im" ] && dbus-send --session --type=method_call --dest=org.fcitx.Fcitx5 /controller org.fcitx.Fcitx.Controller1.SetCurrentIM string:"$im"'
+
+[templates.cava]
+input_path = '~/.config/matugen/templates/cava-colors.ini'
+output_path = '~/.config/cava/themes/matugen'
+
+[templates.fuzzel]
+input_path = '~/.config/matugen/templates/fuzzel-colors.ini'
+output_path = '~/.config/fuzzel/colors.ini'
+
+[templates.hyprlock]
+input_path = '~/.config/matugen/templates/hyprlock-colors.conf'
+output_path = '~/.cache/matugen/hyprlock-colors.conf'
+
+[templates.swayosd]
+input_path = '~/.config/matugen/templates/colors.css'
+output_path = '~/.config/swayosd/colors.css'
+post_hook = 'pkill swayosd-server; swayosd-server &'
+
+[templates.kitty]
+input_path = '~/.config/matugen/templates/kitty-colors.conf'
+output_path = '~/.config/kitty/themes/matugen.conf'
+post_hook = 'for s in $(find /tmp -maxdepth 1 -name "mykitty-*" -type s 2>/dev/null); do kitty @ --to "unix:$s" set-colors --all --configured ~/.config/kitty/themes/matugen.conf; done &'
+
+[templates.ghostty]
+input_path = '~/.config/matugen/templates/ghostty-colors.conf'
+output_path = '~/.config/ghostty/modules/matugen-colors.config'
+
+[templates.gtk3]
+input_path = '~/.config/matugen/templates/gtk-colors.css'
+output_path = '~/.config/gtk-3.0/colors.css'
+
+[templates.gtk4]
+input_path = '~/.config/matugen/templates/gtk-colors.css'
+output_path = '~/.config/gtk-4.0/colors.css'
+
+
+[templates.tmux]
+input_path = '~/.config/matugen/templates/tmux-colors.conf'
+output_path = '~/.config/tmux/conf/matugen-colors.conf'
+post_hook = 'tmux source-file ~/.config/tmux/tmux.conf 2>/dev/null || true'
+
+[templates.quickshell]
+input_path = '~/.config/matugen/templates/quickshell-colors.json'
+output_path = '~/.config/quickshell/Common/colors.json'
+

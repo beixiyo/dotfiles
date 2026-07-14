@@ -1,0 +1,50 @@
+# mako 通知样式
+# 配色 (background / border / text / progress) 由 matugen 跟随壁纸自动生成于 colors.conf
+include=~/.config/mako/colors.conf
+
+# ── 位置与尺寸 ──
+anchor=top-right
+outer-margin=14
+margin=12
+padding=14,16
+width=400
+border-size=0
+border-radius=16
+default-timeout=8000
+
+# ── 字体与文本（CJK 由 fontconfig 自动回退到 Noto Sans CJK SC）──
+font=Adwaita Sans 11
+markup=1
+text-alignment=left
+
+# ── 图标 ──
+icons=1
+icon-location=left
+max-icon-size=48
+icon-border-radius=10
+
+# ── 同源通知折叠分组 ──
+group-by=app-name
+max-visible=5
+
+# ── 历史（makoctl restore 恢复最近关闭的通知）──
+history=1
+max-history=100
+
+# ── 鼠标交互：左键触发默认动作(跳转)，右键关当前，中键全部关 ──
+on-button-left=invoke-default-action
+on-button-right=dismiss
+on-button-middle=dismiss-all
+on-touch=dismiss
+
+# ── 分组折叠条目：显示数量 ──
+[grouped]
+format=<b>%s</b>\n%b\n<small>　%g 条通知</small>
+
+# ── 紧急通知：不超时 ──
+[urgency=critical]
+default-timeout=0
+
+# ── 低优先级：更快消失 ──
+[urgency=low]
+default-timeout=4000

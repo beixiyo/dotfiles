@@ -1,0 +1,217 @@
+{
+  "layer": "top",
+  "position": "top",
+  "fixed-center": true,
+  "reload_style_on_change": true,
+
+  "modules-left": [
+    "niri/workspaces",
+    "custom/div-right#ws",
+    "niri/window"
+  ],
+
+  "modules-center": [
+    "custom/div-left#tools",
+    "idle_inhibitor",
+    "custom/screenshot",
+    "custom/clipboard",
+    "custom/div-left#clock",
+    "clock",
+    "custom/div-right#clock",
+    "custom/cava",
+    "custom/div-right#cava"
+  ],
+
+  "modules-right": [
+    "tray",
+    "pulseaudio",
+    "backlight",
+    "bluetooth",
+    "network",
+    // 旧模块：Waybar 内建 battery
+    // 临时停用原因见下方电池配置注释
+    // "battery",
+    "custom/battery",
+    "custom/power"
+  ],
+
+  // 工作区
+  "niri/workspaces": {
+    "format": "{icon}",
+    "format-icons": {
+      "active": "󰜋",
+      "default": ""
+    }
+  },
+
+  // 当前窗口标题
+  "niri/window": {
+    "format": "{}",
+    "rewrite": {
+      "(.*) - Mozilla Firefox": "🌎 $1",
+      "(.*) - zsh": "> [$1]"
+    }
+  },
+
+  // 时钟
+  "clock": {
+    "interval": 60,
+    "format": "󰥔 {:%H:%M}",
+    "tooltip-format": "{:%Y/%m/%d %A}",
+    "on-click": "gnome-clocks",
+    "on-click-right": "gnome-calendar"
+  },
+
+  // 电池旧配置：Waybar 内建 battery，暂时注释保留，方便后续回滚/复查
+  //
+  // 问题说明：
+  // Waybar 0.15.0 内建 battery 会监听并遍历 /sys/class/power_supply
+  // 在 HID++/USB 电池设备热插拔或重载时可能触发 race，导致 SIGABRT；
+  // 本机还观察到 Waybar 异常内存增长后被 OOM killer 介入
+  //
+  // 相关 issue / PR：
+  // - https://github.com/Alexays/Waybar/issues/4871
+  // - https://github.com/Alexays/Waybar/pull/4881
+  // - https://github.com/Alexays/Waybar/issues/4904
+  // - https://github.com/Alexays/Waybar/issues/5019
+  // - https://github.com/Alexays/Waybar/pull/5121
+  //
+  // "battery": {
+  //   "interval": 60,
+  //   "format": "{icon} {capacity}%",
+  //   "format-charging": "󰂄 {capacity}%",
+  //   "format-icons": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂂", "󰁹"],
+  //   "tooltip-format": "剩余：{capacity}%\n功率：{power}W\n{timeTo}\n健康度：{health}%"
+  // },
+  //
+  // 新配置：只读取固定 BAT0/AC，避开内建 battery 的热插拔遍历
+  "custom/battery": {
+    "interval": 60,
+    "return-type": "json",
+    "exec": "~/.config/waybar/scripts/battery.sh",
+    "format": "{}",
+    "tooltip": true
+  },
+
+  // 音量
+  "pulseaudio": {
+    "format": "{icon} {volume}%",
+    "format-muted": "󰝟 {volume}%",
+    "format-icons": {
+      "headphone": "󰋋",
+      "default": ["󰕿", "󰖀", "󰕾"]
+    },
+    "on-click": "swayosd-client --output-volume mute-toggle",
+    "on-click-right": "pavucontrol --tab=3",
+    "on-scroll-up": "swayosd-client --output-volume +5",
+    "on-scroll-down": "swayosd-client --output-volume -5",
+    "tooltip-format": "音量：{volume}%\n左键：静音\n右键：打开音量面板"
+  },
+
+  // 亮度
+  "backlight": {
+    "format": "{icon}",
+    "format-icons": ["󰃘", "󰃙", "󰃚", "󰃛", "󰃜", "󰃝", "󰃞"],
+    "tooltip-format": "亮度：{percent}%\n滚轮：调节亮度",
+    "on-scroll-up": "swayosd-client --brightness +5",
+    "on-scroll-down": "swayosd-client --brightness -5"
+  },
+
+  // 网络
+  "network": {
+    "interval": 5,
+    "format-disconnected": "󰤮",
+    "format-wifi": "{icon}",
+    "format-ethernet": "󰈀",
+    "format-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
+    "tooltip-format-ethernet": "{ifname}: {ipaddr}",
+    "tooltip-format-wifi": "{essid} ({signalStrength}%)\n{ifname}: {ipaddr}\n左键：网络菜单\n右键：开关 WiFi",
+    "tooltip-format-disconnected": "未连接\n左键：网络菜单\n右键：开关 WiFi",
+    "on-click": "~/.config/niri/scripts/netmenu.sh",
+    "on-click-right": "~/.config/waybar/scripts/wifi-toggle.sh"
+  },
+
+  // 蓝牙
+  "bluetooth": {
+    "format-disabled": "󰂲",
+    "format": "󰂯",
+    "format-connected": "󰂱",
+    "tooltip-format-on": "左键：打开蓝牙管理",
+    "tooltip-format-connected": "󰂱 {device_alias}",
+    "on-click": "ghostty -e bluetui"
+  },
+
+  // 系统托盘配置：Waybar master 受限测试
+  //
+  // 问题说明：
+  // 2026-07-06 12:09 左右，本机发生全局 OOM。waybar-manual.service 被
+  // kernel OOM killer 杀掉，systemd 记录 Waybar memory peak 14.8G
+  // OOM 前 Waybar tray 路径持续报错：
+  // - Item 'Fcitx': Could not find an icon named 'fcitx-rime'
+  // - Failed to create DBus Proxy ... /StatusNotifierItem
+  // - glycin-svg / bwrap: Too many open files
+  // - Creating pipes for GWakeup: Too many open files
+  //
+  // 已安装 Waybar master 进行验证：
+  // - https://github.com/Alexays/Waybar/issues/4267
+  // - https://github.com/Alexays/Waybar/commit/7d8be29
+  // - https://github.com/Alexays/Waybar/commit/e684e70
+  // - https://github.com/Alexays/Waybar/commit/2a748f1
+  //
+  // 当前策略：
+  // 已恢复完整 tray，不再隐藏 Fcitx/输入法；风险由 systemd user service 的
+  // MemoryHigh/MemoryMax 限制承接，避免 Waybar 再次把整机拖进 OOM
+  "tray": {
+    "icon-size": 20,
+    "spacing": 6
+  },
+
+  // 禁止熄屏开关
+  "idle_inhibitor": {
+    "format": "{icon}",
+    "format-icons": {
+      "activated": "󰅶",
+      "deactivated": "󰛊"
+    },
+    "tooltip-format-activated": "自动熄屏已禁止",
+    "tooltip-format-deactivated": "自动熄屏已开启"
+  },
+
+  // 截图
+  "custom/screenshot": {
+    "format": "󰄀",
+    "on-click": "niri msg action screenshot",
+    "tooltip-format": "左键：区域截图"
+  },
+
+  // 剪贴板
+  "custom/clipboard": {
+    "format": "󰅍",
+    "on-click": "clipse-gui",
+    "tooltip-format": "剪贴板历史"
+  },
+
+  // cava 音频频谱
+  "custom/cava": {
+    "format": "{}",
+    "exec": "~/.config/waybar/scripts/cava.sh",
+    "on-click": "playerctl play-pause",
+    "tooltip": false
+  },
+
+  // 电源菜单
+  "custom/power": {
+    "format": "󰐥",
+    "tooltip-format": "电源菜单",
+    "on-click": "~/.config/niri/scripts/powermenu.sh"
+  },
+
+  // Powerline 分隔符（左侧棱角：工作区块 → 任务栏/窗口块）
+  "custom/div-right#ws":  { "format": "", "tooltip": false },
+
+  // Powerline 分隔符（中间区域胶囊效果）
+  "custom/div-left#tools":  { "format": "", "tooltip": false },
+  "custom/div-left#clock":  { "format": "", "tooltip": false },
+  "custom/div-right#clock": { "format": "", "tooltip": false },
+  "custom/div-right#cava": { "format": "", "tooltip": false }
+}
