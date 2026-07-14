@@ -1,0 +1,129 @@
+// Niri 配置 — https://niri-wm.github.io/niri/Configuration:-Introduction
+// 保存即热重载，无需重启。验证语法：niri validate
+// v25.11+ 支持 include 拆分配置，optional=true 文件不存在时不报错
+
+include "layout.kdl"
+include "blur.kdl"
+include "rules.kdl"
+include "animations.kdl"
+include "binds.kdl"
+include optional=true "output.kdl"
+include optional=true "colors.kdl"
+include optional=true "nvidia.kdl"
+
+input {
+  keyboard {
+    xkb {}
+    numlock
+    repeat-delay 250
+    repeat-rate 35
+  }
+
+  touchpad {
+    tap
+    natural-scroll
+  }
+
+  mouse {
+    accel-profile "flat"
+  }
+
+  focus-follows-mouse max-scroll-amount="0%"
+}
+
+cursor {
+  xcursor-theme "breeze_cursors"
+  xcursor-size 24
+  hide-after-inactive-ms 15000
+}
+
+prefer-no-csd
+
+overview {
+  zoom 0.5
+}
+screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
+
+hotkey-overlay {
+  skip-at-startup
+}
+
+// Alt+Tab 窗口切换器（带缩略图）
+recent-windows {
+  debounce-ms 750
+  open-delay-ms 150
+
+  highlight {
+    active-color "#999999ff"
+    urgent-color "#ff9999ff"
+    padding 30
+    corner-radius 12
+  }
+
+  previews {
+    max-height 480
+    max-scale 0.2
+  }
+
+  binds {
+    Alt+Tab         { next-window scope="workspace"; }
+    Alt+Shift+Tab   { previous-window scope="workspace"; }
+  }
+}
+
+environment {
+  LANG "en_US.UTF-8"
+  LC_CTYPE "en_US.UTF-8"
+  LC_MESSAGES "zh_CN.UTF-8"
+  LC_TIME "zh_CN.UTF-8"
+  PATH "/usr/local/bin:/usr/bin:/bin:/home/dev/.local/bin"
+
+  XMODIFIERS "@im=fcitx"
+  QT_IM_MODULE "fcitx"
+  QT_IM_MODULES "wayland;fcitx;ibus"
+
+  GTK_THEME "MacTahoe-Dark"
+  QT_STYLE_OVERRIDE "kvantum-dark"
+}
+
+// 自启动
+// 检测 NVIDIA 驱动，生成/删除 nvidia.kdl（首次需重启 niri 生效）
+spawn-at-startup "sh" "-c" "$HOME/.config/niri/scripts/detect-nvidia.sh"
+// 自动登录后立即锁屏（SDDM 跳过了密码验证）
+spawn-at-startup "hyprlock"
+// 通知守护进程（systemd 托管，复用 org.freedesktop.Notifications DBus 名称）
+spawn-at-startup "systemctl" "--user" "start" "mako.service"
+// 输入法（XDG autostart 生成的 systemd user unit，避免重复实例）
+spawn-at-startup "systemctl" "--user" "start" "app-org.fcitx.Fcitx5@autostart.service"
+// 提权弹窗
+spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
+
+// 壁纸守护进程
+spawn-at-startup "awww-daemon"
+// 总览界面背景壁纸
+spawn-at-startup "awww-daemon" "-n" "overview"
+// 壁纸自动循环切换（内部 matugen 生成配色后自动 reload waybar/mako/niri）
+spawn-sh-at-startup "~/.config/niri/scripts/wallpaper-cycle.sh"
+
+// 音量/亮度 OSD
+spawn-at-startup "swayosd-server"
+
+// 状态栏（systemd 托管，限制内存并自动重启；同时启动 XEmbed 托盘桥）
+spawn-at-startup "systemctl" "--user" "start" "waybar.service" "plasma-xembedsniproxy.service"
+
+// 剪贴板历史监听（cliphist，保留最近 5000 条，单条超 5MB 跳过）
+// ExecStart 在 user drop-in 中保留 -max-items 5000
+spawn-at-startup "systemctl" "--user" "start" "cliphist.service"
+// 空闲管理（swayidle）：
+//   lock         → loginctl lock-session 信号 → 启动 hyprlock（pidof 防多开）
+//   timeout 120  → 2 分钟无操作：若已锁屏(pidof hyprlock)则关屏，否则跳过
+//   timeout 900  → 15 分钟无操作：自动锁屏
+//   timeout 1020 → 17 分钟无操作：强制关屏（兜底走开场景，此时 timeout 120 早已空跑过）
+//   unlock       → 解锁后 SIGUSR1 重置 swayidle 计时器（workaround hyprlock #784）
+//   before-sleep → 休眠前先锁屏
+//   无 resume 回调：niri 收到输入自动亮屏，且避免 swayidle #193 竞态死锁
+spawn-at-startup "swayidle" "-w" "lock" "pidof hyprlock || hyprlock" "timeout" "120" "pidof hyprlock && niri msg action power-off-monitors" "timeout" "900" "pidof hyprlock || hyprlock" "timeout" "1020" "niri msg action power-off-monitors" "unlock" "pkill -SIGUSR1 swayidle" "before-sleep" "pidof hyprlock || hyprlock"
+
+// 默认应用
+spawn-at-startup "ghostty"
+spawn-at-startup "firefox"

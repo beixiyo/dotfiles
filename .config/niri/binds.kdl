@@ -1,0 +1,144 @@
+binds {
+  Mod+Shift+Slash { show-hotkey-overlay; }
+
+  // 启动
+  Mod+T { spawn "kitty"; }
+  Mod+D { spawn "fuzzel"; }
+  Mod+E { spawn "dolphin"; }
+
+  // 剪贴板（cliphist + quickshell 组件，手动 Ctrl+V 粘贴）
+  Alt+V { spawn-sh "qs-popup clipboard"; }
+
+  // 音量（swayosd 显示 OSD，wpctl 兜底）
+  XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "swayosd-client --output-volume +5 || wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05+"; }
+  XF86AudioLowerVolume allow-when-locked=true { spawn-sh "swayosd-client --output-volume -5 || wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05-"; }
+  XF86AudioMute        allow-when-locked=true { spawn-sh "swayosd-client --output-volume mute-toggle || wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"; }
+  XF86AudioMicMute     allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"; }
+
+  // 媒体
+  XF86AudioPlay allow-when-locked=true { spawn-sh "playerctl play-pause"; }
+  XF86AudioStop allow-when-locked=true { spawn-sh "playerctl stop"; }
+  XF86AudioPrev allow-when-locked=true { spawn-sh "playerctl previous"; }
+  XF86AudioNext allow-when-locked=true { spawn-sh "playerctl next"; }
+
+  // 亮度（swayosd 显示 OSD，brightnessctl 兜底）
+  XF86MonBrightnessUp   allow-when-locked=true { spawn-sh "swayosd-client --brightness +5 || brightnessctl --class=backlight set +5%"; }
+  XF86MonBrightnessDown allow-when-locked=true { spawn-sh "swayosd-client --brightness -5 || brightnessctl --class=backlight set 5%-"; }
+
+  // 总览
+  Mod+Tab repeat=false { toggle-overview; }
+
+  // 窗口
+  Mod+Q repeat=false { close-window; }
+
+  // 调整窗口大小
+  Mod+Left  { set-column-width  "-10%"; }
+  Mod+Right { set-column-width  "+10%"; }
+  Mod+Up    { set-window-height "+10%"; }
+  Mod+Down  { set-window-height "-10%"; }
+
+  // 焦点移动
+  Mod+H     { focus-column-left; }
+  Mod+J     { focus-window-or-workspace-down; }
+  Mod+K     { focus-window-or-workspace-up; }
+  Mod+L     { focus-column-right; }
+
+  // 移动窗口
+  Mod+Ctrl+Left  { move-column-left; }
+  Mod+Ctrl+Down  { move-window-down-or-to-workspace-down; }
+  Mod+Ctrl+Up    { move-window-up-or-to-workspace-up; }
+  Mod+Ctrl+Right { move-column-right; }
+  Mod+Ctrl+H     { move-column-left; }
+  Mod+Ctrl+J     { move-window-down-or-to-workspace-down; }
+  Mod+Ctrl+K     { move-window-up-or-to-workspace-up; }
+  Mod+Ctrl+L     { move-column-right; }
+
+  Mod+Home { focus-column-first; }
+  Mod+End  { focus-column-last; }
+  Mod+Ctrl+Home { move-column-to-first; }
+  Mod+Ctrl+End  { move-column-to-last; }
+
+  // 显示器间
+  Mod+Shift+Left  { focus-monitor-left; }
+  Mod+Shift+Down  { focus-monitor-down; }
+  Mod+Shift+Up    { focus-monitor-up; }
+  Mod+Shift+Right { focus-monitor-right; }
+  Mod+Shift+H     { focus-monitor-left; }
+  Mod+Shift+J     { focus-monitor-down; }
+  Mod+Shift+K     { focus-monitor-up; }
+  Mod+Shift+L     { focus-monitor-right; }
+
+  Mod+Shift+Ctrl+Left  { move-column-to-monitor-left; }
+  Mod+Shift+Ctrl+Down  { move-column-to-monitor-down; }
+  Mod+Shift+Ctrl+Up    { move-column-to-monitor-up; }
+  Mod+Shift+Ctrl+Right { move-column-to-monitor-right; }
+  Mod+Shift+Ctrl+H     { move-column-to-monitor-left; }
+  Mod+Shift+Ctrl+J     { move-column-to-monitor-down; }
+  Mod+Shift+Ctrl+K     { move-column-to-monitor-up; }
+  Mod+Shift+Ctrl+L     { move-column-to-monitor-right; }
+
+  // 工作区
+  Mod+Page_Down { focus-workspace-down; }
+  Mod+Page_Up   { focus-workspace-up; }
+  Mod+U         { focus-workspace-down; }
+  Mod+I         { focus-workspace-up; }
+  Mod+Ctrl+Page_Down { move-column-to-workspace-down; }
+  Mod+Ctrl+Page_Up   { move-column-to-workspace-up; }
+  Mod+Ctrl+U         { move-column-to-workspace-down; }
+  Mod+Ctrl+I         { move-column-to-workspace-up; }
+
+  Mod+Shift+Page_Down { move-workspace-down; }
+  Mod+Shift+Page_Up   { move-workspace-up; }
+  Mod+Shift+U         { move-workspace-down; }
+  Mod+Shift+I         { move-workspace-up; }
+
+  // 滚轮
+  Mod+WheelScrollDown      cooldown-ms=150 { focus-workspace-down; }
+  Mod+WheelScrollUp        cooldown-ms=150 { focus-workspace-up; }
+  Mod+Ctrl+WheelScrollDown cooldown-ms=150 { move-column-to-workspace-down; }
+  Mod+Ctrl+WheelScrollUp   cooldown-ms=150 { move-column-to-workspace-up; }
+  Mod+WheelScrollRight      { focus-column-right; }
+  Mod+WheelScrollLeft       { focus-column-left; }
+  Mod+Ctrl+WheelScrollRight { move-column-right; }
+  Mod+Ctrl+WheelScrollLeft  { move-column-left; }
+  Mod+Shift+WheelScrollDown      { focus-column-right; }
+  Mod+Shift+WheelScrollUp        { focus-column-left; }
+  Mod+Ctrl+Shift+WheelScrollDown { move-column-right; }
+  Mod+Ctrl+Shift+WheelScrollUp   { move-column-left; }
+
+  // 列操作（边缘自动反向）
+  Mod+BracketLeft  { spawn-sh "/home/dev/.config/niri/scripts/consume-left.sh"; }
+  Mod+BracketRight { spawn-sh "/home/dev/.config/niri/scripts/consume-right.sh"; }
+
+  // 布局
+  Mod+R { switch-preset-column-width; }
+  Mod+Shift+R { switch-preset-column-width-back; }
+  Mod+Ctrl+Shift+R { switch-preset-window-height; }
+  Mod+Ctrl+R { reset-window-height; }
+  Mod+F { maximize-column; }
+  Mod+Shift+F { fullscreen-window; }
+  Mod+M { maximize-window-to-edges; }
+  Mod+Ctrl+F { expand-column-to-available-width; }
+  Mod+C { center-column; }
+  Mod+Ctrl+C { center-visible-columns; }
+  // 浮动
+  Mod+V       { toggle-window-floating; }
+  Mod+Shift+V { switch-focus-between-floating-and-tiling; }
+
+  // 截图（mark-shot 截图标注，标注界面中 F3 贴图）
+  // https://github.com/jswysnemc/mark-shot
+  // For ORC, you have to install:
+  // python3 -m venv ~/.local/share/mark-shot/ocr-venv
+  // ~/.local/share/mark-shot/ocr-venv/bin/pip install -U pip rapidocr onnxruntime
+  F1 { spawn "mark-shot"; }
+  Ctrl+Print { screenshot-screen; }
+  Alt+Print { screenshot-window; }
+
+  // 系统
+  Mod+Escape allow-inhibiting=false { toggle-keyboard-shortcuts-inhibit; }
+  Mod+Shift+E { quit; }
+  Ctrl+Alt+Delete { quit; }
+  Mod+Shift+P { power-off-monitors; }
+  // 锁屏（类 Win+L，息屏由 swayidle 120s 计时器接管）
+  Mod+Alt+L { spawn-sh "loginctl lock-session"; }
+}

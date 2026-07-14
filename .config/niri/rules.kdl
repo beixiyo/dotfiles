@@ -1,0 +1,54 @@
+// overview 壁纸放到总览背景层
+layer-rule {
+  match namespace="awww-daemonoverview"
+  place-within-backdrop true
+}
+
+// 全局窗口规则
+window-rule {
+  geometry-corner-radius 12
+  clip-to-geometry true
+  draw-border-with-background false
+}
+
+// fcitx5 输入法窗口浮动（解决候选窗口被平铺的问题）
+window-rule {
+  match app-id="fcitx" title="Fcitx5 Input Window"
+  open-floating true
+}
+
+// Firefox 画中画浮动
+window-rule {
+  match app-id=r#"firefox$"# title="^Picture-in-Picture$"
+  open-floating true
+}
+
+// WezTerm 初始宽度 bug 修复
+window-rule {
+  match app-id=r#"^org\.wezfurlong\.wezterm$"#
+  default-column-width {}
+}
+
+// 浮动打开的应用
+window-rule {
+  match app-id="pavucontrol"
+  match app-id="blueman-manager"
+  match app-id="nm-connection-editor"
+  match app-id="clipse-gui"
+  match app-id="org.gnome.Calculator"
+  open-floating true
+}
+
+// 飞书 / 微信图片预览：浮动
+// 飞书图片窗口 app-id 未设置，仅能按标题匹配
+window-rule {
+  match title="^图片$"
+  match app-id="wechat" title="^图片和视频$"
+  open-floating true
+}
+
+// 屏幕录制时屏蔽敏感窗口
+/-window-rule {
+  match app-id=r#"^org\.keepassxc\.KeePassXC$"#
+  block-out-from "screen-capture"
+}

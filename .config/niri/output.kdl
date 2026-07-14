@@ -1,0 +1,13 @@
+// 显示器配置（单显示器无需启用，Niri 自动检测）
+// 启用方法：去掉 /- 前缀。/- 是 KDL 语法，注释掉整个节点
+// 查询显示器名称：niri msg outputs
+// 格式："<宽>x<高>" 或 "<宽>x<高>@<刷新率>"
+// scale 支持小数（如 1.5 = 150%）
+// transform 可选：normal, 90, 180, 270, flipped, flipped-90, flipped-180, flipped-270
+// position 用于多显示器排列，如 3840×2160 scale 2 的逻辑尺寸为 1920×1080
+/-output "eDP-1" {
+  mode "1920x1080@60.160"
+  scale 1
+  // transform "normal"
+  // position x=0 y=0
+}
