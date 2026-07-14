@@ -14,4 +14,21 @@ return {
     skip_unbalanced = true,
     markdown = true,
   },
+
+  config = function(_, opts)
+    local mini_pairs = require('mini.pairs')
+    mini_pairs.setup(opts)
+
+    local undo_break = vim.api.nvim_replace_termcodes('<C-g>u', true, false, true)
+    for key, pair_info in pairs(mini_pairs.config.mappings) do
+      local info = pair_info
+      vim.keymap.set('i', key, function()
+        return mini_pairs[info.action](info.pair, info.neigh_pattern) .. undo_break
+      end, {
+        expr = true,
+        replace_keycodes = false,
+        desc = 'Pair with undo break',
+      })
+    end
+  end,
 }
