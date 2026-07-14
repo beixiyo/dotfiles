@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run ~/.claude/hooks/deny-compound-bypass.ts"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.zsh/notify/main.sh 'Codex 需要你'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,185 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "lsp": false,
+  "mcp": {
+    "apifox-mcp": {
+      "type": "local",
+      "command": [
+        "npx",
+        "apifox-mcp-server",
+        "--project-id={env:APIFOX_PROJECT_ID}"
+      ],
+      "environment": {
+        "APIFOX_ACCESS_TOKEN": "{env:APIFOX_ACCESS_TOKEN}"
+      },
+      "enabled": true
+    },
+    "gh-grep-mcp": {
+      "type": "remote",
+      "url": "https://mcp.grep.app",
+      "enabled": true
+    },
+    "search-mcp": {
+      "type": "remote",
+      "url": "https://mcp.exa.ai",
+      "enabled": true
+    },
+    "db-mcp": {
+      "type": "local",
+      "command": [
+        "npx",
+        "@bytebase/dbhub@latest",
+        "--transport",
+        "stdio",
+        "--config",
+        "~/.config/dbhub/dbhub.toml"
+      ],
+      "enabled": true
+    },
+    "figma-mcp": {
+      "type": "remote",
+      "url": "https://mcp.figma.com/mcp",
+      "enabled": true
+    },
+    "context7-mcp": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "environment": {
+        "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}"
+      },
+      "enabled": true
+    },
+    "lsp-mcp": {
+      "type": "local",
+      "command": [
+        "vv-mcp"
+      ],
+      "enabled": true
+    }
+  },
+  "formatter": {
+    "prettier": {
+      "disabled": true
+    },
+    "eslint": {
+      "command": [
+        "npx",
+        "--no-install",
+        "eslint",
+        "--fix",
+        "--fix-type",
+        "layout,suggestion,directive",
+        "--rule",
+        "unused-imports/no-unused-imports: off",
+        "--rule",
+        "unused-imports/no-unused-vars: off",
+        "--rule",
+        "prefer-const: off",
+        "$FILE"
+      ],
+      "extensions": [
+        ".js",
+        ".jsx",
+        ".ts",
+        ".tsx"
+      ]
+    },
+    "vvmcp": {
+      "command": [
+        "vv-mcp",
+        "fix",
+        "$FILE"
+      ],
+      "extensions": [
+        ".html",
+        ".js",
+        ".jsx",
+        ".ts",
+        ".tsx",
+        ".vue",
+        ".svelte",
+        ".css",
+        ".scss",
+        ".less",
+        ".c",
+        ".cc",
+        ".cpp",
+        ".cs",
+        ".go",
+        ".java",
+        ".kt",
+        ".kts",
+        ".rs",
+        ".swift",
+        ".py",
+        ".rb",
+        ".lua"
+      ]
+    }
+  },
+  "permission": {
+    "external_directory": {
+      "~/.config/opencode/**": "allow",
+      "/tmp/**": "allow"
+    },
+    "bash": {
+      "*": "allow",
+      "rm *": "ask",
+      "rmdir *": "ask",
+      "del *": "ask",
+      "erase *": "ask",
+      "rd *": "ask",
+      "git add*": "ask",
+      "git commit*": "ask",
+      "git push*": "ask",
+      "git pull*": "ask",
+      "git fetch*": "ask",
+      "git merge*": "ask",
+      "git rebase*": "ask",
+      "git reset*": "ask",
+      "git checkout*": "ask",
+      "git branch*": "ask",
+      "git tag*": "ask",
+      "git stash*": "ask",
+      "git clean*": "ask",
+      "git am*": "ask",
+      "git apply*": "ask",
+      "git cherry-pick*": "ask",
+      "git revert*": "ask",
+      "git remote*": "ask",
+      "git submodule*": "ask",
+      "git worktree*": "ask",
+      "git update-index*": "ask",
+      "git update-ref*": "ask",
+      "sh": "deny",
+      "bash": "deny",
+      "zsh": "deny",
+      "sh *": "deny",
+      "bash *": "deny",
+      "zsh *": "deny",
+      "shutdown *": "deny",
+      "reboot *": "deny",
+      "poweroff *": "deny",
+      "systemctl *": "ask",
+      "service *": "deny",
+      "format *": "deny",
+      "fdisk *": "deny",
+      "mkfs *": "deny"
+    },
+    "edit": "allow",
+    "read": {
+      "*": "allow",
+      ".env.example": "allow",
+      ".env*": "ask",
+      "**/.env*": "ask",
+      "~/.ssh/**": "ask",
+      "~/.gnupg/**": "ask",
+      "~/.netrc": "ask",
+      "~/.aws/**": "ask"
+    }
+  }
+}

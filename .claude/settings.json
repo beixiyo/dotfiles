@@ -1,0 +1,84 @@
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_CODE_SCROLL_SPEED": "8"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read(*)",
+      "Write(~/tmp/**)",
+      "mcp__search-mcp__*",
+      "mcp__figma-mcp__*",
+      "mcp__context7-mcp__*",
+      "mcp__ref-mcp__*",
+      "mcp__gh-grep-mcp__*",
+      "mcp__db-mcp__*",
+      "WebSearch",
+      "WebFetch(*)"
+    ],
+    "defaultMode": "bypassPermissions"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run ~/.claude/hooks/deny-compound-bypass.ts"
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run ~/.claude/hooks/deny-compound-bypass.ts"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.zsh/notify/main.sh 'Claude Code'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run ~/.claude/hooks/post-write-code.ts"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.zsh/notify/main.sh 'Claude Code 需要你'"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bunx -y ccstatusline-zh@2.2.16",
+    "padding": 0,
+    "refreshInterval": 3
+  },
+  "tui": "fullscreen",
+  "skipDangerousModePermissionPrompt": true,
+  "editorMode": "vim"
+}

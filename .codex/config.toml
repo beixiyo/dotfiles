@@ -1,0 +1,90 @@
+# ~/.codex/config.toml
+#
+# 当前配置是“danger full access + no approval 模式”：
+# - 文件系统沙箱已关闭，命令默认拥有本机用户权限可访问的路径
+# - default_permissions 当前使用 :danger-full-access
+# - 常见 .env 文件不再由 permission profile 拒绝；如需保护，依赖 Bash hook
+# - Bash 命令仍会经过 PreToolUse hook 拦截
+# - Codex hooks 不支持 Claude Code 的 Read matcher；不要在 hooks.json 里配置 Read
+# - 不弹权限审批；但 hook、操作系统权限、外层宿主策略仍可能拒绝某些路径或工具通道
+# - MCP 工具默认直接批准，不再逐个询问
+
+# 审批策略：
+# - "on-request"：默认在沙箱内执行，越权时询问用户
+# - "never"：不弹权限审批，适合你想要全自动执行的模式
+# - "untrusted"：更保守，会对不在可信集合里的命令询问
+# 原值是 "on-request"，会频繁打断桌面排障；先改为低打扰模式
+approval_policy = "never"
+
+# 默认权限配置
+# 当前使用内置危险全权限 profile：无文件系统沙箱，适合本机已可信且希望低打扰的场景
+default_permissions = ":danger-full-access"
+
+# 当 approval_policy 仍会产生审批时，审批交给谁处理；approval_policy = "never" 时基本不生效：
+# - "user"：弹给你确认
+# - "auto_review"：交给自动 reviewer；不是 hook ask
+approvals_reviewer = "user"
+
+# TUI 状态栏展示项
+[tui]
+status_line = [
+  "model-with-reasoning",
+  "project-name",
+  "context-remaining",
+  "five-hour-limit",
+  "weekly-limit",
+  "context-window-size",
+]
+status_line_use_colors = true
+[features]
+memories = true
+# 允许 Default mode 使用结构化选择提问
+default_mode_request_user_input = true
+
+# MCP server 配置
+# default_tools_approval_mode 可选：
+# - "auto"：按 Codex/工具标注决定是否审批
+# - "prompt"：工具调用时倾向询问
+# - "approve"：默认批准该 server 的工具调用，更接近 Claude Code allow 规则
+
+[mcp_servers.lsp-mcp]
+command = "vv-mcp"
+default_tools_approval_mode = "approve"
+
+[mcp_servers.apifox-mcp]
+command = "sh"
+args = [
+  "-lc",
+  "exec 'npx' 'apifox-mcp-server' \"--project-id=$APIFOX_PROJECT_ID\"",
+]
+env_vars = ["APIFOX_ACCESS_TOKEN", "APIFOX_PROJECT_ID"]
+default_tools_approval_mode = "approve"
+
+[mcp_servers.gh-grep-mcp]
+url = "https://mcp.grep.app"
+default_tools_approval_mode = "approve"
+
+[mcp_servers.search-mcp]
+url = "https://mcp.exa.ai"
+default_tools_approval_mode = "approve"
+
+[mcp_servers.db-mcp]
+command = "npx"
+args = [
+  "@bytebase/dbhub@latest",
+  "--transport",
+  "stdio",
+  "--config",
+  "~/.config/dbhub/dbhub.toml",
+]
+default_tools_approval_mode = "approve"
+
+[mcp_servers.figma-mcp]
+url = "https://mcp.figma.com/mcp"
+default_tools_approval_mode = "approve"
+
+[mcp_servers.context7-mcp]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp"]
+env_vars = ["CONTEXT7_API_KEY"]
+default_tools_approval_mode = "approve"

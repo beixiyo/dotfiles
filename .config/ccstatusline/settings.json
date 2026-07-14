@@ -1,0 +1,108 @@
+{
+  "version": 3,
+  "lines": [
+    [
+      {
+        "id": "edba41a7-4760-4d22-b645-2d53dc8ad318",
+        "type": "model"
+      },
+      {
+        "id": "2d2b45a1-1c1d-4401-b747-2bc401d1afb5",
+        "type": "separator"
+      },
+      {
+        "id": "28df4c34-5455-42d9-8098-123e1ee654e8",
+        "type": "context-percentage-usable"
+      },
+      {
+        "id": "eab99522-63f3-4965-9387-f34ac48513bf",
+        "type": "separator"
+      },
+      {
+        "id": "02187448-abd5-4151-8894-fc2eadbf533b",
+        "type": "context-window",
+        "color": ""
+      }
+    ],
+    [
+      {
+        "id": "3e4373a8-9436-4c6b-bf1e-08dcedc1bd27",
+        "type": "reset-timer"
+      },
+      {
+        "id": "fc4841a0-8b25-4ecb-bfcc-8221f00e97d7",
+        "type": "separator"
+      },
+      {
+        "id": "bfd6b65a-db43-4d42-9d99-820201716313",
+        "type": "session-usage"
+      },
+      {
+        "id": "1d0c8380-66df-4705-b5cf-1273569999fd",
+        "type": "separator"
+      },
+      {
+        "id": "a45bd2ac-2de5-4cd2-b27f-6f3c340a382a",
+        "type": "weekly-reset-timer",
+        "color": "brightCyan"
+      },
+      {
+        "id": "ebdd19e7-f140-4b27-ba40-e846ca7eacd3",
+        "type": "separator"
+      },
+      {
+        "id": "b482de65-b499-4cda-8102-64a1bde1528c",
+        "type": "weekly-usage",
+        "color": ""
+      }
+    ],
+    [
+      {
+        "id": "30245ced-9725-497f-b5c3-9c292793a9c4",
+        "type": "total-speed",
+        "color": "yellow"
+      },
+      {
+        "id": "0632610e-2fac-4410-a2f2-860b4aeb51dc",
+        "type": "separator"
+      },
+      {
+        "id": "5f73e098-385e-4559-843b-031291e4e737",
+        "type": "tokens-cached",
+        "color": "brightRed"
+      },
+      {
+        "id": "fb319a96-2263-4a50-a547-b7f7e96cf54f",
+        "type": "separator"
+      },
+      {
+        "id": "e5a5d155-eec8-40ea-a90f-f13e46a3f446",
+        "type": "tokens-total"
+      }
+    ]
+  ],
+  "flexMode": "full",
+  "compactThreshold": 60,
+  "colorLevel": 2,
+  "inheritSeparatorColors": false,
+  "globalBold": false,
+  "gitCacheTtlSeconds": 5,
+  "minimalistMode": false,
+  "powerline": {
+    "enabled": false,
+    "separators": [
+      ""
+    ],
+    "separatorInvertBackground": [
+      false
+    ],
+    "startCaps": [],
+    "endCaps": [],
+    "autoAlign": false,
+    "continueThemeAcrossLines": false
+  },
+  "installation": {
+    "method": "pinned",
+    "installedVersion": "2.2.16"
+  }
+}
