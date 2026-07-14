@@ -153,6 +153,21 @@
 .config/ghostty/modules/matugen-colors.config
 .config/tmux/conf/matugen-colors.conf
 
+# -- systemd user units（Linux）--
+# 只放行手写的 drop-in；systemctl enable 生成的 *.wants/ 符号链接是本机状态，不跟踪
+!.config/systemd/
+!.config/systemd/user/
+!.config/systemd/user/waybar.service.d/
+!.config/systemd/user/waybar.service.d/10-resource-limits.conf
+!.config/systemd/user/plasma-xembedsniproxy.service.d/
+!.config/systemd/user/plasma-xembedsniproxy.service.d/10-resource-limits.conf
+!.config/systemd/user/mako.service.d/
+!.config/systemd/user/mako.service.d/10-user-config.conf
+!.config/systemd/user/cliphist.service.d/
+!.config/systemd/user/cliphist.service.d/10-user-config.conf
+!.config/systemd/user/dbus-broker.service.d/
+!.config/systemd/user/dbus-broker.service.d/override.conf
+
 # -- dprint --
 !.config/dprint/
 !.config/dprint/dprint.json
