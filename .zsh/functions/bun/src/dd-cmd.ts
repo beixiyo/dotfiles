@@ -1,0 +1,56 @@
+#!/usr/bin/env bun
+
+import { assertCmd, BUN_SRC, fzf, spawnFzfCapture } from './fzf-shared'
+
+const DOCKER_BUN = `${BUN_SRC}/docker.ts`
+
+async function main(): Promise<void> {
+  assertCmd('docker')
+  assertCmd('fzf')
+
+  const genList = `bun run '${DOCKER_BUN}' list 2>/dev/null < /dev/null`
+  const dispatchCmd = `bun run '${DOCKER_BUN}' dispatch`
+
+  const listResult = Bun.spawnSync(
+    ['bun', 'run', DOCKER_BUN, 'list'],
+    { stdout: 'pipe', stderr: 'pipe' },
+  )
+  const list = listResult.stdout.toString()
+
+  const guide = [
+    'Tab:多选 | l:Logs | e:Exec | c:Copy-ID | s:Stop | r:Run | R:Restart',
+    'd:Rm-Cont(Stop+Rm) | i:Rm-Img(rmi，仅镜像)',
+  ].join('\n')
+
+  const [, selected] = await spawnFzfCapture([
+    '-m',
+    '--bind', fzf.tabToggleDown,
+    '--with-nth', '2..',
+    '--header', guide,
+    '--header-lines', '0',
+    '--bind', `l:execute(${dispatchCmd} logs {+} </dev/tty)+abort`,
+    '--bind', `e:execute(${dispatchCmd} exec {+} </dev/tty)+abort`,
+    '--bind', `c:execute(${dispatchCmd} copy {+})+abort`,
+    '--bind', `s:execute(${dispatchCmd} stop {+})+abort`,
+    '--bind', `r:execute(${dispatchCmd} run {+})+abort`,
+    '--bind', `R:execute(${dispatchCmd} restart {+})+abort`,
+    '--bind', `d:execute(${dispatchCmd} delete {+})+abort`,
+    '--bind', `i:execute(${dispatchCmd} image {+})+abort`,
+    '--bind', `ctrl-r:reload:${genList}`,
+  ], list)
+
+  if (selected) {
+    const choice = selected
+      .split('\n')
+      .map(l => {
+        const fields = l.split('\t')
+        return fields.length >= 3 ? fields[2] : ''
+      })
+      .filter(Boolean)
+      .join('\n')
+
+    if (choice) console.log(`Selected: ${choice}`)
+  }
+}
+
+main().catch(() => process.exit(1))

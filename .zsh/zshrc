@@ -1,0 +1,71 @@
+# 环境变量与密钥：在所有 shell 中加载（脚本、cron、GUI 子进程等也能用到 PATH 等）
+source ~/.zsh/env.zsh
+[[ -f ~/.zsh/secret.zsh ]] && source ~/.zsh/secret.zsh
+
+# 以下仅在交互式 shell 中执行
+[[ -o interactive ]] || return
+
+# ── 自动进入 tmux ────────────────────────────────────────
+# 条件：tmux 已安装 & 不在 tmux 内 & 不在 IDE 内嵌终端
+if command -v tmux &>/dev/null \
+  && [[ -z "$TMUX" ]] \
+  && [[ -z "$VSCODE_PID" ]] \
+  && [[ -z "$INTELLIJ_ENVIRONMENT_READER" ]] \
+  && [[ "$TERM_PROGRAM" != vscode ]]; then
+
+  # 显示 tmux 快捷提示，按键选择，Enter/其他键跳过
+  local _tmux_sessions
+  _tmux_sessions=$(tmux list-sessions 2>/dev/null | wc -l | tr -d ' ')
+
+  echo ""
+  if [[ "$_tmux_sessions" -gt 0 ]]; then
+    print -P "  %F{8}┌ tmux%f  %B%F{cyan}a%f%b attach($_tmux_sessions)  %B%F{cyan}n%f%b new  %F{8}↵ skip%f"
+  else
+    print -P "  %F{8}┌ tmux%f  %B%F{cyan}n%f%b new  %F{8}↵ skip%f"
+  fi
+
+  read -sk1 '_tmux_key'
+  case "$_tmux_key" in
+    a|A)
+      if [[ "$_tmux_sessions" -eq 1 ]]; then
+        exec tmux attach-session
+      else
+        local -a _sl
+        _sl=("${(@f)$(tmux list-sessions -F '#{session_name}'$'\t''#{session_windows}w · #{session_panes}p')}")
+        echo ""
+        for i in {1..${#_sl[@]}}; do
+          local _n="${_sl[$i]%%$'\t'*}" _m="${_sl[$i]#*$'\t'}"
+          print -P "    %F{8}${i})%f %B${_n}%b  %F{8}${_m}%f"
+        done
+        print -P "\n  %F{8}press 1-${#_sl[@]} to attach · ↵ skip%f"
+        read -sk1 '_tmux_num'
+        if [[ "$_tmux_num" =~ ^[1-9]$ ]] && (( _tmux_num <= ${#_sl[@]} )); then
+          exec tmux attach-session -t "${_sl[$_tmux_num]%%$'\t'*}"
+        fi
+      fi
+      ;;
+    n|N)
+      echo ""
+      read -r '_tmux_sname?  session name (↵ auto): '
+      if [[ -n "$_tmux_sname" ]]; then
+        exec tmux new-session -s "$_tmux_sname"
+      else
+        exec tmux new-session
+      fi
+      ;;
+  esac
+  unset _tmux_key _tmux_sessions _tmux_num _sl _n _m i
+  echo ""
+fi
+
+source ~/.zsh/options.zsh     # setopt + history + compinit（必须在 plugins 之前）
+
+source ~/.zsh/plugins.zsh
+source ~/.zsh/completions.zsh # 自定义命令补全（compinit 之后）
+source ~/.zsh/tools.zsh       # 外部工具集成：starship / mise / zoxide / fzf / tmuxifier
+source ~/.zsh/aliases.zsh
+source ~/.zsh/functions/index.zsh
+
+# keybindings 必须在 plugins 之后，否则 history-substring-search 的 bindkey 会失效
+source ~/.zsh/keybindings.zsh
+source ~/.zsh/notify.zsh

@@ -1,0 +1,7 @@
+# 克隆的第三方插件目录；顶层 *.zsh 为仓库内引导脚本，保持跟踪
+plugins/*
+!plugins/*.zsh
+secret.zsh
+
+.hidden
+node_modules
