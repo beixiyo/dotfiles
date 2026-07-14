@@ -1,0 +1,105 @@
+#:schema https://yazi-rs.github.io/schemas/yazi.json
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 管理器 (mgr) — 文件列表的显示与行为
+# ═══════════════════════════════════════════════════════════════════════════════
+[mgr]
+# 三栏宽度比例 [左:中:右]
+ratio          = [ 1, 2, 3 ]
+sort_by        = "alphabetical"
+# 是否区分大小写
+sort_sensitive = false
+# 是否倒序
+sort_reverse 	 = false
+# 目录是否排在文件前面
+sort_dir_first = true
+# 排序时是否按音译（如 é→e）处理
+sort_translit  = false
+# 列表行显示模式：none / size / mtime / permissions 等
+linemode       = "none"
+# 是否显示隐藏文件（. 开头）
+show_hidden    = true
+# 是否显示符号链接
+show_symlink   = true
+# 距顶部/底部多少行时开始预滚动
+scrolloff      = 5
+# 启用的鼠标事件
+mouse_events   = [ "click", "scroll" ]
+# 窗口标题格式，{cwd} 为当前路径
+title_format   = "Yazi: {cwd}"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 打开器 (opener) — 各类操作对应的外部命令
+# edit=编辑 play=播放 open=打开 reveal=在文件管理器中显示 extract=解压 download=下载
+# ═══════════════════════════════════════════════════════════════════════════════
+[opener]
+# 1. 编辑组
+edit = [
+	{ run = 'code "$@"', desc = "code" },
+	{ run = 'nvim "$@"', block = true, desc = "nvim" },
+]
+# 2. 系统打开
+open = [
+	{ run = 'open "$@"',     desc = "System Open", for = "macos" },
+	{ run = 'xdg-open "$@"', desc = "System Open", for = "linux" },
+]
+# 3. 媒体播放
+play = [
+	{ run = 'open "$@"',     desc = "Play", for = "macos" },
+	{ run = 'xdg-open "$@"', desc = "Play", for = "linux" },
+]
+# 4. 在文件管理器中显示
+reveal = [
+	{ run = 'open -R "$1"',             desc = "Reveal in Finder",       for = "macos" },
+	{ run = 'xdg-open "$(dirname $1)"', desc = "Reveal in File Manager", for = "linux" },
+]
+# 5. QuickLook (macOS only)
+quicklook = [
+	{ run = 'qlmanage -p "$@"', desc = "QuickLook", for = "macos" },
+]
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 打开规则 (open) — 按 URL/MIME 决定对文件可用的操作（edit/open/play/reveal 等）
+# ═══════════════════════════════════════════════════════════════════════════════
+[open]
+rules = [
+	# 文件夹：支持代码编辑、系统打开、在文件管理器中显示
+	{ url = "*/", use = [ "edit", "open", "reveal" ] },
+	# 文本和 JSON
+	{ mime = "text/*", use = [ "edit", "open", "reveal" ] },
+	{ mime = "application/json", use = [ "edit", "open", "reveal" ] },
+	# 图片：默认用系统“预览”，支持 QuickLook
+	{ mime = "image/*", use = [ "open", "quicklook", "reveal" ] },
+	# 视频和音频
+	{ mime = "{audio,video}/*", use = [ "play", "reveal" ] },
+	# PDF
+	{ mime = "application/pdf", use = [ "open", "reveal" ] },
+	# 兜底规则：不认识的全部尝试用系统 open
+	{ url = "*", use = [ "open", "reveal" ] },
+]
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 预览 (preview) — 预览面板的显示与图片/终端预览
+# ═══════════════════════════════════════════════════════════════════════════════
+[preview]
+# 文本是否自动换行：no / yes
+wrap            = "no"
+# 制表符显示宽度
+tab_size        = 2
+# 预览区域最大宽/高（像素）
+max_width       = 600
+max_height      = 900
+# 预览缓存目录，空则用默认
+cache_dir       = ""
+# 切换文件后延迟多少毫秒再加载图片（防抖）
+image_delay     = 30
+# 图片缩放算法：triangle / catmull-rom / gaussian 等
+image_filter    = "triangle"
+# 图片预览质量 1–100
+image_quality   = 75
+# ueberzug 图片缩放比例与偏移 [x, y, w, h]
+ueberzug_scale  = 1
+ueberzug_offset = [ 0, 0, 0, 0 ]

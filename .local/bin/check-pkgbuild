@@ -1,0 +1,157 @@
+#!/usr/bin/env bash
+#
+# check-pkgbuild —— AUR PKGBUILD 投毒粗筛工具
+# ============================================================================
+#
+# 【作用】
+#   扫描 AUR 包的 PKGBUILD / .install 文件,揪出供应链投毒的常见"坏味道"
+#   (如 2026-06 Atomic Arch 事件:在构建脚本里偷偷 `npm install 恶意包`)。
+#   它只负责"拉警报",不负责"定罪"——命中不代表中毒,代表这个点需要你人工判断。
+#
+# 【用法】
+#   check-pkgbuild                  不带参数 = 自动扫描所有已缓存的 AUR 包(体检)
+#   check-pkgbuild <包名>           只扫某个包,例: check-pkgbuild google-chrome
+#   check-pkgbuild <包名> <包名>... 扫多个包
+#   check-pkgbuild ./某目录         也支持直接给路径(以 . / ~ 开头时按路径处理)
+#
+#   不用记长目录!直接填包名即可,脚本自动去 AUR helper 的缓存目录里找。
+#   (想要包名 Tab 补全?见文件末尾「可选:zsh 补全」注释。)
+#
+# 【典型场景】装包时另开一个终端:paru 装包会停在 "Proceed to review?",
+#   这时文件已 clone 好,跑 `check-pkgbuild <正在装的包名>` 看完再决定 y/n。
+#
+# 【返回码】 0=全部干净  1=有命中需复查  2=环境/参数错误
+#
+# 【怎么看结果】
+#   ✅ 未命中  → 大概率没事,但仍建议扫一眼 build()/package()/.install
+#   ⚠️ 命中    → 不等于中毒。问自己一句:"这个动作对这个软件合理吗?"
+#                例: 壁纸工具跑 `npm install 陌生包` = 红灯;
+#                    Python 包 `pip install 本地的 dist/*.whl` = 正常(装本地构建产物)
+# ============================================================================
+
+set -uo pipefail
+
+# ── AUR helper 缓存目录:按存在顺序自动探测(paru / yay / pikaur)──────────────
+# 这就是"构建目录"的爹:每个包 clone 到 <缓存目录>/<包名>/
+detect_cache() {
+  local c
+  for c in \
+    "$HOME/.cache/paru/clone" \
+    "$HOME/.cache/yay" \
+    "$HOME/.cache/pikaur/aur"
+  do
+    [ -d "$c" ] && { echo "$c"; return 0; }
+  done
+  return 1
+}
+
+CACHE="$(detect_cache)" || {
+  echo "✗ 没找到 AUR helper 缓存目录(paru/yay/pikaur 都没有)" >&2
+  exit 2
+}
+
+# ── 把入参解析成"待扫描目录列表"────────────────────────────────────────────
+#   · 无参数        → 缓存目录下的所有包
+#   · 看着像路径    → 直接当目录用(以 / . ~ 开头,或包含 /)
+#   · 否则          → 当包名,拼成 <缓存目录>/<包名>
+resolve_targets() {
+  local arg dir
+  if [ "$#" -eq 0 ]; then
+    # 默认:全部包
+    for dir in "$CACHE"/*/; do
+      [ -d "$dir" ] && printf '%s\n' "${dir%/}"
+    done
+    return
+  fi
+  for arg in "$@"; do
+    case "$arg" in
+      /*|./*|../*|~/*|*/*) dir="$arg" ;;        # 像路径,原样用
+      *)                   dir="$CACHE/$arg" ;; # 当包名,去缓存里找
+    esac
+    if [ -d "$dir" ]; then
+      printf '%s\n' "${dir%/}"
+    else
+      echo "✗ 找不到: $arg  (期望目录: $dir)" >&2
+    fi
+  done
+}
+
+# ── 单个目录的扫描逻辑 ──────────────────────────────────────────────────────
+# 每条规则: scan <正则> <人类可读的说明>。命中则打印匹配的文件:行号:内容。
+scan_dir() {
+  local dir="$1" name files hit=0 m
+  name="$(basename "$dir")"
+
+  # 只看真正会"执行"的文件:PKGBUILD、*.install(post_install 钩子)、*.sh
+  files="$(find "$dir" -maxdepth 2 \
+            \( -name 'PKGBUILD' -o -name '*.install' -o -name '*.sh' \) 2>/dev/null)"
+  if [ -z "$files" ]; then
+    echo "── $name : (无 PKGBUILD,跳过)"
+    return 0
+  fi
+
+  scan() { # $1=正则  $2=说明
+    m="$(grep -rInE "$1" $files 2>/dev/null)"
+    [ -n "$m" ] && { echo "  ⚠️  [$2]"; echo "$m" | sed 's/^/        /'; hit=1; }
+  }
+
+  # ── 7 条已知投毒坏味道 ──────────────────────────────────────────────
+  # 1) 意外的包管理器联网装包 —— 本次 Atomic Arch 的核心特征
+  scan '(npm|bun|pnpm|yarn|npx|pip)[[:space:]]+(install|add|i)[[:space:]]' \
+       '意外的包管理器安装(本次攻击特征!确认装的是本地文件还是联网包名)'
+  # 2) 远程拉脚本直接执行
+  scan '(curl|wget)[^|]*\|[[:space:]]*(ba)?sh' \
+       'curl/wget 管道到 shell'
+  # 3) 混淆:base64 解码 / eval
+  scan 'base64[[:space:]]+(-d|--decode)|eval[[:space:]]' \
+       'base64 解码 / eval(可能是混淆,看内容是否可读)'
+  # 4) 持久化:动 ssh / shell rc / 定时任务
+  scan '(authorized_keys|\.ssh/|\.bashrc|\.zshrc|crontab)' \
+       '改 ssh / shell 配置 / 定时任务(持久化后门)'
+  # 5) 硬编码 IP / onion 地址(注意:版本号如 4.5.1.48 会误报)
+  scan '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b|\.onion' \
+       '硬编码 IP / .onion(注意排除版本号误报)'
+
+  if [ "$hit" -eq 0 ]; then
+    echo "✅ $name : 未命中"
+  else
+    echo "🚨 $name : 命中,请逐条人工确认 ↑"
+  fi
+  return "$hit"
+}
+
+# ── 主流程 ──────────────────────────────────────────────────────────────────
+mapfile -t TARGETS < <(resolve_targets "$@")
+if [ "${#TARGETS[@]}" -eq 0 ]; then
+  echo "没有可扫描的目标(缓存目录 $CACHE 为空?)" >&2
+  exit 2
+fi
+
+echo "🔍 缓存目录: $CACHE"
+echo "🔍 待扫描: ${#TARGETS[@]} 个包"
+echo "────────────────────────────────────────────"
+
+any_hit=0
+for t in "${TARGETS[@]}"; do
+  scan_dir "$t" || any_hit=1
+done
+
+echo "────────────────────────────────────────────"
+if [ "$any_hit" -eq 0 ]; then
+  echo "✅ 全部未命中已知坏味道(仍建议人工扫一眼 build()/package()/.install)"
+  exit 0
+else
+  echo "🚨 有命中项,务必逐条判断「这个动作对该软件是否合理」再决定是否安装"
+  exit 1
+fi
+
+# ── 可选:zsh 包名 Tab 补全 ──────────────────────────────────────────────────
+# 把下面这段(去掉行首 #)加到你的 ~/.zshrc,即可对包名按 Tab 自动补全:
+#
+#   _check_pkgbuild() {
+#     local cache=~/.cache/paru/clone
+#     [ -d "$cache" ] && compadd -- ${cache}/*(/:t)   # 列出缓存里的所有包名
+#   }
+#   compdef _check_pkgbuild check-pkgbuild
+#
+# (bash 用户改用 complete -W "$(ls ~/.cache/paru/clone)" check-pkgbuild)

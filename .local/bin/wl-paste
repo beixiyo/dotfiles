@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# WSL2 剪贴板读取桥接 —— 让 Claude Code 等工具能在 WSL 里读取 Windows 剪贴板
+#
+# 工作原理：
+#   Claude Code 在 Linux 上统一调 wl-paste 读剪贴板（包括图片粘贴）
+#   WSL 没有 Wayland，所以这个脚本"伪装"成 wl-paste
+#   内部通过 PowerShell 调用 Windows 剪贴板 API
+#
+# 非 WSL 环境（原生 Linux）：
+#   直接转发给系统真正的 wl-paste，这个脚本等于透明
+
+set -euo pipefail
+
+# ── 非 WSL 环境：转发给系统原生 wl-paste ──
+if [[ ! -f /proc/version ]] || ! grep -qi microsoft /proc/version; then
+  # command -v -p：只在系统默认 PATH 里找（跳过 ~/.local/bin 自己）
+  real=$(command -v -p wl-paste 2>/dev/null || true)
+  if [[ -n "$real" ]]; then
+    exec "$real" "$@"   # exec = 替换当前进程，完全透明
+  fi
+  echo "wl-paste: not found" >&2
+  exit 1
+fi
+
+# ── 以下仅 WSL 执行 ──
+
+PS_EXE="/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/powershell.exe"
+[[ -x "$PS_EXE" ]] || { echo "wl-paste: powershell.exe not found" >&2; exit 1; }
+
+# ── 解析参数 ──
+# Claude Code 会先调 `wl-paste --list-types` 探测剪贴板里有什么
+# 然后调 `wl-paste -t image/png` 提取图片
+has_type_arg=false
+want_image=false
+
+for arg in "$@"; do
+  case "$arg" in
+    -l|--list-types)
+      # 探测模式：告诉调用方剪贴板里有图片还是文本
+      "$PS_EXE" -NoProfile -Command '
+        Add-Type -AssemblyName System.Windows.Forms
+        $img = [System.Windows.Forms.Clipboard]::GetImage()
+        if ($img) { Write-Output "image/png" }
+        $text = [System.Windows.Forms.Clipboard]::GetText()
+        if ($text) { Write-Output "text/plain" }
+      ' 2>/dev/null | tr -d '\r'    # tr -d '\r'：去掉 Windows 的回车符
+      exit 0
+      ;;
+    -t|--type) has_type_arg=true ;;                          # 下一个参数是 MIME 类型
+    image/*) [[ "$has_type_arg" == true ]] && want_image=true ;;  # -t image/png
+  esac
+done
+
+# ── 图片提取 ──
+if [[ "$want_image" == true ]]; then
+  tmp=$(mktemp /tmp/clip-XXXXXX.png)
+  trap 'rm -f "$tmp"' EXIT   # 脚本退出时自动删除临时文件
+
+  # PowerShell：从 Windows 剪贴板取图片，保存为 PNG
+  # wslpath -w：把 Linux 路径 /tmp/xxx 转成 Windows 路径 \\wsl$\...\tmp\xxx
+  "$PS_EXE" -NoProfile -Command "
+    Add-Type -AssemblyName System.Windows.Forms
+    \$img = [System.Windows.Forms.Clipboard]::GetImage()
+    if (\$img -eq \$null) { exit 1 }
+    \$img.Save('$(wslpath -w "$tmp")', [System.Drawing.Imaging.ImageFormat]::Png)
+  " 2>/dev/null
+
+  if [[ -s "$tmp" ]]; then   # -s：文件存在且非空
+    cat "$tmp"                # 输出到 stdout，调用方读取
+    exit 0
+  else
+    exit 1
+  fi
+fi
+
+# ── 文本提取（兜底） ──
+"$PS_EXE" -NoProfile -Command '
+  $OutputEncoding = [Console]::OutputEncoding = [Text.Encoding]::UTF8
+  $t = [System.Windows.Forms.Clipboard]::GetText()
+  if ($t) { Write-Output $t }
+' 2>/dev/null | tr -d '\r'

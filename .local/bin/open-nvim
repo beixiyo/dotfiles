@@ -1,0 +1,86 @@
+#!/bin/bash
+# open-nvim: 供 code-inspector-plugin 调用，自动跳转到正确的 Neovim 实例
+#
+# 用法（支持以下三种参数格式）：
+#   open-nvim <file>:<line>:<col>        # code-inspector-plugin 默认格式
+#   open-nvim <file>:<line>              # 无列号
+#   open-nvim <file> [line] [col]        # 分参格式（line/col 省略时默认为 1）
+#   open-nvim "+call cursor(l,c)" <file> # vim +call 格式
+
+# ── 解析参数 ──
+if [[ "$1" == +call* ]]; then
+  # vim +call cursor(line,col) file 格式
+  CURSOR_CALL="$1"
+  FILE="$2"
+  LINE=$(echo "$CURSOR_CALL" | grep -oE '[0-9]+' | head -1)
+  COL=$(echo "$CURSOR_CALL" | grep -oE '[0-9]+' | tail -1)
+elif [[ "$1" =~ ^(.+):([0-9]+):([0-9]+)$ ]]; then
+  # code-inspector-plugin 默认的 file:line:col 单参格式
+  FILE="${BASH_REMATCH[1]}"
+  LINE="${BASH_REMATCH[2]}"
+  COL="${BASH_REMATCH[3]}"
+elif [[ "$1" =~ ^(.+):([0-9]+)$ ]]; then
+  # file:line 格式（无 col）
+  FILE="${BASH_REMATCH[1]}"
+  LINE="${BASH_REMATCH[2]}"
+  COL=1
+else
+  # 分参格式：file line col
+  FILE="$1"
+  LINE="${2:-1}"
+  COL="${3:-1}"
+fi
+
+[ -z "$FILE" ] && echo "Usage: open-nvim <file>[:<line>[:<col>]] [line] [col]" && exit 1
+FILE=$(realpath "$FILE" 2>/dev/null || echo "$FILE")
+
+open_in_nvim() {
+  nvim --headless --server "$1" --remote-send "<C-\\><C-n>:e ${FILE}<CR>:call cursor(${LINE:-1}, ${COL:-1})<CR>"
+}
+
+# ── 优先级 1: $NVIM（从 nvim 内置终端启动时自动可用） ──
+if [ -n "$NVIM" ]; then
+  open_in_nvim "$NVIM"
+  echo "[open-nvim] Opened ${FILE}:${LINE}:${COL} (embedded terminal)"
+  exit 0
+fi
+
+# ── 收集存活的 socket 及其 cwd ──
+# macOS 用 getconf DARWIN_USER_TEMP_DIR 获取 per-user 临时目录，不依赖 $TMPDIR 继承
+# Linux / 其他系统 getconf 会返回空，自动 fallback 到 $TMPDIR 或 /tmp/
+_TMPDIR=$(getconf DARWIN_USER_TEMP_DIR 2>/dev/null || echo "${TMPDIR:-/tmp/}")
+SOCK_DIR="${_TMPDIR%/}/nvim.$(whoami)"
+BEST_MATCH=""
+BEST_LEN=0
+LAST_ALIVE=""
+
+for sock in "$SOCK_DIR"/*/nvim.*.0; do
+  [ -S "$sock" ] || continue
+  CWD=$(nvim --headless --server "$sock" --remote-expr "getcwd()" 2>/dev/null) || continue
+  LAST_ALIVE="$sock"
+
+  if [[ "$FILE" == "$CWD"/* ]]; then
+    LEN=${#CWD}
+    if (( LEN > BEST_LEN )); then
+      BEST_MATCH="$sock"
+      BEST_LEN=$LEN
+    fi
+  fi
+done
+
+# ── 优先级 2: cwd 最匹配的实例 ──
+if [ -n "$BEST_MATCH" ]; then
+  open_in_nvim "$BEST_MATCH"
+  echo "[open-nvim] Opened ${FILE}:${LINE}:${COL} (matched cwd)"
+  exit 0
+fi
+
+# ── 优先级 3: 最后一个存活实例 ──
+if [ -n "$LAST_ALIVE" ]; then
+  open_in_nvim "$LAST_ALIVE"
+  echo "[open-nvim] Opened ${FILE}:${LINE}:${COL} (fallback instance)"
+  exit 0
+fi
+
+echo "[open-nvim] No running Neovim instance found"
+exit 1

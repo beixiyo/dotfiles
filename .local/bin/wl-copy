@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# WSL2 剪贴板写入桥接 —— 让 fzf 等工具能在 WSL 里写入 Windows 剪贴板
+#
+# 工作原理：
+#   fzf 的 Alt-C 等操作会调 wl-copy 把内容写入剪贴板
+#   clip.exe 不支持 UTF-8（中文会乱码），所以用 PowerShell 的 Set-Clipboard
+#   通过 Base64 传输避免 WSL→Windows 管道的编码问题
+#
+# 非 WSL 环境（原生 Linux）：
+#   直接转发给系统真正的 wl-copy，这个脚本等于透明
+
+if [[ ! -f /proc/version ]] || ! grep -qi microsoft /proc/version; then
+  # command -v -p：只在系统默认 PATH 里找（跳过 ~/.local/bin 自己）
+  real=$(command -v -p wl-copy 2>/dev/null || true)
+  if [[ -n "$real" ]]; then
+    exec "$real" "$@"   # exec = 替换当前进程，完全透明
+  fi
+  echo "wl-copy: not found" >&2
+  exit 1
+fi
+
+# ── 以下仅 WSL 执行 ──
+
+PS_EXE="/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/powershell.exe"
+[[ -x "$PS_EXE" ]] || { echo "wl-copy: powershell.exe not found" >&2; exit 1; }
+
+# stdin → Base64 编码 → PowerShell 解码 → 写入剪贴板
+# 为什么用 Base64：WSL 和 Windows 之间的管道会破坏 UTF-8 编码
+b64=$(base64 -w0)
+"$PS_EXE" -NoProfile -Command "
+  Set-Clipboard -Value ([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('$b64')))
+"
