@@ -1,0 +1,34 @@
+# ╭─────────────────────────────────────────────────────╮
+# │          Ghostty 配置文件（模块化入口）               │
+# │   实际内容按功能拆分到 modules/*.config              │
+# ╰─────────────────────────────────────────────────────╯
+# Ghostty 用 config-file 加载子文件（相对路径从 ~/.config/ghostty/ 开始）
+
+
+# ──── 外观（主题、光标、字体、透明度）────
+config-file = modules/appearance.config
+
+# ──── 窗口（尺寸、shell、鼠标、macOS）────
+config-file = modules/window.config
+
+# ──── 基础快捷键（Tab / 字体缩放 / F13 / 粘贴）────
+config-file = modules/keys-common.config
+
+# ──── Shader 视觉特效 ────
+config-file = modules/shaders.config
+
+# ──── matugen 动态主题色（覆盖 appearance.config 中的 theme）────
+# ? 前缀 = 可选文件：缺失时(如新克隆未跑 matugen)静默跳过,不报错,沿用 appearance.config 的 Catppuccin
+config-file = ?modules/matugen-colors.config
+
+
+# ╭─────────────────────────────────────────────────────╮
+# │       Window 管理模式（二选一，注释切换）             │
+# ╰─────────────────────────────────────────────────────╯
+# native：Ghostty 原生 tab + split（无 smart-splits 透传，详见 keys-native.config 注释）
+# tmux  ：tab / pane 全交给 tmux，由 tmux 条件 bind 无缝切换
+#
+# 默认 tmux 模式；切回 Ghostty 原生，注释下面一行、取消注释上面一行
+
+# config-file = modules/keys-native.config
+config-file = modules/keys-tmux.config

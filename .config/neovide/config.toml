@@ -1,0 +1,5 @@
+# Neovide 原生 macOS 菜单快捷键
+# smart-splits 在 Neovide 下需要接收 h 方向的组合键；
+# 默认的 Hide / Hide Others 分别是 Command+h / Command+Alt+h，可能先被应用菜单吞掉
+system-hide-hotkey = false
+system-hide-others-hotkey = false
