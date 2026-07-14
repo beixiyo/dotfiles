@@ -1,0 +1,15 @@
+patch:
+  __include: rime_ice_suggestion:/
+
+  "menu/page_size": 9
+
+  # 有候选时按左 Shift 上屏原始编码；不要用 key_binder 绑定裸 Shift_L，否则会吃掉 Vim 的 Shift+v
+  # ascii_composer/switch_key/Shift_L: commit_code
+  # ascii_composer/switch_key/Shift_R: commit_code
+  ascii_composer/switch_key/Shift_L: commit_code
+  ascii_composer/switch_key/Shift_R: noop
+
+  __patch:
+    key_binder/bindings/+:
+      - { when: paging, accept: comma, send: Page_Up }
+      - { when: has_menu, accept: period, send: Page_Down }
