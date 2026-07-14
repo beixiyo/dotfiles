@@ -1,20 +1,5 @@
 # dotfiles
 
-<!--toc:start-->
-- [dotfiles](#dotfiles)
-  - [为什么选择全终端工作流](#为什么选择全终端工作流)
-    - [开发运行时](#开发运行时)
-    - [快速体验](#快速体验)
-  - [AI 工作流](#ai-工作流)
-  - [终端操作](#终端操作)
-  - [技术栈](#技术栈)
-  - [Neovim](#neovim)
-    - [Neovide 与 `nvd`](#neovide-与-nvd)
-    - [插件](#插件)
-  - [安装](#安装)
-  - [模块](#模块)
-<!--toc:end-->
-
 > 轻量、可恢复、适合远程开发的全终端工作区
 
 <p align="center"><a href="README.md">English</a> | 中文</p>
@@ -43,6 +28,21 @@
 <p align="center"><strong>Neovim 配置、使用与插件展示：<a href=".config/nvim/README.md">快速开始 →</a></strong></p>
 
 这个仓库可以把一台新机器的终端变成完整的开发工作区：Zsh 提供 Shell，tmux 持久保存会话，Kitty / Ghostty / WezTerm 负责终端显示，Neovim 处理代码、Git、笔记和 AI 辅助工作流。终端分屏与编辑器分屏共用同一套快捷键，使用时更像一个完整环境，而不是多个互不相关的工具
+
+<!--toc:start-->
+- [dotfiles](#dotfiles)
+  - [为什么选择全终端工作流](#为什么选择全终端工作流)
+    - [开发运行时](#开发运行时)
+    - [快速体验](#快速体验)
+  - [AI 工作流](#ai-工作流)
+  - [终端操作](#终端操作)
+  - [技术栈](#技术栈)
+  - [Neovim](#neovim)
+    - [Neovide 与 `nvd`](#neovide-与-nvd)
+    - [插件](#插件)
+  - [安装](#安装)
+  - [模块](#模块)
+<!--toc:end-->
 
 ## 为什么选择全终端工作流
 

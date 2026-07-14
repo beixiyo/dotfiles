@@ -1,20 +1,5 @@
 # dotfiles
 
-<!--toc:start-->
-- [dotfiles](#dotfiles)
-  - [Why a terminal-first workflow](#why-a-terminal-first-workflow)
-    - [Development runtimes](#development-runtimes)
-    - [Quick tour](#quick-tour)
-  - [AI workflow](#ai-workflow)
-  - [Terminal workflow](#terminal-workflow)
-  - [Stack](#stack)
-  - [Neovim](#neovim)
-    - [Neovide and `nvd`](#neovide-and-nvd)
-    - [Plugins](#plugins)
-  - [Setup](#setup)
-  - [Modules](#modules)
-<!--toc:end-->
-
 > A lightweight, recoverable terminal workspace built for remote development
 
 <p align="center">English | <a href="README.zh-CN.md">中文</a></p>
@@ -43,6 +28,21 @@
 <p align="center"><strong>Neovim setup and plugin showcase: <a href=".config/nvim/README.md">Chinese guide →</a></strong></p>
 
 This repository turns a fresh terminal into a complete development workspace: Zsh provides the shell, tmux keeps sessions alive, Kitty / Ghostty / WezTerm render the terminal, and Neovim handles code, Git, notes, and AI-assisted workflows. The same shortcuts move between terminal panes and editor splits, so the tools feel like one environment instead of several unrelated apps
+
+<!--toc:start-->
+- [dotfiles](#dotfiles)
+  - [Why a terminal-first workflow](#why-a-terminal-first-workflow)
+    - [Development runtimes](#development-runtimes)
+    - [Quick tour](#quick-tour)
+  - [AI workflow](#ai-workflow)
+  - [Terminal workflow](#terminal-workflow)
+  - [Stack](#stack)
+  - [Neovim](#neovim)
+    - [Neovide and `nvd`](#neovide-and-nvd)
+    - [Plugins](#plugins)
+  - [Setup](#setup)
+  - [Modules](#modules)
+<!--toc:end-->
 
 ## Why a terminal-first workflow
 
