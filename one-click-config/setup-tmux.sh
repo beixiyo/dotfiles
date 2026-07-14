@@ -56,14 +56,16 @@ _run_tpm() {
   local tmpdir rc=0
   tmpdir="$(mktemp -d)"
   (
+    local tpm_rc=0
     unset TMUX
     export TMUX_TMPDIR="$tmpdir"
     # 用 detached session 拉起隔离 server：无 session 的 start-server 会立即退出、丢失全局环境
     # 全程 TMUX 已 unset 且 TMUX_TMPDIR 指向一次性 socket，下面所有 tmux 调用只作用于隔离 server
     tmux new-session -d -s tpm_setup
     tmux set-environment -g TMUX_PLUGIN_MANAGER_PATH "$PLUGINS_DIR"
-    "$bin" "$@"
+    "$bin" "$@" || tpm_rc=$?
     tmux kill-server 2>/dev/null || true
+    exit "$tpm_rc"
   ) || rc=$?
   rm -rf "$tmpdir"
   return "$rc"

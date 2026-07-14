@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # 共享常量
+# shellcheck disable=SC2034 # 由 source 本文件的 lib/packages.sh 读取
 STARSHIP_INSTALL_URL='https://starship.rs/install.sh'
 
 init_colors() {
