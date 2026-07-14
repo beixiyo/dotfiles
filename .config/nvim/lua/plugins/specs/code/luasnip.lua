@@ -69,9 +69,38 @@ return {
   build = 'make install_jsregexp',
 
   config = function()
-    require('luasnip').setup({
+    local luasnip = require('luasnip')
+    local types = require('luasnip.util.types')
+
+    luasnip.setup({
       update_events = { 'TextChanged', 'TextChangedI' },
       enable_autosnippets = false,
+      ext_opts = {
+        [types.insertNode] = {
+          active = {
+            hl_group = 'Visual',
+            virt_text = { { ' 󰘳 snippet', 'Comment' } },
+            virt_text_pos = 'inline',
+          },
+        },
+        [types.choiceNode] = {
+          active = {
+            hl_group = 'Visual',
+            virt_text = { { ' 󰘳 choice', 'Comment' } },
+            virt_text_pos = 'inline',
+          },
+        },
+      },
+    })
+
+    vim.api.nvim_create_autocmd('InsertLeave', {
+      group = vim.api.nvim_create_augroup('LuaSnipCancelOnInsertLeave', { clear = true }),
+      callback = function()
+        if luasnip.in_snippet() then
+          luasnip.unlink_current()
+        end
+      end,
+      desc = 'Cancel the active snippet session',
     })
 
     -- 加载 ~/.config/nvim/snippets：读 package.json + *.json + *.code-snippets

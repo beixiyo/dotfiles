@@ -24,8 +24,10 @@ return {
         ['<C-Space>'] = { 'show' },
         ['<C-n>'] = { 'select_next', 'fallback' },
         ['<C-p>'] = { 'select_prev', 'fallback' },
-        ['<Tab>'] = { 'snippet_forward', 'select_and_accept', 'fallback' },
-        ['<S-Tab>'] = { 'snippet_backward', 'fallback' },
+        ['<Tab>'] = { 'select_and_accept', 'fallback' },
+        ['<S-Tab>'] = { 'fallback' },
+        ['<C-f>'] = { 'snippet_forward', 'fallback' },
+        ['<C-b>'] = { 'snippet_backward', 'fallback' },
         ['<C-k>'] = { 'show_documentation', 'hide_documentation' },
         ['<C-e>'] = { 'scroll_documentation_down', 'fallback' },
         ['<C-y>'] = { 'scroll_documentation_up', 'fallback' },
@@ -78,7 +80,8 @@ return {
       sources = {
         default = { 'lsp', 'path', 'snippets', 'buffer' },
         providers = {
-          lsp = { score_offset = 4 },
+          -- LSP 首次响应可能超过 2s；异步返回，避免阻塞 snippets/path 的即时候选
+          lsp = { score_offset = 4, async = true },
           path = { score_offset = 3 },
           snippets = { score_offset = 2 },
           buffer = { score_offset = 1 },
@@ -140,7 +143,20 @@ return {
   ---@param _ PackSpec
   ---@param opts blink.cmp.Config
   config = function(_, opts)
-    opts.snippets = { preset = pcall(require, 'luasnip') and 'luasnip' or 'default' }
+    local has_luasnip, luasnip = pcall(require, 'luasnip')
+    opts.snippets = { preset = has_luasnip and 'luasnip' or 'default' }
+
+    if has_luasnip then
+      -- 不把光标前恰好可展开的文本误判为活动 snippet，否则精确匹配会隐藏候选
+      opts.snippets.active = function(filter)
+        if filter and filter.direction then
+          return luasnip.locally_jumpable(filter.direction)
+        end
+
+        return luasnip.locally_jumpable(1) or luasnip.locally_jumpable(-1)
+      end
+    end
+
     require('blink.cmp').setup(opts)
   end,
 }
