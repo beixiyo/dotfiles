@@ -1,0 +1,272 @@
+{
+  "global": {
+    "enable_notification_window": false,
+    "show_in_menu_bar": false
+  },
+  "profiles": [
+    {
+      "complex_modifications": {
+        "rules": [
+          {
+            "description": "全局互换 Ctrl 和 Cmd (用于复制粘贴等)，终端 / RDP 远程 Windows 客户端除外",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^net\\.kovidgoyal\\.kitty$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^com\\.mitchellh\\.ghostty$",
+                      "^com\\.neovide\\.neovide$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^com\\.microsoft\\.rdc\\.macos$",
+                      "^com\\.microsoft\\.rdc\\.mac$",
+                      "^com\\.microsoft\\.rdc$",
+                      "^com\\.parallels\\.client$",
+                      "^com\\.p5sys\\.jump\\.mac\\.viewer$",
+                      "^com\\.royalapps\\.rtsx-mac$",
+                      "^com\\.vmware\\.horizon\\.client\\.mac$",
+                      "^com\\.nomachine\\.nxdock$",
+                      "^com\\.moonlight-stream\\.Moonlight$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "from": {
+                  "key_code": "left_control",
+                  "modifiers": { "optional": ["any"] }
+                },
+                "to": [{ "key_code": "left_command" }],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^net\\.kovidgoyal\\.kitty$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^com\\.mitchellh\\.ghostty$",
+                      "^com\\.neovide\\.neovide$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^com\\.microsoft\\.rdc\\.macos$",
+                      "^com\\.microsoft\\.rdc\\.mac$",
+                      "^com\\.microsoft\\.rdc$",
+                      "^com\\.parallels\\.client$",
+                      "^com\\.p5sys\\.jump\\.mac\\.viewer$",
+                      "^com\\.royalapps\\.rtsx-mac$",
+                      "^com\\.vmware\\.horizon\\.client\\.mac$",
+                      "^com\\.nomachine\\.nxdock$",
+                      "^com\\.moonlight-stream\\.Moonlight$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "from": {
+                  "key_code": "left_command",
+                  "modifiers": { "optional": ["any"] }
+                },
+                "to": [{ "key_code": "left_control" }],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "Ctrl+Shift+方向键 → 单词级选择（模拟 Windows 行为）",
+            "manipulators": [
+              {
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": {
+                    "mandatory": ["left_command", "shift"],
+                    "optional": ["option", "command"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "left_arrow",
+                    "modifiers": ["option", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": {
+                    "mandatory": ["left_command", "shift"],
+                    "optional": ["option", "command"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "right_arrow",
+                    "modifiers": ["option", "shift"]
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "Win+L → 锁屏脚本（避免 osascript 合成按键的 TCC 权限 bug）",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^net\\.kovidgoyal\\.kitty$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^com\\.mitchellh\\.ghostty$",
+                      "^com\\.neovide\\.neovide$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^com\\.moonlight-stream\\.Moonlight$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "from": {
+                  "key_code": "l",
+                  "modifiers": {
+                    "mandatory": ["left_control"],
+                    "optional": ["any"]
+                  }
+                },
+                "to": [{ "shell_command": "/bin/bash \"$HOME/scripts/lock-screen.sh\"" }],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "Win+I → 系统设置 / Win+E → Finder（模拟 Windows 行为）",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^net\\.kovidgoyal\\.kitty$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^com\\.mitchellh\\.ghostty$",
+                      "^com\\.neovide\\.neovide$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^com\\.moonlight-stream\\.Moonlight$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "from": {
+                  "key_code": "i",
+                  "modifiers": {
+                    "mandatory": ["left_control"],
+                    "optional": ["any"]
+                  }
+                },
+                "to": [{ "shell_command": "open -a 'System Settings'" }],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^net\\.kovidgoyal\\.kitty$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^com\\.mitchellh\\.ghostty$",
+                      "^com\\.neovide\\.neovide$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^com\\.moonlight-stream\\.Moonlight$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "from": {
+                  "key_code": "e",
+                  "modifiers": {
+                    "mandatory": ["left_control"],
+                    "optional": ["any"]
+                  }
+                },
+                "to": [{ "shell_command": "open ~" }],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "Neovide: Ctrl/Command+Alt+H → F19（绕过 macOS Option+H 死键）",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.neovide\\.neovide$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "from": {
+                  "key_code": "h",
+                  "modifiers": {
+                    "mandatory": ["control", "option"],
+                    "optional": ["any"]
+                  }
+                },
+                "to": [{ "key_code": "f19" }],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.neovide\\.neovide$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "from": {
+                  "key_code": "h",
+                  "modifiers": {
+                    "mandatory": ["command", "option"],
+                    "optional": ["any"]
+                  }
+                },
+                "to": [{ "key_code": "f19" }],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "禁用 Cmd+H（隐藏应用）",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.moonlight-stream\\.Moonlight$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "from": {
+                  "key_code": "h",
+                  "modifiers": {
+                    "mandatory": ["left_command"],
+                    "optional": ["any"]
+                  }
+                },
+                "to": [{ "key_code": "vk_none" }],
+                "type": "basic"
+              }
+            ]
+          }
+        ],
+        "title": "Windows 完美布局 (Ctrl/Cmd互换 + AltTab切应用)"
+      },
+      "name": "Default profile",
+      "selected": true,
+      "virtual_hid_keyboard": { "keyboard_type_v2": "ansi" }
+    }
+  ]
+}
