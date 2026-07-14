@@ -5,6 +5,10 @@
 !README.md
 !README.zh-CN.md
 
+# ── GitHub Actions ──
+!.github/
+!.github/**
+
 # ── Docs assets ──
 !docs/
 !docs/assets/
