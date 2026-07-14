@@ -33,18 +33,138 @@ This repository turns a fresh terminal into a complete development workspace: Zs
 
 <!--toc:start-->
 - [dotfiles](#dotfiles)
+  - [Start here: setup](#start-here-setup)
   - [Why a terminal-first workflow](#why-a-terminal-first-workflow)
     - [Development runtimes](#development-runtimes)
-    - [Quick tour](#quick-tour)
   - [AI workflow](#ai-workflow)
   - [Terminal workflow](#terminal-workflow)
   - [Stack](#stack)
   - [Neovim](#neovim)
     - [Neovide and `nvd`](#neovide-and-nvd)
     - [Plugins](#plugins)
-  - [Setup](#setup)
   - [Modules](#modules)
 <!--toc:end-->
+
+## Start here: setup
+
+No terminal experience is required. Complete these steps in order and move on only when the current step works
+
+### 1. Choose a modern terminal
+
+Choose one of the following terminals. They all support this configuration, and **only one is required**:
+
+- [Kitty](https://sw.kovidgoyal.net/kitty/) — **the most extensible and recommended choice**. Of the three terminals, only Kitty's native mode reproduces the full tmux-like window, pane, and layout handoff workflow, and it supports a smooth cursor
+- [Ghostty](https://ghostty.org/) — supports custom shaders for terminal visual effects; its feature set is more direct and its memory usage is slightly higher
+- [WezTerm](https://wezterm.org/) — a balanced cross-platform choice for macOS, Linux, and Windows, configured through Lua scripts
+
+The setup scripts support macOS and mainstream Linux distributions. Windows users can install WezTerm, but should deploy the shell configuration inside [WSL](https://learn.microsoft.com/windows/wsl/install)
+
+### 2. Check for a Nerd Font
+
+A Nerd Font provides the folder, Git, diagnostic, and interface icons used by the terminal, Neovim, and prompt. **Skip this step if a Nerd Font is already installed and selected in the terminal**
+
+[Maple Mono NF](https://github.com/subframe7536/maple-font/releases) is recommended, or choose another font from [Nerd Fonts](https://www.nerdfonts.com/font-downloads). After installing it, select that Nerd Font in the terminal settings
+
+On Linux, the upstream Maple Mono NF package avoids downloading the much larger AUR split-package source:
+
+The command below requires `curl` and `unzip`. If they are not installed yet, use the browser to install the font or return here after step 4
+
+```bash
+mkdir -p ~/Downloads/maplemono && \
+cd ~/Downloads/maplemono && \
+curl -fL --retry 3 \
+  -o MapleMono-NF.zip \
+  https://github.com/subframe7536/maple-font/releases/latest/download/MapleMono-NF.zip && \
+unzip -o MapleMono-NF.zip && \
+sudo install -d /usr/local/share/fonts/MapleMono-NF && \
+sudo install -m 644 ./*.ttf /usr/local/share/fonts/MapleMono-NF/ && \
+sudo fc-cache -f
+
+fc-list | grep 'MapleMono'
+```
+
+### 3. Clone the repository
+
+Make sure Git is installed. On a fresh system, run the command for the current platform:
+
+```bash
+# macOS
+xcode-select --install
+
+# Arch Linux
+sudo pacman -S git
+
+# Debian / Ubuntu
+sudo apt install git
+
+# Fedora
+sudo dnf install git
+```
+
+Then clone the repository and enter it:
+
+```bash
+git clone https://github.com/beixiyo/dotfiles.git ~/dotfiles
+cd ~/dotfiles
+```
+
+Run all following `./one-click-config/...` commands from `~/dotfiles`
+
+### 4. Install command-line dependencies
+
+```bash
+./one-click-config/setup-deps.sh
+```
+
+The script detects pacman, apt, dnf, zypper, or Homebrew and installs Zsh, Neovim, tmux, mise, Git, ripgrep, fd, and related tools. Administrator access is requested only when system packages actually need to be installed
+
+### 5. Deploy the configuration
+
+Most users only need the first command:
+
+```bash
+# Deploy to the current user
+./one-click-config/setup-user.sh
+
+# Optional: deploy to specific users
+./one-click-config/setup-user.sh alice bob
+```
+
+With no arguments, the script deploys to the current user and asks whether to configure anyone else. Passing `alice bob` deploys to those users. Linux can create missing users automatically; on macOS, create them in System Settings first
+
+Before replacing existing files, the script asks for confirmation and can back them up under `~/.dotfiles-backup-<timestamp>/`. Administrator access is limited to required operations such as creating users, changing login shells, and configuring sudo
+
+### 6. Install Bun
+
+```bash
+# This repository only requires Bun
+mise use -g bun
+```
+
+Bun runs the Zsh helpers and parts of the Neovim tooling. Run `mise install` only when the complete toolchain in [.config/mise/config.toml](.config/mise/config.toml) is wanted
+
+### 7. Install tmux plugins
+
+```bash
+./one-click-config/setup-tmux.sh
+```
+
+Run this as the normal user. It installs TPM, session recovery, status-line, and related tmux plugins
+
+### 8. Start the workspace
+
+```bash
+exec zsh
+tmux new-session -A
+```
+
+Run `nvim` to open the editor. Neovim downloads its plugins automatically on the first launch
+
+New to tmux? Read the [tmux usage guide (Chinese)](.config/tmux/README.md) for sessions, windows, panes, detaching, and workspace recovery
+
+New to Neovim? Follow the Chinese Wiki in order: [Modes and Movement](https://github.com/beixiyo/dotfiles/wiki/01-modes-and-movement), [Editing and Text Objects](https://github.com/beixiyo/dotfiles/wiki/02-editing-and-text-objects), then [Advanced Commands](https://github.com/beixiyo/dotfiles/wiki/03-advanced-commands)
+
+> Want configuration files only, without installing dependencies or changing the system? See the manual deployment option in the [one-click-config guide](one-click-config/README.md)
 
 ## Why a terminal-first workflow
 
@@ -64,19 +184,6 @@ mise use -g bun
 ```
 
 Run `mise install` only when the complete development toolchain is wanted. mise automatically selects configured versions when entering a project, without manual PATH changes. This repository's [mise configuration](.config/mise/config.toml) selects Node.js 22, the latest Bun / Go / Python, and stable Rust. System-level tools such as Git, tmux, and compilers still come from Homebrew, pacman, apt, or another system package manager
-
-### Quick tour
-
-```text
-Open a terminal
-→ enter or restore the tmux session
-→ open a project
-→ create a new window with Ctrl + Shift + T
-→ switch windows with Ctrl + number
-→ create a pane with Ctrl + Alt + \
-→ run the project in one pane and Neovim or an AI CLI in the other
-→ reconnect later and continue from the same tmux session
-```
 
 ## AI workflow
 
@@ -113,9 +220,9 @@ Kitty, Ghostty, and WezTerm all have tmux and standalone/native keymap files. Th
 | System | [Arch Linux](https://archlinux.org/) + [Niri](https://github.com/niri-wm/niri) | My base desktop stack |
 | Shell | [Zsh](https://www.zsh.org/) | Close enough to Bash that AI-written shell snippets are less likely to drift |
 | Multiplexer | [tmux](https://github.com/tmux/tmux) | Default session layer, lightweight and stable |
-| Terminal | [Kitty](https://sw.kovidgoyal.net/kitty/) | Primary terminal |
-| Terminal | [Ghostty](https://ghostty.org/) | Secondary terminal, modern and polished |
-| Terminal | [WezTerm](https://wezfurlong.org/wezterm/) | Cross-platform fallback, especially useful on Windows |
+| Terminal | [Kitty](https://sw.kovidgoyal.net/kitty/) | Primary terminal; the most extensible, with a complete tmux-like native workflow and smooth cursor support |
+| Terminal | [Ghostty](https://ghostty.org/) | Custom shader support with slightly higher memory usage |
+| Terminal | [WezTerm](https://wezterm.org/) | A balanced cross-platform option configured in Lua, especially useful on Windows |
 | File manager | [Yazi](https://yazi-rs.github.io/) | Fast file and directory browsing inside the terminal |
 | Editor | [Neovim](https://neovim.io/) | Main editor for code, Git work, notes, and workflow |
 
@@ -140,73 +247,6 @@ The vv-* plugins cover navigation, Git, search, refactors, Markdown, and workflo
 | Workflow | [vv-flow](https://github.com/beixiyo/vv-flow.nvim) · [vv-task-panel](https://github.com/beixiyo/vv-task-panel.nvim) · [vv-i18n](https://github.com/beixiyo/vv-i18n.nvim) · [vv-log-hl](https://github.com/beixiyo/vv-log-hl.nvim) · [vv-mcp](https://github.com/beixiyo/vv-mcp.nvim) |
 
 Each plugin repository has its own bilingual README. The [Neovim guide (Chinese)](.config/nvim/README.md) includes a clickable plugin demo gallery
-
-## Setup
-
-1. Install CLI tools
-
-   ```bash
-   ./one-click-config/setup-deps.sh
-   ```
-
-   The script auto-detects the package manager and installs the shell, editor, and runtime tools this repo expects
-   System package managers request administrator access only when an installation is needed
-
-2. Install a Nerd Font
-
-   Download and install [Maple Mono NF](https://github.com/subframe7536/maple-font/releases), or another font from [Nerd Fonts](https://www.nerdfonts.com/font-downloads). A Nerd Font is required for icons in Neovim, the terminal, and the prompt
-
-   On Linux, install the upstream Maple Mono NF package directly to avoid downloading the much larger AUR split-package source. This variant contains no CJK glyphs and includes Nerd Font icons, ligatures, and hinting:
-
-   ```bash
-   mkdir -p ~/Downloads/maplemono && \
-   cd ~/Downloads/maplemono && \
-   curl -fL --retry 3 \
-     -o MapleMono-NF.zip \
-     https://github.com/subframe7536/maple-font/releases/latest/download/MapleMono-NF.zip && \
-   unzip -o MapleMono-NF.zip && \
-   sudo install -d /usr/local/share/fonts/MapleMono-NF && \
-   sudo install -m 644 ./*.ttf /usr/local/share/fonts/MapleMono-NF/ && \
-   sudo fc-cache -f
-
-   fc-list | grep 'MapleMono'
-   ```
-
-3. Deploy the config
-
-   ```bash
-   # Deploy to the current user
-   ./one-click-config/setup-user.sh
-
-   # Deploy to specified users; missing users are created on systems with useradd
-   ./one-click-config/setup-user.sh alice bob
-   ```
-
-   With no arguments, the script deploys to the current user and interactively asks whether to configure additional users. Passing `alice bob` deploys to those users. Missing users can be created automatically on systems that provide `useradd`; on macOS, create the accounts in System Settings first, then rerun the script. The script detects the repository or clones it, checks or installs Zsh, Git, and Starship, deploys the dotfiles, sets Zsh as the login shell, configures sudo membership and passwordless package-manager commands, and optionally links the configuration into `/root`. It requests administrator access only for privileged steps, asks before overwriting existing files, and offers a backup under `~/.dotfiles-backup-<timestamp>/`
-
-4. Install Bun with `mise`
-
-   ```bash
-   # This repository only requires Bun
-   mise use -g bun
-   ```
-
-   Bun powers the Zsh helper scripts and parts of the Neovim tooling. Run `mise install` only when all runtimes declared in [.config/mise/config.toml](.config/mise/config.toml) are wanted
-
-5. Install tmux plugins
-
-   ```bash
-   ./one-click-config/setup-tmux.sh
-   ```
-
-   Run this as your normal user the first time. It installs the tmux plugin manager and the session restore plugins
-
-> Config files only, no system changes:
->
-> ```bash
-> git clone --depth=1 https://github.com/beixiyo/dotfiles.git /tmp/dotfiles && \
-> cp -a /tmp/dotfiles/{.zsh,.zshrc,.config} ~/ && rm -rf /tmp/dotfiles
-> ```
 
 ## Modules
 
