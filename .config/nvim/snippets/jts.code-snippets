@@ -1,0 +1,496 @@
+{
+  "fori": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "fori",
+    "body": [
+      "for (let i = 0; i < $1.length; i++) {",
+      "  const ${2:item} = $1[i]",
+      "  $3",
+      "}"
+    ],
+    "description": "Output Loop fori"
+  },
+  "for in key value": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "forkv",
+    "body": [
+      "Object.entries($1).forEach(([k, v]) => {",
+      "  $2",
+      "})"
+    ],
+    "description": "for in key value"
+  },
+  "for in": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "forin",
+    "body": [
+      "for (const k in ${1:data}) {",
+      "  if (!Object.hasOwnProperty.call(${1:data}, k)) continue\n",
+      "  ${2:const item = ${1:data}[k]}$3",
+      "}"
+    ],
+    "description": "for in"
+  },
+  "for of": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "forof",
+    "body": [
+      "for (const ${1:item} of $2) {",
+      "  $3",
+      "}"
+    ],
+    "description": "for of"
+  },
+  "forEach": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": ".forEach",
+    "body": [
+      ".forEach((${1:item}) => $2)"
+    ],
+    "description": "forEach"
+  },
+  "filter": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": ".filter",
+    "body": [
+      ".filter((${1:item}) => $2)"
+    ],
+    "description": "filter"
+  },
+  "map": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": ".map",
+    "body": [
+      ".map((${1:item}) => $2)"
+    ],
+    "description": "map"
+  },
+  "reduce": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": ".reduce",
+    "body": [
+      ".reduce(",
+      "  (prev, item) => $1,",
+      "  ${2:0}",
+      ")"
+    ],
+    "description": "reduce"
+  },
+  "find": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": ".find",
+    "body": [
+      ".find((${1:item}) => $2)"
+    ],
+    "description": "find"
+  },
+  "findIndex": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": ".findIndex",
+    "body": [
+      ".findIndex((${1:item}) => $2)"
+    ],
+    "description": "findIndex"
+  },
+  "some": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": ".some",
+    "body": [
+      ".some((${1:item}) => $2)"
+    ],
+    "description": "some"
+  },
+  "every": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": ".every",
+    "body": [
+      ".every((${1:item}) => $2)"
+    ],
+    "description": "every"
+  },
+  "sort": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": ".sort",
+    "body": [
+      ".sort((perv, next) => ${1:perv - next})"
+    ],
+    "description": "sort"
+  },
+  "betweenForLoop": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "bfori",
+    "body": [
+      "for (let i = 0, j = ${1:arr}.length - 1;",
+      "\t${1:arr}.length % 2 === 0",
+      "\t\t? i < j",
+      "\t\t: i <= j;",
+      "\ti++, j--) {\n",
+      "\tres[i] = arr[i]",
+      "\ti !== j && (res[j] = arr[j])",
+      "}"
+    ],
+    "description": "between for loop"
+  },
+  "objectFunction": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "fn",
+    "body": [
+      "$1($2) {\n\t$3\n}"
+    ],
+    "description": "object function"
+  },
+  "function": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "fun",
+    "body": [
+      "function ${1:${TM_FILENAME_BASE}}($2) {",
+      "  $4",
+      "}"
+    ],
+    "description": "function"
+  },
+  "asyncFunction": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "asy",
+    "body": [
+      "async function ${1:${TM_FILENAME_BASE}}($2) {",
+      "  const ${3:data} = await $4",
+      "}"
+    ],
+    "description": "async function"
+  },
+  "iife": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "iife",
+    "body": [
+      "(function () {\n\t$1\n})()"
+    ],
+    "description": "iife"
+  },
+  "asyncIife": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "iifeasy",
+    "body": [
+      "(async function () {",
+      "  const ${1:data} = await $2",
+      "})()"
+    ],
+    "description": "async iife"
+  },
+  "anonymousFunction": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "ano",
+    "body": [
+      "($1) => {$2}"
+    ],
+    "description": "anonymous function"
+  },
+  "asyncAnonymous": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "anoasy",
+    "body": [
+      "async ($1) => {",
+      "  const ${2:data} = await $3",
+      "}"
+    ],
+    "description": "async anonymous"
+  },
+  "anonymousIife": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "iifeano",
+    "body": [
+      "(($1) => {\n\t$2\n})()"
+    ],
+    "description": "anonymous iife"
+  },
+  "awaitData": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "await",
+    "body": [
+      "const ${1:data} = await $2"
+    ],
+    "description": "await data"
+  },
+  "newPromise": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "np",
+    "body": [
+      "new Promise((resolve, reject) => {\n\t$1\n})"
+    ],
+    "description": "Promise"
+  },
+  "th": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": ".th",
+    "body": [
+      ".then(res => ${1:console.log(res)} )"
+    ],
+    "description": "then"
+  },
+  "then": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": ".then",
+    "body": [
+      ".then((res) => {",
+      "  $1",
+      "})"
+    ],
+    "description": "then"
+  },
+  "debugger": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "deb",
+    "body": [
+      "debugger"
+    ],
+    "description": "debugger"
+  },
+  "moustache": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "mm",
+    "body": [
+      "{ $1 }"
+    ],
+    "description": "moustache"
+  },
+  "import": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "imp",
+    "body": [
+      "import $2 from '$1'"
+    ],
+    "description": "import"
+  },
+  "require": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "req",
+    "body": [
+      "const $2 = require('$1')"
+    ],
+    "description": "require"
+  },
+  "export": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "exp",
+    "body": [
+      "export ${1:* from '$2'}"
+    ],
+    "description": "export all"
+  },
+  "get": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "get",
+    "body": [
+      "get $1(){",
+      "  return this._$1;",
+      "}"
+    ],
+    "description": "get"
+  },
+  "set": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "set",
+    "body": [
+      "set $1($2){",
+      "  this._$1 = $2;",
+      "}"
+    ],
+    "description": "set"
+  },
+
+  "jlTool": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "jltool",
+    "body": [
+      "import { $1 } from '@jl-org/tool'"
+    ],
+    "description": "jlTools"
+  },
+
+  "vue3.2Props": {
+    "scope": "javascript,typescript",
+    "prefix": "v32props",
+    "body": [
+      "$1: {",
+      "  type: ${2:String},",
+      "  default: ${3:''}",
+      "}"
+    ],
+    "description": "vue3.2 props"
+  },
+  "vue3Props": {
+    "scope": "javascript,typescript",
+    "prefix": "vprops",
+    "body": [
+      "const props = withDefaults(",
+      "  defineProps<{",
+      "    ${1:modelValue: any}",
+      "  }>(),",
+      "  {",
+      "  }",
+      ")"
+    ],
+    "description": "vue3 props"
+  },
+  "vueEmit": {
+    "scope": "javascript,typescript",
+    "prefix": "vemit",
+    "body": [
+      "const emit = defineEmits<{",
+      "  (e: 'update:${1:modelValue}', ${2:data: any}): void",
+      "}>()"
+    ],
+    "description": "vue3 emit"
+  },
+  "defineOptions": {
+    "scope": "javascript,typescript",
+    "prefix": "vdefine",
+    "body": [
+      "defineOptions({ name: '${TM_FILENAME_BASE}' })"
+    ],
+    "description": "vue3 defineOptions"
+  },
+  "ref": {
+    "scope": "javascript,typescript",
+    "prefix": "ref",
+    "body": [
+      "const ${1:data} = ref${3:<${4:number[]}>}($2)"
+    ],
+    "description": "vue3 ref"
+  },
+  "url": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "url",
+    "body": [
+      "new URL('$1', import.meta.url)${2:.href}"
+    ],
+    "description": "vite url"
+  },
+
+  "setData": {
+    "scope": "javascript,typescript",
+    "prefix": "wxset",
+    "body": [
+      "this.setData({",
+      "  $1",
+      "})"
+    ],
+    "description": "setData"
+  },
+  "showToast": {
+    "scope": "javascript,typescript",
+    "prefix": "wx.showT",
+    "body": [
+      "wx.showToast({",
+      "  title: '$1'",
+      "  icon: 'success'",
+      "})"
+    ],
+    "description": "showToast"
+  },
+  "hideToast": {
+    "scope": "javascript,typescript",
+    "prefix": "wx.hideT",
+    "body": [
+      "wx.hideToast()"
+    ],
+    "description": "hideToast"
+  },
+  "showLoading": {
+    "scope": "javascript,typescript",
+    "prefix": "wx.showL",
+    "body": [
+      "wx.showLoading({",
+      "  title: '$1',",
+      "  mask: true,",
+      "})"
+    ],
+    "description": "showLoading"
+  },
+  "hideLoading": {
+    "scope": "javascript,typescript",
+    "prefix": "wx.hideL",
+    "body": [
+      "wx.hideLoading()"
+    ],
+    "description": "hideLoading"
+  },
+  "showModal": {
+    "scope": "javascript,typescript",
+    "prefix": "wx.showM",
+    "body": [
+      "wx.showModal({",
+      "  title: '$1',",
+      "  content: '$2',",
+      "  success({ confirm }) {",
+      "    if (confirm) {",
+      "      $3",
+      "    }",
+      "  }",
+      "})"
+    ],
+    "description": "showModal"
+  },
+  "switchTab": {
+    "scope": "javascript,typescript",
+    "prefix": "wx.st",
+    "body": [
+      "wx.switchTab({",
+      "  url: '$1',",
+      "})"
+    ],
+    "description": "switchTab"
+  },
+  "reLaunch": {
+    "scope": "javascript,typescript",
+    "prefix": "wx.reL",
+    "body": [
+      "wx.reLaunch({",
+      "  url: '$1',",
+      "})"
+    ],
+    "description": "reLaunch"
+  },
+  "redirectTo": {
+    "scope": "javascript,typescript",
+    "prefix": "wx.red",
+    "body": [
+      "wx.redirectTo({",
+      "  url: '$1',",
+      "})"
+    ],
+    "description": "redirectTo"
+  },
+  "navigateTo": {
+    "scope": "javascript,typescript",
+    "prefix": "wx.nav",
+    "body": [
+      "wx.navigateTo({",
+      "  url: '$1',",
+      "  success({ eventChannel }) {",
+      "    eventChannel.emit('$2', $3)",
+      "  }",
+      "})"
+    ],
+    "description": "navigateTo"
+  },
+  "navigateBack": {
+    "scope": "javascript,typescript",
+    "prefix": "wx.navB",
+    "body": [
+      "wx.navigateBack()"
+    ],
+    "description": "navigateBack"
+  },
+  "eventChannel": {
+    "scope": "javascript,typescript",
+    "prefix": "wxev",
+    "body": [
+      "const eventChannel = this.getOpenerEventChannel()",
+      "eventChannel.on('userInfo', (data) => {",
+      "  $1",
+      "})"
+    ],
+    "description": "eventChannel"
+  }
+}

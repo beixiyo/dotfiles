@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+#
+# 项目级行尾清理 CLI —— 复用 nvim vv-utils.format，与编辑器内命令同一套逻辑（零漂移）
+#
+# 策略：散文（md/txt…）删「句号 + 闭合符 + 行尾空白」（跳代码围栏、不删 ？！）；
+#       其它代码/配置仅删行尾空白 + 行首注释末尾句号；二进制文件跳过。只处理 git 跟踪的文件。
+#
+# vv-utils.nvim 路径解析顺序：
+#   1) 本地 dev（stdpath('config')/vendors/vv-utils.nvim，见 pack/dev.lua）
+#   2) vim.pack.get()（官方 API，拿 spec 解析出的确切路径）
+#   3) stdpath('data')/site/pack/core/opt/vv-utils.nvim（vim.pack 官方安装目录，见 neovim runtime/lua/vim/pack.lua）
+#   自己开发时 vendors 优先；别人 clone 配置后由 vim.pack 装到 site/pack/core/opt，排在后面。
+#
+# 用法：
+#   clean-trailing                 清理当前所在 git 项目
+#   clean-trailing --dry           只预览不写入
+#   clean-trailing /path/to/repo   指定项目（可叠加 --dry）
+
+set -euo pipefail
+
+dry=false
+target="$PWD"
+for a in "$@"; do
+  case "$a" in
+    --dry | -n) dry=true ;;
+    *) target="$a" ;;
+  esac
+done
+
+tmp="$(mktemp -t clean-trailing.XXXXXX)"
+trap 'rm -f "$tmp"' EXIT
+
+cat > "$tmp" <<'LUA'
+-- 解析 vv-utils.nvim 安装路径
+local function find_vvutils()
+  local cands = {}
+
+  -- 1) 本地 dev 覆盖（pack/dev.lua：stdpath('config')/vendors/<repo名>）—— 自己开发时在这，优先
+  cands[#cands + 1] = vim.fn.stdpath('config') .. '/vendors/vv-utils.nvim'
+
+  -- 2) vim.pack 官方 API：先问 vim.pack.get() 拿确切路径（-u NONE 下也可用）
+  local ok, plugins = pcall(function()
+    return vim.pack and vim.pack.get and vim.pack.get()
+  end)
+  if ok and type(plugins) == 'table' then
+    for _, pl in ipairs(plugins) do
+      if (pl.spec and pl.spec.name == 'vv-utils.nvim') or (pl.path and pl.path:match('vv%-utils%.nvim$')) then
+        cands[#cands + 1] = pl.path
+      end
+    end
+  end
+
+  -- 3) 兜底：vim.pack 官方安装目录 site/pack/core/opt（neovim runtime/lua/vim/pack.lua）
+  cands[#cands + 1] = vim.fn.stdpath('data') .. '/site/pack/core/opt/vv-utils.nvim'
+
+  for _, d in ipairs(cands) do
+    if d and d ~= '' and vim.uv.fs_stat(d .. '/lua/vv-utils/format.lua') then
+      return d
+    end
+  end
+end
+
+local vv = find_vvutils()
+if not vv then
+  io.stderr:write('未找到 vv-utils.nvim（已查 dev / vendors / vim.pack / site/pack）\n')
+  os.exit(1)
+end
+vim.opt.rtp:prepend(vv)
+
+local dry = (vim.env.VV_DRY == 'true')
+local r = require('vv-utils.format').clean_project({
+  cwd = vim.env.VV_CWD,
+  dry_run = dry,
+  silent = true,
+})
+
+local mark = dry and '· ' or '✓ '
+for _, f in ipairs(r.files) do
+  io.stdout:write(mark .. f .. '\n')
+end
+io.stdout:write(('%s %d/%d 文件（二进制跳过 %d）\n'):format(
+  dry and '将清理' or '已清理', r.changed, r.scanned, r.skipped_binary))
+LUA
+
+VV_CWD="$target" VV_DRY="$dry" nvim --headless -u NONE -l "$tmp"

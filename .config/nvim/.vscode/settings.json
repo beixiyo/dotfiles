@@ -1,0 +1,15 @@
+{
+  "Lua.runtime.version": "LuaJIT",
+  "Lua.runtime.path": ["lua/?.lua", "lua/?/init.lua"],
+  "Lua.diagnostics.globals": ["vim"],
+  "Lua.workspace.library": [
+    "/usr/share/nvim/runtime/lua",
+    "${3rd}/luv/library",
+    "${workspaceFolder}/lua",
+    "${workspaceFolder}/vendors",
+    "~/.local/share/nvim/site/pack/core/opt"
+  ],
+  "Lua.workspace.checkThirdParty": false,
+  "Lua.workspace.ignoreDir": [".git", "after/plugin"],
+  "Lua.telemetry.enable": false
+}

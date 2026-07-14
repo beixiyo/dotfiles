@@ -1,0 +1,406 @@
+{
+
+  "reactFnComponent": {
+    "scope": "typescriptreact",
+    "prefix": "rfc",
+    "body": [
+      "import { cn } from '@/utils'",
+      "import { memo } from 'react'",
+      "",
+      "",
+      "export const ${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/} = memo<${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}Props>((props) => {",
+      "  const { ",
+      "    style,",
+      "    className,",
+      "  } = props",
+      "",
+      "  return <div",
+      "    className={ cn(",
+      "      '${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}Container',",
+      "      className",
+      "    ) }",
+      "    style={ style }",
+      "  >",
+      "     ",
+      "  </div>",
+      "})",
+      "",
+      "${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}.displayName = '${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}'",
+      "",
+      "export type ${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}Props = {",
+      "  ",
+      "}",
+      "& React.PropsWithChildren<React.HTMLAttributes<HTMLElement>>"
+    ],
+    "description": "FnComponent"
+  },
+  "reacReftFnComponent": {
+    "scope": "typescriptreact",
+    "prefix": "rfcref",
+    "body": [
+      "import { cn } from '@/utils'",
+      "import { memo, forwardRef } from 'react'",
+      "",
+      "",
+      "const Inner${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/} = forwardRef<${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}Ref, ${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}Props>((props) => {",
+      "  const { ",
+      "    style,",
+      "    className,",
+      "  } = props",
+      "",
+      "  return <div",
+      "    className={ cn(",
+      "      '${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}Container',",
+      "      className",
+      "    ) }",
+      "    style={ style }",
+      "  >",
+      "     ",
+      "  </div>",
+      "})",
+      "",
+      "Inner${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}.displayName = '${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}'",
+      "",
+      "export const ${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/} = memo(Inner${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}) as typeof Inner${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}",
+      "",
+      "export type ${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}Ref = { }",
+      "",
+      "export type ${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}Props = {",
+      "  ",
+      "}",
+      "& React.PropsWithChildren<React.HTMLAttributes<HTMLElement>>"
+    ],
+    "description": "FnRefComponent"
+  },
+  "reactFnStyleComponent": {
+    "scope": "typescriptreact",
+    "prefix": "rfcstyle",
+    "body": [
+      "import { cn } from '@/utils'",
+      "import { memo } from 'react'",
+      "import styles from './styles.module.scss'",
+      "",
+      "",
+      "export const ${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/} = memo<${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}Props>((props) => {",
+      "  const { ",
+      "    style,",
+      "    className,",
+      "  } = props",
+      "",
+      "  return <div",
+      "    className={ cn(",
+      "      styles.wrap,",
+      "      className",
+      "    ) }",
+      "    style={ style }",
+      "  >",
+      "    ",
+      "  </div>",
+      "})",
+      "",
+      "${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}.displayName = '${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}'",
+      "",
+      "export type ${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}Props = {",
+      "  ",
+      "}",
+      "& React.PropsWithChildren<React.HTMLAttributes<HTMLElement>>"
+    ],
+    "description": "FnComponent"
+  },
+  "jsReactFnComponent": {
+    "scope": "javascriptreact",
+    "prefix": "rfc",
+    "body": [
+      "import { cn } from '@/utils'",
+      "import { memo } from 'react'",
+      "",
+      "",
+      "export const ${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/} = memo(",
+      "  /**",
+      "   * @param {${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}Props} props",
+      "   */",
+      "  (props) => {",
+      "    const {",
+      "      style,",
+      "      className,",
+      "    } = props",
+      "",
+      "    return <div",
+      "      className={ cn(",
+      "        '${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}Container',",
+      "        className",
+      "      ) }",
+      "      style={ style }",
+      "    >",
+      "",
+      "    </div>",
+      "  }",
+      ")",
+      "",
+      "${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}.displayName = '${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}'",
+      "",
+      "/**",
+      " * @typedef {Object} ${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}Props",
+      " * @property {React.CSSProperties} style - 样式",
+      " * @property {string} className - 类名",
+      " */"
+    ],
+    "description": "FnComponent"
+  },
+  "jsReactFnStyleComponent": {
+    "scope": "javascriptreact",
+    "prefix": "rfcStyle",
+    "body": [
+      "import { cn } from '@/utils'",
+      "import { memo } from 'react'",
+      "import styles from './styles.module.scss'",
+      "",
+      "",
+      "export const ${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/} = memo(",
+      "  /**",
+      "   * @param {${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}Props} props",
+      "   */",
+      "  (props) => {",
+      "    const {",
+      "      style,",
+      "      className,",
+      "    } = props",
+      "",
+      "    return <div",
+      "      className={ cn(",
+      "        styles.wrap,",
+      "        className",
+      "      ) }",
+      "      style={ style }",
+      "    >",
+      "",
+      "    </div>",
+      "  }",
+      ")",
+      "",
+      "${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}.displayName = '${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}'",
+      "",
+      "/**",
+      " * @typedef {Object} ${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}Props",
+      " * @property {React.CSSProperties} style - 样式",
+      " * @property {string} className - 类名",
+      " */"
+    ],
+    "description": "FnComponent"
+  },
+  "classComponent": {
+    "scope": "javascriptreact,typescriptreact",
+    "prefix": "rcc",
+    "body": [
+      "import { PureComponent } from 'react'",
+      "",
+      "",
+      "export class ${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/} extends PureComponent {",
+      "",
+      "  static displayName = '${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}'",
+      "",
+      "  render() {",
+      "    return <div>",
+      "      $1",
+      "    </div>",
+      "  }",
+      "}"
+    ],
+    "description": "class component"
+  },
+  "className": {
+    "scope": "javascriptreact,typescriptreact",
+    "prefix": "className",
+    "body": [
+      "className={${1:cn($2)}}"
+    ],
+    "description": "React className"
+  },
+  "tailwindClassName": {
+    "scope": "javascriptreact,typescriptreact",
+    "prefix": "tailwindClassName",
+    "body": [
+      "className={`$1`}"
+    ],
+    "description": "React tailwind className"
+  },
+  "reactMap": {
+    "scope": "javascriptreact,typescriptreact",
+    "prefix": ".mapreact",
+    "body": [
+      ".map((item, index) =>",
+      "  <${1:div} key={index}",
+      "  >",
+      "    $2",
+      "  </$1>",
+      ")"
+    ],
+    "description": "React map"
+  },
+  "style": {
+    "scope": "javascriptreact,typescriptreact",
+    "prefix": "style",
+    "body": [
+      "style={{",
+      "  $1",
+      "}}"
+    ],
+    "description": "React style"
+  },
+
+  "zusatndSelector": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "zusatndSelector",
+    "body": [
+      "const ${1:state} = use${2:Counter}Store(state => state.${3:count})"
+    ],
+    "description": "zusatnd selector"
+  },
+  "valtio": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "valtio",
+    "body": [
+      "import { proxy } from 'valtio'",
+      "import { devtools } from 'valtio/utils'",
+      "",
+      "",
+      "const initData = () => ({",
+      "  $1",
+      "})",
+      "",
+      "export const $2Store = proxy(initData())",
+      "",
+      "/**",
+      " * Redux DevTools",
+      " */",
+      "devtools($2Store, { name: '$2Store', enabled: true })",
+      ""
+    ],
+    "description": "valtio"
+  },
+
+  "useState": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "uses",
+    "body": [
+      "const [${1}, set${1/(.*)/${1:/capitalize}/}] = useState($2)"
+    ],
+    "description": "useState"
+  },
+  "useImmer": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "usei",
+    "body": [
+      "const [${1}, set${1/(.*)/${1:/capitalize}/}] = useImmer($2)"
+    ],
+    "description": "useImmer"
+  },
+  "setState": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "sets",
+    "body": [
+      "set$1(prev => {",
+      "  $2",
+      "})"
+    ],
+    "description": "setState"
+  },
+  "useEffect": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "usee",
+    "body": [
+      "useEffect(",
+      "  () => {",
+      "    $1",
+      "  },",
+      "  [$2]",
+      ")"
+    ],
+    "description": "useEffect"
+  },
+  "useCallback": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "usecb",
+    "body": [
+      "const $1 = useCallback(",
+      "  () => {",
+      "    $2",
+      "  },",
+      "  [$3]",
+      ")"
+    ],
+    "description": "useCallback"
+  },
+  "useMemo": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "usem",
+    "body": [
+      "const $1 = useMemo(",
+      "  () => $2,",
+      "  []",
+      ")"
+    ],
+    "description": "useMemo"
+  },
+  "useContext": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "usectx",
+    "body": [
+      "const ${1:val} = useContext($2)"
+    ],
+    "description": "useContext"
+  },
+  "useRef": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "user",
+    "body": [
+      "const $1 = useRef<${2:HTMLElement}>(null)"
+    ],
+    "description": "useRef"
+  },
+  "useLayoutEffect": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "uselay",
+    "body": [
+      "const $1 = useLayoutEffect(",
+      "  () => {",
+      "    $2",
+      "  },",
+      "  [$3]",
+      ")"
+    ],
+    "description": "useLayoutEffect"
+  },
+
+  "rn": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "rn",
+    "body": [
+      "import { ${1:View, Text} } from 'react-native'"
+    ],
+    "description": "import React Native"
+  },
+  "ReactNativeFnComponent": {
+    "scope": "javascriptreact,typescriptreact",
+    "prefix": "rnrfc",
+    "body": [
+      "import { memo, type ReactNode } from 'react'",
+      "import { ThemedText, ThemedView } from '@/components/Themed'",
+      "",
+      "",
+      "function _${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}({}: ${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}Props) {",
+      "  return (<ThemedView>",
+      "    <ThemedText>ThemedText</ThemedText>",
+      "  </ThemedView>)",
+      "}",
+      "_${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}.displayName = '${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}'",
+      "",
+      "export const ${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/} = memo(_${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/})",
+      "",
+      "export type ${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}Props = {",
+      "  children?: ReactNode",
+      "}"
+    ],
+    "description": "ReactNative FnComponent"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "before": {
+    "prefix": "before",
+    "body": [
+      "${1:&}::before {",
+      "    content: \"$2\";",
+      "    $3",
+      "}"
+    ],
+    "description": "before"
+  },
+  "after": {
+    "prefix": "after",
+    "body": [
+      "${1:&}::after {",
+      "    content: \"$2\";",
+      "    $3",
+      "}"
+    ],
+    "description": "after"
+  },
+  "hover": {
+    "prefix": "hover",
+    "body": [
+      "${1:&}:hover {",
+      "    $2",
+      "}"
+    ],
+    "description": "hover"
+  },
+  "active": {
+    "prefix": "active",
+    "body": [
+      "${1:&}:active {",
+      "    $2",
+      "}"
+    ],
+    "description": "active"
+  }
+}

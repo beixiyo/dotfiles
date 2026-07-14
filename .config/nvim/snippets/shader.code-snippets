@@ -1,0 +1,286 @@
+{
+  "vec2": {
+    "prefix": "vec2",
+    "body": [
+      "vec2(${1:0.0, 0.0})"
+    ],
+    "description": "vec2"
+  },
+  "vec3": {
+    "prefix": "vec3",
+    "body": [
+      "vec3(${1:0.0, 0.0, 0.0})"
+    ],
+    "description": "vec3"
+  },
+  "vec4": {
+    "prefix": "vec4",
+    "body": [
+      "vec4(${1:0.0, 0.0, 0.0, 0.0})"
+    ],
+    "description": "vec4"
+  },
+
+  
+  "fragment shader": {
+    "prefix": "fragmentShader",
+    "body": [
+      "void main() {",
+      "    gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);",
+      "    #include <tonemapping_fragment>",
+      "    #include <colorspace_fragment>",
+      "}"
+    ],
+    "description": "fragment shader"
+  },
+  "vertex shader": {
+    "prefix": "vertexShader",
+    "body": [
+      "void main() {",
+      "    vec4 modelPosition = modelMatrix * vec4(position, 1.0);",
+      "    vec4 viewPosition = viewMatrix * modelPosition;",
+      "    vec4 projectionPosition = projectionMatrix * viewPosition;",
+      "",
+      "    gl_Position = projectionPosition;",
+      "}"
+    ],
+    "description": "vertex shader"
+  },
+
+  
+  "attribute": {
+    "prefix": "attribute",
+    "body": [
+      "attribute "
+    ],
+    "description": "attribute"
+  },
+  "uniform": {
+    "prefix": "uniform",
+    "body": [
+      "uniform "
+    ],
+    "description": "uniform"
+  },
+  "varying": {
+    "prefix": "varying",
+    "body": [
+      "varying "
+    ],
+    "description": "varying"
+  },
+  "define": {
+    "prefix": "define",
+    "body": [
+      "#ifndef ${1:PI}",
+      "#define $1 ${2:3.141592653589793}",
+      "#endif "
+    ],
+    "description": "define"
+  },
+
+  
+  
+  "modelMatrix": {
+    "prefix": "modelMatrix",
+    "body": [
+      "modelMatrix"
+    ],
+    "description": "uniform mat4 modelMatrix"
+  },
+  "viewMatrix": {
+    "prefix": "viewMatrix",
+    "body": [
+      "viewMatrix"
+    ],
+    "description": "uniform mat4 viewMatrix"
+  },
+  "projectionMatrix": {
+    "prefix": "projectionMatrix",
+    "body": [
+      "projectionMatrix"
+    ],
+    "description": "uniform mat4 projectionMatrix"
+  },
+  "modelViewMatrix": {
+    "prefix": "modelViewMatrix",
+    "body": [
+      "modelViewMatrix"
+    ],
+    "description": "uniform mat4 modelViewMatrix"
+  },
+  "normalMatrix": {
+    "prefix": "normalMatrix",
+    "body": [
+      "normalMatrix"
+    ],
+    "description": "uniform mat4 normalMatrix"
+  },
+  "cameraPosition": {
+    "prefix": "cameraPosition",
+    "body": [
+      "cameraPosition"
+    ],
+    "description": "uniform mat4 cameraPosition"
+  },
+
+  
+  "position": {
+    "prefix": "position",
+    "body": [
+      "position"
+    ],
+    "description": "attribute vec3 position"
+  },
+  "normal": {
+    "prefix": "normal",
+    "body": [
+      "normal"
+    ],
+    "description": "attribute vec3 normal"
+  },
+  "uv": {
+    "prefix": "uv",
+    "body": [
+      "uv"
+    ],
+    "description": "attribute vec3 uv"
+  },
+
+  
+  "gl_Position": {
+    "prefix": "gl_Position",
+    "body": [
+      "gl_Position"
+    ],
+    "description": "gl_Position"
+  },
+  "gl_PointCoord": {
+    "prefix": "gl_PointCoord",
+    "body": [
+      "gl_PointCoord"
+    ],
+    "description": "gl_PointCoord"
+  },
+  "gl_PointSize": {
+    "prefix": "gl_PointSize",
+    "body": [
+      "gl_PointSize"
+    ],
+    "description": "gl_PointSize"
+  },
+  "gl_FragColor": {
+    "prefix": "gl_FragColor",
+    "body": [
+      "gl_FragColor"
+    ],
+    "description": "gl_FragColor"
+  },
+  "gl_FragDepth": {
+    "prefix": "gl_FragDepth",
+    "body": [
+      "gl_FragDepth"
+    ],
+    "description": "gl_FragDepth"
+  },
+  "gl_FragCoord": {
+    "prefix": "gl_FragCoord",
+    "body": [
+      "gl_FragCoord"
+    ],
+    "description": "gl_FragCoord"
+  },
+  "gl_FrontFacing": {
+    "prefix": "gl_FrontFacing",
+    "body": [
+      "gl_FrontFacing"
+    ],
+    "description": "gl_FrontFacing"
+  },
+  
+  
+  "csm_Position": {
+    "prefix": "csm_Position",
+    "body": [
+      "csm_Position"
+    ],
+    "description": "csm_Position"
+  },
+  "csm_PositionRaw": {
+    "prefix": "csm_PositionRaw",
+    "body": [
+      "csm_PositionRaw"
+    ],
+    "description": "csm_PositionRaw"
+  },
+  "csm_Normal": {
+    "prefix": "csm_Normal",
+    "body": [
+      "csm_Normal"
+    ],
+    "description": "csm_Normal"
+  },
+  "csm_PointSize": {
+    "prefix": "csm_PointSize",
+    "body": [
+      "csm_PointSize"
+    ],
+    "description": "csm_PointSize"
+  },
+  "csm_FragColor": {
+    "prefix": "csm_FragColor",
+    "body": [
+      "csm_FragColor"
+    ],
+    "description": "csm_FragColor"
+  },
+  "csm_DiffuseColor": {
+    "prefix": "csm_DiffuseColor",
+    "body": [
+      "csm_DiffuseColor"
+    ],
+    "description": "csm_DiffuseColor"
+  },
+  "csm_Emissive": {
+    "prefix": "csm_Emissive",
+    "body": [
+      "csm_Emissive"
+    ],
+    "description": "csm_Emissive"
+  },
+  "csm_Metalness": {
+    "prefix": "csm_Metalness",
+    "body": [
+      "csm_Metalness"
+    ],
+    "description": "csm_Metalness"
+  },
+  "csm_Roughness": {
+    "prefix": "csm_Roughness",
+    "body": [
+      "csm_Roughness"
+    ],
+    "description": "csm_Roughness"
+  },
+  "csm_AO": {
+    "prefix": "csm_AO",
+    "body": [
+      "csm_AO"
+    ],
+    "description": "csm_AO"
+  },
+  "csm_Bump": {
+    "prefix": "csm_Bump",
+    "body": [
+      "csm_Bump"
+    ],
+    "description": "csm_Bump"
+  },
+  "csm_DepthAlpha": {
+    "prefix": "csm_DepthAlpha",
+    "body": [
+      "csm_DepthAlpha"
+    ],
+    "description": "csm_DepthAlpha"
+  }
+}

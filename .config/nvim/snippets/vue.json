@@ -1,0 +1,63 @@
+{
+  "vue2": {
+    "prefix": "vue2",
+    "body": [
+      "<template>",
+      "  <div class=\"${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}-container\">",
+      "",
+      "  </div>",
+      "</template>",
+      "",
+      "<script>",
+      "export default {",
+      "  name: '${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}',",
+      "  inheritAttrs: true,",
+      "  data() {",
+      "    return {",
+      "      ",
+      "    }",
+      "  }",
+      "};",
+      "</script>",
+      "",
+      "<style lang=\"${1:scss}\" scoped>",
+      "",
+      "</style>\n"
+    ],
+    "description": "vue2"
+  },
+  "vue3": {
+    "prefix": "vue3",
+    "body": [
+      "<template>",
+      "  <div class=\"${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}-container\">",
+      "    ",
+      "  </div>",
+      "</template>",
+      "",
+      "<script setup lang=\"${2:ts}\">",
+      "",
+      "",
+      "defineOptions({ name: '${TM_FILEPATH/.+[\\/\\\\](.+)[\\/\\\\]index.+|.+[\\/\\\\](.+)\\..+$/${1:/pascalcase}${2:/pascalcase}/}' })",
+      "const props = withDefaults(",
+      "  defineProps<{",
+      "    ${3:modelValue: any}",
+      "  }>(),",
+      "  {",
+      "  }",
+      ")",
+      "",
+      "const emit = defineEmits<{",
+      "  (e: '${4:update:modelValue}'${5:, data: any}): void",
+      "}>()",
+      "",
+      "</script>",
+      "",
+      "<style lang=\"${1:scss}\" scoped>",
+      "",
+      "</style>",
+      ""
+    ],
+    "description": "vue3"
+  }
+}

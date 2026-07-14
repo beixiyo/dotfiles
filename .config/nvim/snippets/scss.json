@@ -1,0 +1,126 @@
+{
+  "if": {
+    "prefix": "if",
+    "body": [
+      "if(${1:expr}, $2, $3)"
+    ],
+    "description": "if"
+  },
+  "while": {
+    "prefix": "whlie",
+    "body": [
+      "\\$i: 6;",
+      "@while \\$i > 0 {",
+      "    .item-#{\\$i} {",
+      "        width: 2em * \\$i;",
+      "    }",
+      "    \\$i: \\$i - 1;",
+      "}"
+    ],
+    "description": "while"
+  },
+  "for": {
+    "prefix": "for",
+    "body": [
+      "@for $$i from 1 through $2 {",
+      "    .item-#{\\$i} {",
+      "        width: 2em * \\$i;",
+      "    }",
+      "}"
+    ],
+    "description": "for"
+  },
+  "eachList": {
+    "prefix": "eachList",
+    "body": [
+      "@each $$item in ${1:$$list} {",
+      "    .item-#{$$item} {",
+      "        width: 2em * index($1, $$item);",
+      "    }",
+      "}"
+    ],
+    "description": "each list"
+  },
+  "eachMap": {
+    "prefix": "eachMap",
+    "body": [
+      "@each $$key, $$value in ${1:$$map} {",
+      "    .item-#{$$key} {",
+      "        width: $$value;",
+      "    }",
+      "}"
+    ],
+    "description": "eachMap"
+  },
+  "content": {
+    "prefix": "@content",
+    "body": [
+      "@content;"
+    ],
+    "description": "@content"
+  },
+  "function": {
+    "prefix": "fun",
+    "body": [
+      "@function ${1:name}() {",
+      "    @return $2;",
+      "}"
+    ],
+    "description": "function"
+  },
+  "mixin": {
+    "prefix": "mixin",
+    "body": [
+      "@mixin ${1:name}() {",
+      "    $2",
+      "}"
+    ],
+    "description": "mixin"
+  },
+  "include": {
+    "prefix": "include",
+    "body": [
+      "@include $1($2);"
+    ],
+    "description": "include"
+  },
+  // CSS
+  "before": {
+    "prefix": "before",
+    "body": [
+      "${1:&}::before {",
+      "    content: \"$2\";",
+      "    $3",
+      "}"
+    ],
+    "description": "before"
+  },
+  "after": {
+    "prefix": "after",
+    "body": [
+      "${1:&}::after {",
+      "    content: \"$2\";",
+      "    $3",
+      "}"
+    ],
+    "description": "after"
+  },
+  "hover": {
+    "prefix": "hover",
+    "body": [
+      "${1:&}:hover {",
+      "    $2",
+      "}"
+    ],
+    "description": "hover"
+  },
+  "active": {
+    "prefix": "active",
+    "body": [
+      "${1:&}:active {",
+      "    $2",
+      "}"
+    ],
+    "description": "active"
+  }
+}

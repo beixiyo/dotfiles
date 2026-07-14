@@ -1,0 +1,7 @@
+# extras/ 是生成产物，只保留实际使用的应用
+# 重新生成：在本目录执行 nvim --headless +"lua require('tokyonight.extra')" +qa
+/extras/*/
+!/extras/vim/
+
+# vendor 里不需要跑测试
+/tests/

@@ -1,0 +1,41 @@
+{
+  "stream forEach": {
+    "prefix": ".forEach",
+    "body": [
+      ".stream().forEach((item) -> $1);",
+    ],
+    "description": "stream forEach"
+  },
+  "stream filter": {
+    "prefix": ".filter",
+    "body": [
+      ".stream().filter((item) -> $1);",
+    ],
+    "description": "stream filter"
+  },
+  "stream map": {
+    "prefix": ".map",
+    "body": [
+      ".stream().map((item) -> $1);",
+    ],
+    "description": "stream map"
+  },
+  "fn": {
+    "prefix": "fn",
+    "body": [
+      "${1:public} ${2:void} ${3:fn}($4) {",
+      "    $5",
+      "}"
+    ],
+    "description": "fn"
+  },
+  "static fn": {
+    "prefix": "fnStatic",
+    "body": [
+      "${1:public} static ${2:void} ${3:fn}($4) {",
+      "    $5",
+      "}"
+    ],
+    "description": "static fn"
+  },
+}

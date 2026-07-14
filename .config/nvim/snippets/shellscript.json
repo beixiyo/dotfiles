@@ -1,0 +1,98 @@
+{
+  "bin": {
+    "prefix": "bin",
+    "body": [
+      "#!/bin/bash"
+    ],
+    "description": "bin"
+  },
+  "if": {
+    "prefix": "if",
+    "body": [
+      "if [ $1 ]; then",
+      "    $2",
+      "fi"
+    ],
+    "description": "if"
+  },
+  "elif": {
+    "prefix": "elif",
+    "body": [
+      "elif [ $1 ]; then",
+      "    $2"
+    ],
+    "description": "elif"
+  },
+  "else": {
+    "prefix": "else",
+    "body": [
+      "else",
+      "    $1"
+    ],
+    "description": "else"
+  },
+  "case": {
+    "prefix": "case",
+    "body": [
+      "case $1 in",
+      "$2)",
+      "    $3",
+      ";;",
+      "esac"
+    ],
+    "description": "case"
+  },
+  "for": {
+    "prefix": "for",
+    "body": [
+      "for ((i = 1; i <= $1; i++)); do",
+      "    $2",
+      "done"
+    ],
+    "description": "for"
+  },
+  "forIn": {
+    "prefix": "forin",
+    "body": [
+      "for $1 in $2; do",
+      "    $3",
+      "done"
+    ],
+    "description": "for in"
+  },
+  "IFS": {
+    "prefix": "IFS",
+    "body": [
+      "IFS=\"${1:\\n}\""
+    ],
+    "description": "IFS"
+  },
+  "while": {
+    "prefix": "while",
+    "body": [
+      "while [ $1 ]; do",
+      "    $2",
+      "done"
+    ],
+    "description": "while"
+  },
+  "select": {
+    "prefix": "select",
+    "body": [
+      "select i in $1 exit",
+      "do",
+      "    $2",
+      "done"
+    ],
+    "description": "select"
+  },
+  "function": {
+    "prefix": "fun",
+    "body": [
+      "${1:fnName}() {",
+      "    $2",
+      "}"
+    ],
+    "description": "function"
+  }
+}

@@ -1,0 +1,162 @@
+{
+  "randomImg": {
+    "prefix": "rimg",
+    "body": [
+      "https://picsum.photos/200/300?r=1"
+    ],
+    "description": "random image url"
+  },
+
+  "semicolonReturn": {
+    "prefix": "re",
+    "scope": "java,cpp",
+    "body": [
+      "return $1;"
+    ],
+    "description": "semicolon return"
+  },
+  "return": {
+    "prefix": "re",
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "body": [
+      "return $1"
+    ],
+    "description": "return"
+  },
+
+  
+  "javascriptPrint": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "prefix": "pri",
+    "body": [
+      "console.log($1)"
+    ],
+    "description": "print"
+  },
+  "javaPrint": {
+    "scope": "java",
+    "prefix": "pri",
+    "body": [
+      "System.out.println($1)"
+    ],
+    "description": "print"
+  },
+  "pythonPrint": {
+    "scope": "py",
+    "prefix": "pri",
+    "body": [
+      "print($1)"
+    ],
+    "description": "print"
+  },
+  "kotlinPrint": {
+    "scope": "kt",
+    "prefix": "pri",
+    "body": [
+      "println($1)"
+    ],
+    "description": "print"
+  },
+  "cppPrint": {
+    "scope": "cpp",
+    "prefix": "print",
+    "body": [
+      "cout << \"$1\" << endl;"
+    ],
+    "description": "print"
+  },
+  "shellPrint": {
+    "scope": "shellscript",
+    "prefix": "pri",
+    "body": [
+      "echo \"$1\""
+    ],
+    "description": "print"
+  },
+
+  "comment": {
+    "prefix": "comment",
+    "body": [
+      "// ======================",
+      "// * $1",
+      "// ======================"
+    ],
+    "description": "comment"
+  },
+
+  
+  "eslint-to-function": {
+    "prefix": "///tofn",
+    "scope": "javascript,typescript,javascriptreact,typescriptreact,vue",
+    "body": [
+      "///to-function"
+    ]
+  },
+  "eslint-to-arrow": {
+    "prefix": "///toarrow",
+    "scope": "javascript,typescript,javascriptreact,typescriptreact,vue",
+    "body": [
+      "///to-arrow"
+    ]
+  },
+
+  "eslint-to-promise-all": {
+    "prefix": "///toprom",
+    "scope": "javascript,typescript,javascriptreact,typescriptreact,vue",
+    "body": [
+      "///to-promise-all"
+    ]
+  },
+  "eslint-keep-sorted": {
+    "prefix": "///tosort",
+    "scope": "javascript,typescript,javascriptreact,typescriptreact,vue",
+    "body": [
+      "///keep-sorted"
+    ]
+  },
+  "eslint-to-string-literal": {
+    "prefix": "///tostrliteral",
+    "scope": "javascript,typescript,javascriptreact,typescriptreact,vue",
+    "body": [
+      "///to-string-literal"
+    ]
+  },
+  "eslint-to-template-literal": {
+    "prefix": "///tostrtemp",
+    "scope": "javascript,typescript,javascriptreact,typescriptreact,vue",
+    "body": [
+      "///to-template-literal"
+    ]
+  },
+
+  "eslint-to-for-each": {
+    "prefix": "///topfore",
+    "scope": "javascript,typescript,javascriptreact,typescriptreact,vue",
+    "body": [
+      "///to-for-each"
+    ]
+  },
+  "eslint-to-for-of": {
+    "prefix": "///topforof",
+    "scope": "javascript,typescript,javascriptreact,typescriptreact,vue",
+    "body": [
+      "///to-for-of"
+    ]
+  },
+
+  
+  "tailwindcss-container": {
+    "prefix": "tcontainer",
+    "scope": "javascript,typescript,javascriptreact,typescriptreact,vue",
+    "body": [
+      "mx-auto h-full px-4 container lg:px-8 sm:px-6"
+    ]
+  },
+  "tailwindcss-grid": {
+    "prefix": "tgrid",
+    "scope": "javascript,typescript,javascriptreact,typescriptreact,vue",
+    "body": [
+      "grid grid-cols-1 gap-4 lg:grid-cols-3 md:grid-cols-2 xl:grid-cols-4"
+    ]
+  }
+}
