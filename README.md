@@ -25,6 +25,8 @@
 
 ![workflow](./docs/assets/workflow.png)
 
+<video muted autoplay loop controls src="https://github.com/user-attachments/assets/b26a9b91-1898-4fcb-99b3-692911eb10ed" title="Terminal workflow demo"></video>
+
 <p align="center"><strong>Neovim setup and plugin showcase: <a href=".config/nvim/README.md">Chinese guide →</a></strong></p>
 
 This repository turns a fresh terminal into a complete development workspace: Zsh provides the shell, tmux keeps sessions alive, Kitty / Ghostty / WezTerm render the terminal, and Neovim handles code, Git, notes, and AI-assisted workflows. The same shortcuts move between terminal panes and editor splits, so the tools feel like one environment instead of several unrelated apps
