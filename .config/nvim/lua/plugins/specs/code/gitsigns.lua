@@ -43,12 +43,12 @@ return {
         vim.keymap.set(mode, lhs, rhs, { desc = icon .. ' ' .. desc, buffer = bufnr })
       end
 
-      -- 跳转：]c / [c 与 Vim 原生 diff 跳转键一致；已在 diff 窗口则走原生行为
+      -- 跳转：diff 窗口走原生行为；普通 buffer 同时覆盖 staged / unstaged hunk
       map('n', ']c', function()
         if vim.wo.diff then
           vim.cmd.normal({ ']c', bang = true })
         else
-          gs.nav_hunk('next')
+          gs.nav_hunk('next', { target = 'all' })
         end
       end, 'Next hunk', 'next')
 
@@ -56,7 +56,7 @@ return {
         if vim.wo.diff then
           vim.cmd.normal({ '[c', bang = true })
         else
-          gs.nav_hunk('prev')
+          gs.nav_hunk('prev', { target = 'all' })
         end
       end, 'Previous hunk', 'prev')
 
@@ -98,4 +98,18 @@ return {
       map({ 'o', 'x' }, 'ih', gs.select_hunk, 'Select hunk', 'git_modified')
     end,
   },
+
+  config = function(_, opts)
+    require('gitsigns').setup(opts)
+
+    -- packadd 会先触发 gitsigns 的默认 setup，启动 buffer 可能在自定义 on_attach
+    -- 生效前已经完成 attach。等异步 attach 收尾后，为这些 buffer 补装一次键位。
+    vim.defer_fn(function()
+      for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_is_loaded(bufnr) and vim.b[bufnr].gitsigns_status_dict then
+          opts.on_attach(bufnr)
+        end
+      end
+    end, 200)
+  end,
 }
