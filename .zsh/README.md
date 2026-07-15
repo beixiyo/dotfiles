@@ -31,6 +31,9 @@
 | 项目 | 识别文件 | 支持的操作 |
 |---|---|---|
 | Node.js | `package.json` | 根据 lock 文件选择 pnpm、Bun、Yarn 或 npm |
+| Go | `go.mod` | `go run / build / get / test` |
+| Rust | `Cargo.toml` | `cargo run / build / add / test` |
+| Python | `pyproject.toml` 或 `uv.lock` | 使用 uv 运行、构建、同步依赖和测试 |
 | Maven | `pom.xml` | Spring Boot 开发、构建、安装和测试 |
 | Flutter | `pubspec.yaml` | 运行、构建、获取依赖和测试 |
 
@@ -43,6 +46,8 @@ t              # 执行项目 test
 ```
 
 Node.js 包管理器优先读取当前目录的 lock 文件；没有 lock 文件时按 pnpm、Bun、Yarn、npm 的可用顺序选择
+
+Go 和 Rust 使用语言官方工具链的默认命令。Python 使用 uv：`i` 同步依赖、`i package` 添加依赖、`b` 构建发行包、`t` 运行 pytest。Python 没有统一的开发启动命令，因此 `d` 会优先运行 `main.py` 或 `app.py`；其他项目使用 `d <command> [args...]` 明确指定入口
 
 ## 文件与内容搜索
 
