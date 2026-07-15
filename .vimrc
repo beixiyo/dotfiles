@@ -56,6 +56,31 @@ nnoremap <silent> <Esc> :noh<CR><Esc>
 set mouse=nv
 
 
+" ================= 撤销粒度 =================
+" 连续 Insert 默认只生成一个 undo block；与 Neovim 一致，在空格和标点后拆分
+let s:undo_separator_codes = [32]
+
+for s:range in [[33, 47], [58, 64], [91, 96], [123, 126]]
+  call extend(s:undo_separator_codes, range(s:range[0], s:range[1]))
+endfor
+
+let s:undo_separators = [
+  \ '，', '。', '！', '？', '；', '：', '、', '…', '—', '–', '·', '￥',
+  \ '“', '”', '‘', '’', '「', '」', '『', '』',
+  \ '（', '）', '【', '】', '〔', '〕', '［', '］', '｛', '｝', '〈', '〉', '《', '》',
+  \ '＂', '＃', '＄', '％', '＆', '＇', '＊', '＋', '－', '．', '／',
+  \ '＜', '＝', '＞', '＠', '＼', '＾', '＿', '｀', '｜', '～',
+  \ ]
+
+call extend(s:undo_separator_codes, map(s:undo_separators, 'char2nr(v:val)'))
+
+for s:code in s:undo_separator_codes
+  execute printf('inoremap <Char-%d> <Char-%d><C-g>u', s:code, s:code)
+endfor
+
+unlet s:code s:range s:undo_separator_codes s:undo_separators
+
+
 " ================= VSCode 风格快捷键 =================
 " 缩短等待时间，避免按 Esc 后产生 ~1s 延迟
 set ttimeoutlen=20
