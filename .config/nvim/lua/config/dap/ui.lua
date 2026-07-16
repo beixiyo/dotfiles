@@ -100,8 +100,20 @@ function M.setup(dap)
         hide = true,
       },
     },
+    render = {
+      breakpoints = {
+        format = function(line, lnum, path)
+          return {
+            { text = require('vv-utils').path.collapse_middle(path), hl = 'FileName' },
+            { text = lnum, hl = 'LineNumber' },
+            { text = line, hl = true },
+          }
+        end,
+      },
+    },
   })
 
+  require('config.dap.panel').setup()
   require('config.dap.signs').setup()
 end
 
