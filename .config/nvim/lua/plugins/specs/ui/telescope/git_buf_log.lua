@@ -71,55 +71,16 @@ local function make_delta_previewer()
   })
 end
 
-local function open_diff(rev, source_win, reopen)
-  local source_buf = vim.api.nvim_win_get_buf(source_win)
-  local filepath = vim.api.nvim_buf_get_name(source_buf)
-  if filepath == '' then return end
+local function load_vv_git()
+  local ok, vvgit = pcall(require, 'vv-git')
+  if ok then return vvgit end
 
-  local toplevel = vim.trim(vim.fn.system('git rev-parse --show-toplevel'))
-  local rel = filepath:sub(#toplevel + 2)
-  local content = vim.fn.systemlist({ 'git', 'show', rev .. ':' .. rel })
-  if vim.v.shell_error ~= 0 then
-    vim.notify('git show failed: ' .. rev .. ':' .. rel, vim.log.levels.WARN)
-    return
+  if vim.fn.exists(':VVGitLoad') == 2 then
+    pcall(vim.cmd, 'VVGitLoad')
   end
 
-  local diff_buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_lines(diff_buf, 0, -1, false, content)
-  vim.bo[diff_buf].bufhidden = 'wipe'
-  vim.bo[diff_buf].modifiable = false
-
-  local ft = vim.bo[source_buf].filetype
-  if ft ~= '' then vim.bo[diff_buf].filetype = ft end
-
-  vim.api.nvim_set_current_win(source_win)
-  vim.cmd('leftabove vsplit')
-  local diff_win = vim.api.nvim_get_current_win()
-  vim.api.nvim_win_set_buf(diff_win, diff_buf)
-  vim.api.nvim_buf_set_name(diff_buf, rev:sub(1, 7) .. ':' .. vim.fn.fnamemodify(rel, ':t'))
-
-  vim.wo[diff_win].foldenable = false
-  vim.wo[source_win].foldenable = false
-
-  vim.cmd('diffthis')
-  vim.api.nvim_set_current_win(source_win)
-  vim.cmd('diffthis')
-
-  local function close()
-    vim.cmd('diffoff!')
-    if vim.api.nvim_win_is_valid(diff_win) then
-      vim.api.nvim_win_close(diff_win, true)
-    end
-    vim.wo[source_win].foldenable = true
-    pcall(vim.keymap.del, 'n', 'q', { buffer = source_buf })
-    pcall(vim.keymap.del, 'n', '<Esc>', { buffer = source_buf })
-    vim.schedule(reopen)
-  end
-
-  for _, buf in ipairs({ diff_buf, source_buf }) do
-    vim.keymap.set('n', 'q', close, { buffer = buf })
-    vim.keymap.set('n', '<Esc>', close, { buffer = buf })
-  end
+  ok, vvgit = pcall(require, 'vv-git')
+  return ok and vvgit or nil
 end
 
 function M.open(opts)
@@ -128,14 +89,24 @@ function M.open(opts)
   opts = opts or {}
   opts.previewer = make_delta_previewer() or opts.previewer
 
-  local source_win = vim.api.nvim_get_current_win()
+  local source_buf = vim.api.nvim_get_current_buf()
 
   opts.attach_mappings = function(_, map)
     actions.select_default:replace(function(prompt_bufnr)
       local entry = action_state.get_selected_entry(prompt_bufnr)
-      actions.close(prompt_bufnr)
       if not entry then return end
-      open_diff(entry.value, source_win, function() require('telescope.builtin').resume() end)
+
+      local vvgit = load_vv_git()
+      if not vvgit or type(vvgit.compare_file) ~= 'function' then
+        vim.notify('vv-git does not support compare_file', vim.log.levels.ERROR)
+        return
+      end
+
+      actions.close(prompt_bufnr)
+      vvgit.compare_file(entry.value, {
+        bufnr = source_buf,
+        on_close = function() require('telescope.builtin').resume() end,
+      })
     end)
 
     -- 复制 commit hash（留在 telescope）

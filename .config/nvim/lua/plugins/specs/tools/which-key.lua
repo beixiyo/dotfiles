@@ -77,6 +77,7 @@ return {
     vim.keymap.set('n', '<leader>gL', function() require('plugins.specs.ui.telescope.git_buf_log').open() end, { desc = icons.git_log .. ' Buffer git log' })
     vim.keymap.set('n', '<leader>gb', function() require('plugins.specs.ui.telescope.git_branches').open() end, { desc = icons.git_branches .. ' Git branches' })
     vim.keymap.set('n', '<leader>gs', function() require('plugins.specs.ui.telescope.git_stash').open() end, { desc = icons.git_stash .. ' Git stashes' })
+    vim.keymap.set('n', '<leader>gt', function() require('plugins.specs.ui.telescope.git_tags').open() end, { desc = icons.git_log .. ' Git tags' })
 
     -- Stash push 操作（<leader>gS 前缀）
     local stash = function() return require('plugins.specs.ui.telescope.git_stash') end
