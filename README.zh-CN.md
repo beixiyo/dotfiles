@@ -55,6 +55,7 @@
 | Neovim 入门 | [模式与移动](https://github.com/beixiyo/dotfiles/wiki/nvim-learn-01-modes-and-movement) · [编辑与文本对象](https://github.com/beixiyo/dotfiles/wiki/nvim-learn-02-editing-and-text-objects) · [高级命令](https://github.com/beixiyo/dotfiles/wiki/nvim-learn-03-advanced-commands) |
 | Neovim 工作流 | [快捷键技巧](https://github.com/beixiyo/dotfiles/wiki/nvim-guide-shortcut-tips) · [DAP 调试](https://github.com/beixiyo/dotfiles/wiki/nvim-debug-dap) · [Lua 配置](https://github.com/beixiyo/dotfiles/wiki/nvim-config-lua) |
 | Shell 与终端 | [Zsh](https://github.com/beixiyo/dotfiles/wiki/zsh-guide-shell) · [Tmux](https://github.com/beixiyo/dotfiles/wiki/tmux-guide-keymaps) · [终端快捷键](https://github.com/beixiyo/dotfiles/wiki/terminal-guide-keymaps) · [Yazi](https://github.com/beixiyo/dotfiles/wiki/yazi-guide-keymaps) |
+| Arch Linux | [安装指南](https://github.com/beixiyo/dotfiles/wiki/arch-guide-install) · [Windows 双启动](https://github.com/beixiyo/dotfiles/wiki/arch-guide-dual-boot) · [安装排错](https://github.com/beixiyo/dotfiles/wiki/arch-guide-troubleshooting) |
 | 桌面环境 | [Niri](https://github.com/beixiyo/dotfiles/wiki/niri-guide-usage) · [Karabiner Windows 键位](https://github.com/beixiyo/dotfiles/wiki/karabiner-guide-windows-keymap) · [Linux 剪贴板历史](https://github.com/beixiyo/dotfiles/wiki/linux-guide-clipboard) |
 | Neovim 开发 | [面向 TypeScript 开发者的 Lua](https://github.com/beixiyo/dotfiles/wiki/nvim-dev-lua-for-ts-devs) · [Neovim API](https://github.com/beixiyo/dotfiles/wiki/nvim-dev-api) · [插件路径](https://github.com/beixiyo/dotfiles/wiki/nvim-config-plugin-paths) |
 
