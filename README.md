@@ -33,6 +33,7 @@ This repository turns a fresh terminal into a complete development workspace: Zs
 
 <!--toc:start-->
 - [dotfiles](#dotfiles)
+  - [Guides and documentation](#guides-and-documentation)
   - [Start here: setup](#start-here-setup)
   - [Why a terminal-first workflow](#why-a-terminal-first-workflow)
     - [Development runtimes](#development-runtimes)
@@ -44,6 +45,18 @@ This repository turns a fresh terminal into a complete development workspace: Zs
     - [Plugins](#plugins)
   - [Modules](#modules)
 <!--toc:end-->
+
+## Guides and documentation
+
+The [GitHub Wiki](https://github.com/beixiyo/dotfiles/wiki) contains the detailed Chinese usage guides. Start with the workflow you need instead of reading the repository from top to bottom:
+
+| Topic | Guides |
+|---|---|
+| Neovim basics | [Modes and Movement](https://github.com/beixiyo/dotfiles/wiki/nvim-learn-01-modes-and-movement) · [Editing and Text Objects](https://github.com/beixiyo/dotfiles/wiki/nvim-learn-02-editing-and-text-objects) · [Advanced Commands](https://github.com/beixiyo/dotfiles/wiki/nvim-learn-03-advanced-commands) |
+| Neovim workflow | [Shortcut Tips](https://github.com/beixiyo/dotfiles/wiki/nvim-guide-shortcut-tips) · [DAP Debugging](https://github.com/beixiyo/dotfiles/wiki/nvim-debug-dap) · [Lua Configuration](https://github.com/beixiyo/dotfiles/wiki/nvim-config-lua) |
+| Shell and terminal | [Zsh](https://github.com/beixiyo/dotfiles/wiki/zsh-guide-shell) · [Tmux](https://github.com/beixiyo/dotfiles/wiki/tmux-guide-keymaps) · [Terminal Keymaps](https://github.com/beixiyo/dotfiles/wiki/terminal-guide-keymaps) · [Yazi](https://github.com/beixiyo/dotfiles/wiki/yazi-guide-keymaps) |
+| Desktop environment | [Niri](https://github.com/beixiyo/dotfiles/wiki/niri-guide-usage) · [Karabiner Windows Keymap](https://github.com/beixiyo/dotfiles/wiki/karabiner-guide-windows-keymap) · [Linux Clipboard History](https://github.com/beixiyo/dotfiles/wiki/linux-guide-clipboard) |
+| Neovim development | [Lua for TypeScript Developers](https://github.com/beixiyo/dotfiles/wiki/nvim-dev-lua-for-ts-devs) · [Neovim API](https://github.com/beixiyo/dotfiles/wiki/nvim-dev-api) · [Plugin Paths](https://github.com/beixiyo/dotfiles/wiki/nvim-config-plugin-paths) |
 
 ## Start here: setup
 
@@ -160,9 +173,9 @@ tmux new-session -A
 
 Run `nvim` to open the editor. Neovim downloads its plugins automatically on the first launch
 
-New to tmux? Read the [tmux usage guide (Chinese)](.config/tmux/README.md) for sessions, windows, panes, detaching, and workspace recovery
+New to tmux? Read the [Tmux keymap guide](https://github.com/beixiyo/dotfiles/wiki/tmux-guide-keymaps) for windows, panes, copy mode, and workspace recovery
 
-New to Neovim? Follow the Chinese Wiki in order: [Modes and Movement](https://github.com/beixiyo/dotfiles/wiki/01-modes-and-movement), [Editing and Text Objects](https://github.com/beixiyo/dotfiles/wiki/02-editing-and-text-objects), then [Advanced Commands](https://github.com/beixiyo/dotfiles/wiki/03-advanced-commands)
+New to Neovim? Follow the Wiki in order: [Modes and Movement](https://github.com/beixiyo/dotfiles/wiki/nvim-learn-01-modes-and-movement), [Editing and Text Objects](https://github.com/beixiyo/dotfiles/wiki/nvim-learn-02-editing-and-text-objects), then [Advanced Commands](https://github.com/beixiyo/dotfiles/wiki/nvim-learn-03-advanced-commands)
 
 > Want configuration files only, without installing dependencies or changing the system? See the manual deployment option in the [one-click-config guide](one-click-config/README.md)
 
@@ -252,10 +265,14 @@ Each plugin repository has its own bilingual README. The [Neovim guide (Chinese)
 
 | Module | Path | Docs |
 |---|---|---|
-| Zsh | `~/.zsh/` | [README](.zsh/README.md) · [Dev guide](.zsh/AGENTS.md) |
-| Neovim | `~/.config/nvim/` | [README (Chinese)](.config/nvim/README.md) · [Dev guide](.config/nvim/AGENTS.md) |
-| Tmux | `~/.config/tmux/` | [README](.config/tmux/README.md) |
-| Terminals | `~/.config/{kitty,ghostty,wezterm}/` | |
+| Zsh | `~/.zsh/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/zsh-guide-shell) · [README](.zsh/README.md) · [Dev guide](.zsh/AGENTS.md) |
+| Neovim | `~/.config/nvim/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki) · [README (Chinese)](.config/nvim/README.md) · [Dev guide](.config/nvim/AGENTS.md) |
+| Tmux | `~/.config/tmux/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/tmux-guide-keymaps) · [README](.config/tmux/README.md) |
+| Terminals | `~/.config/{kitty,ghostty,wezterm}/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/terminal-guide-keymaps) |
+| Yazi | `~/.config/yazi/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/yazi-guide-keymaps) |
+| Niri | `~/.config/niri/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/niri-guide-usage) |
+| Karabiner | `~/.config/karabiner/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/karabiner-guide-windows-keymap) |
+| Clipboard | `~/.config/quickshell/clipboard/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/linux-guide-clipboard) |
 | Setup scripts | `one-click-config/` | [README](one-click-config/README.md) |
 
 See [AGENTS.md](AGENTS.md) for the full architecture map

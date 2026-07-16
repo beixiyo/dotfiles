@@ -33,6 +33,7 @@
 
 <!--toc:start-->
 - [dotfiles](#dotfiles)
+  - [文档导航](#文档导航)
   - [从零开始安装](#从零开始安装)
   - [为什么选择全终端工作流](#为什么选择全终端工作流)
     - [开发运行时](#开发运行时)
@@ -44,6 +45,18 @@
     - [插件](#插件)
   - [模块](#模块)
 <!--toc:end-->
+
+## 文档导航
+
+[GitHub Wiki](https://github.com/beixiyo/dotfiles/wiki) 提供详细使用教程。可以直接从当前需要的工作流开始，不必按仓库目录从头阅读：
+
+| 主题 | 文档 |
+|---|---|
+| Neovim 入门 | [模式与移动](https://github.com/beixiyo/dotfiles/wiki/nvim-learn-01-modes-and-movement) · [编辑与文本对象](https://github.com/beixiyo/dotfiles/wiki/nvim-learn-02-editing-and-text-objects) · [高级命令](https://github.com/beixiyo/dotfiles/wiki/nvim-learn-03-advanced-commands) |
+| Neovim 工作流 | [快捷键技巧](https://github.com/beixiyo/dotfiles/wiki/nvim-guide-shortcut-tips) · [DAP 调试](https://github.com/beixiyo/dotfiles/wiki/nvim-debug-dap) · [Lua 配置](https://github.com/beixiyo/dotfiles/wiki/nvim-config-lua) |
+| Shell 与终端 | [Zsh](https://github.com/beixiyo/dotfiles/wiki/zsh-guide-shell) · [Tmux](https://github.com/beixiyo/dotfiles/wiki/tmux-guide-keymaps) · [终端快捷键](https://github.com/beixiyo/dotfiles/wiki/terminal-guide-keymaps) · [Yazi](https://github.com/beixiyo/dotfiles/wiki/yazi-guide-keymaps) |
+| 桌面环境 | [Niri](https://github.com/beixiyo/dotfiles/wiki/niri-guide-usage) · [Karabiner Windows 键位](https://github.com/beixiyo/dotfiles/wiki/karabiner-guide-windows-keymap) · [Linux 剪贴板历史](https://github.com/beixiyo/dotfiles/wiki/linux-guide-clipboard) |
+| Neovim 开发 | [面向 TypeScript 开发者的 Lua](https://github.com/beixiyo/dotfiles/wiki/nvim-dev-lua-for-ts-devs) · [Neovim API](https://github.com/beixiyo/dotfiles/wiki/nvim-dev-api) · [插件路径](https://github.com/beixiyo/dotfiles/wiki/nvim-config-plugin-paths) |
 
 ## 从零开始安装
 
@@ -160,9 +173,9 @@ tmux new-session -A
 
 现在可以运行 `nvim` 打开编辑器。第一次启动时，Neovim 会自动下载插件
 
-第一次使用 tmux？阅读 [tmux 使用指南](.config/tmux/README.md)，了解 session、window、pane、断开连接和会话恢复
+第一次使用 tmux？阅读 [Tmux 快捷键指南](https://github.com/beixiyo/dotfiles/wiki/tmux-guide-keymaps)，了解 window、pane、复制模式和会话恢复
 
-第一次使用 Neovim？从 [模式与移动](https://github.com/beixiyo/dotfiles/wiki/01-modes-and-movement)开始，再按顺序学习[编辑与文本对象](https://github.com/beixiyo/dotfiles/wiki/02-editing-and-text-objects)和[高级命令](https://github.com/beixiyo/dotfiles/wiki/03-advanced-commands)
+第一次使用 Neovim？从 [模式与移动](https://github.com/beixiyo/dotfiles/wiki/nvim-learn-01-modes-and-movement)开始，再按顺序学习[编辑与文本对象](https://github.com/beixiyo/dotfiles/wiki/nvim-learn-02-editing-and-text-objects)和[高级命令](https://github.com/beixiyo/dotfiles/wiki/nvim-learn-03-advanced-commands)
 
 > 只想复制配置文件、不安装依赖或修改系统？查看 [one-click-config 说明](one-click-config/README.md)中的手动部署方式
 
@@ -252,10 +265,14 @@ vv-* 插件覆盖导航、Git、搜索、重构、Markdown 和工作流面板
 
 | 模块 | 路径 | 文档 |
 |---|---|---|
-| Zsh | `~/.zsh/` | [说明](.zsh/README.md) · [开发指南](.zsh/AGENTS.md) |
-| Neovim | `~/.config/nvim/` | [说明](.config/nvim/README.md) · [开发指南](.config/nvim/AGENTS.md) |
-| Tmux | `~/.config/tmux/` | [说明](.config/tmux/README.md) |
-| 终端 | `~/.config/{kitty,ghostty,wezterm}/` | |
+| Zsh | `~/.zsh/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/zsh-guide-shell) · [说明](.zsh/README.md) · [开发指南](.zsh/AGENTS.md) |
+| Neovim | `~/.config/nvim/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki) · [说明](.config/nvim/README.md) · [开发指南](.config/nvim/AGENTS.md) |
+| Tmux | `~/.config/tmux/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/tmux-guide-keymaps) · [说明](.config/tmux/README.md) |
+| 终端 | `~/.config/{kitty,ghostty,wezterm}/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/terminal-guide-keymaps) |
+| Yazi | `~/.config/yazi/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/yazi-guide-keymaps) |
+| Niri | `~/.config/niri/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/niri-guide-usage) |
+| Karabiner | `~/.config/karabiner/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/karabiner-guide-windows-keymap) |
+| 剪贴板 | `~/.config/quickshell/clipboard/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/linux-guide-clipboard) |
 | 安装脚本 | `one-click-config/` | [说明](one-click-config/README.md) |
 
 完整架构图见 [AGENTS.md](AGENTS.md)
