@@ -12,7 +12,42 @@ function M.continue()
     return
   end
 
-  require('dap').continue()
+  local dap = require('dap')
+  if next(dap.sessions()) then
+    dap.continue()
+    return
+  end
+
+  local configurations = {}
+  local providers = vim.tbl_keys(dap.providers.configs)
+  table.sort(providers)
+
+  for _, provider in ipairs(providers) do
+    local items = dap.providers.configs[provider](vim.api.nvim_get_current_buf())
+    if vim.islist(items) then vim.list_extend(configurations, items) end
+  end
+
+  if #configurations == 0 then
+    vim.notify('No DAP configuration found for ' .. vim.bo.filetype, vim.log.levels.INFO)
+    return
+  end
+
+  if #configurations == 1 then
+    dap.run(configurations[1])
+    return
+  end
+
+  vim.ui.select(configurations, {
+    prompt = 'Configuration',
+    kind = 'dap-configuration',
+    format_item = function(config) return config.name end,
+  }, function(config)
+    if config then
+      dap.run(config)
+    else
+      vim.notify('No configuration selected', vim.log.levels.INFO)
+    end
+  end)
 end
 
 function M.setup()

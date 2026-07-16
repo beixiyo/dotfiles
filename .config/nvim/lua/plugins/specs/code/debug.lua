@@ -14,7 +14,7 @@ return {
 
   keys = function()
     local icons = require('vv-icons')
-    local d = function(text) return icons.debug .. ' ' .. text end
+    local d = function(icon, text) return icon .. ' ' .. text end
     local toggle_breakpoint = function()
       local buf = vim.api.nvim_get_current_buf()
       require('dap').toggle_breakpoint()
@@ -24,20 +24,62 @@ return {
     end
 
     return {
-      { '<leader>db', toggle_breakpoint,                                      desc = d('Toggle breakpoint') },
-      { '<leader>dc', function() require('config.dap').continue() end,   desc = d('Continue') },
-      { '<leader>di', function() require('dap').step_into() end,         desc = d('Step into') },
-      { '<leader>do', function() require('dap').step_over() end,         desc = d('Step over') },
-      { '<leader>dO', function() require('dap').step_out() end,          desc = d('Step out') },
-      { '<leader>dr', function() require('dap').restart() end,           desc = d('Restart') },
-      { '<leader>dt', function() require('dap').terminate() end,         desc = d('Terminate') },
-      { '<leader>du', function() require('dap-view').toggle() end,       desc = d('Toggle debug panel') },
-      { '<leader>dv', function() require('dap-view').virtual_text_toggle() end, desc = d('Toggle debug values') },
+      { '<leader>db', toggle_breakpoint, desc = d(icons.debug_breakpoint, 'Toggle breakpoint') },
+      {
+        '<leader>dc',
+        function() require('config.dap').continue() end,
+        desc = d(icons.debug_continue, 'Continue to next breakpoint'),
+      },
+      { '<leader>dp', function() require('dap').pause() end, desc = d(icons.debug_pause, 'Pause') },
+      {
+        '<leader>di',
+        function() require('dap').step_into() end,
+        desc = d(icons.debug_step_into, 'Step into function'),
+      },
+      {
+        '<leader>do',
+        function() require('dap').step_over() end,
+        desc = d(icons.debug_step_over, 'Step over to next line'),
+      },
+      {
+        '<leader>dO',
+        function() require('dap').step_out() end,
+        desc = d(icons.debug_step_out, 'Step out of function'),
+      },
+      {
+        '<leader>dr',
+        function() require('dap').restart() end,
+        desc = d(icons.debug_restart, 'Restart current session'),
+      },
+      {
+        '<leader>dl',
+        function() require('dap').run_last() end,
+        desc = d(icons.debug_run_last, 'Run last configuration'),
+      },
+      {
+        '<leader>dt',
+        function()
+          require('dap').terminate({ all = true, hierarchy = true })
+          require('dap-view').close(true)
+        end,
+        desc = d(icons.debug_terminate, 'Terminate all debug sessions'),
+      },
+      {
+        '<leader>dd',
+        function() require('dap').disconnect() end,
+        desc = d(icons.debug_disconnect, 'Disconnect debugger'),
+      },
+      { '<leader>du', function() require('dap-view').toggle() end, desc = d(icons.window, 'Toggle debug panel') },
+      {
+        '<leader>dv',
+        function() require('dap-view').virtual_text_toggle() end,
+        desc = d(icons.cursor, 'Toggle debug values'),
+      },
       {
         '<leader>de',
         function() require('dap-view').hover() end,
         mode = { 'n', 'x' },
-        desc = d('Evaluate'),
+        desc = d(icons.code, 'Evaluate'),
       },
     }
   end,

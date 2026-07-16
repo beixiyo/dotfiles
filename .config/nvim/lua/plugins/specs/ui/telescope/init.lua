@@ -111,7 +111,13 @@ return {
           case_mode = 'smart_case',
         },
         -- ui-select：接管 vim.ui.select（code action / gitsigns 菜单 / session picker 等）
-        ['ui-select'] = { require('telescope.themes').get_dropdown({ previewer = false }) },
+        ['ui-select'] = {
+          require('telescope.themes').get_dropdown({ previewer = false }),
+          specific_opts = {
+            ['dap-configuration'] = require('plugins.specs.ui.telescope.dap_configuration').opts(),
+            ['package-script'] = require('plugins.specs.ui.telescope.package_script').opts(),
+          },
+        },
       },
     })
 
