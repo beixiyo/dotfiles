@@ -65,41 +65,6 @@ local function setup_switchbuf(dap)
   end
 end
 
-local function setup_signs()
-  local icons = require('vv-icons')
-
-  vim.fn.sign_define('DapBreakpoint', {
-    text = icons.debug,
-    texthl = 'DiagnosticError',
-    linehl = '',
-    numhl = '',
-  })
-  vim.fn.sign_define('DapBreakpointCondition', {
-    text = icons.debug,
-    texthl = 'DiagnosticWarn',
-    linehl = '',
-    numhl = '',
-  })
-  vim.fn.sign_define('DapBreakpointRejected', {
-    text = icons.debug,
-    texthl = 'DiagnosticWarn',
-    linehl = '',
-    numhl = '',
-  })
-  vim.fn.sign_define('DapLogPoint', {
-    text = icons.debug,
-    texthl = 'DiagnosticInfo',
-    linehl = '',
-    numhl = '',
-  })
-  vim.fn.sign_define('DapStopped', {
-    text = icons.arrow_right,
-    texthl = 'DiagnosticInfo',
-    linehl = 'Visual',
-    numhl = '',
-  })
-end
-
 ---@param dap table
 function M.setup(dap)
   setup_switchbuf(dap)
@@ -137,7 +102,7 @@ function M.setup(dap)
     },
   })
 
-  setup_signs()
+  require('config.dap.signs').setup()
 end
 
 return M
