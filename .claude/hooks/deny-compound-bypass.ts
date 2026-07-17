@@ -1,4 +1,6 @@
 #!/usr/bin/env bun
+import path from 'node:path'
+
 /**
  * PreToolUse hook: 通用权限管控（Bash + Read）
  *
@@ -6,19 +8,27 @@
  *   Bash — deny/ask 命令规则，全文扫描（不限前缀），防复合命令/flag 绕过
  *   Read — 敏感路径保护（.env / .ssh / .gnupg / .aws / .netrc）
  *
- * Codex ask 兼容性说明（最后验证：2026-06-22，codex-cli 0.141.0）
+ * Codex ask 兼容性说明（最后验证：2026-07-18，codex-cli 0.144.5，仍未变）
  * - Claude Code 支持 PreToolUse 返回 permissionDecision: 'ask'，由客户端弹出审批
- * - Codex 当前 schema 能解析 'ask'，但运行时不支持把它路由到原生审批
- * - 本机实测：当前 Codex TUI 会话中，PreToolUse hook 确实执行并输出 'ask'，
- *   但 Bash 命令继续执行，没有出现审批弹窗
- * - 因此本脚本对 Codex 仅保留 deny 级硬拦截；ask 级命中直接放行，避免把正常排查命令变成硬拒绝
+ * - Codex schema 能解析 'ask'，但运行时 output_parser 显式判其 unsupported（放行 + warning），
+ *   PermissionRequest hook 也只有 allow/deny——即整个 hook 体系没有任何触发原生审批的路径
+ * - 故 Codex 下无「弹审批」中间态，只有放行或硬 deny 二选一：
+ *     · 危险命令（关机/磁盘/pipe-to-shell、systemctl 写、敏感文件读、env dump、危险 rm）→ 升级 deny 硬拦
+ *     · git 写操作 → 静默放行；Claude Code 下则返回 ask 弹审批
+ *     · 普通 rm/rmdir → 两端都静默放行；危险 rm/rmdir → Claude ask、Codex deny
+ * - 本机 Codex 使用 approval_policy=never + danger-full-access。这里的「静默放行」就是 hook
+ *   不输出决策并 exit 0，不存在后续审批或沙箱兜底
+ *
+ * rm 静态判定边界：
+ * - 只展开路径开头的 ~、$HOME、${HOME}，并做引号分词与词法路径归一化
+ * - 不执行 shell，也不求值其他变量、glob 或命令替换；命令替换目标按危险处理
+ * - 其他变量（如 $TARGET）无法知道运行时值，按普通目标处理，这是刻意接受的边界
  *
  * 相关上游记录：
- * - openai/codex#28437（open）：Support PreToolUse permissionDecision: ask for native approval prompts
- * - openai/codex#25555（open）：Hook output schemas allow values later rejected by parser
- * - openai/codex#20702（closed）：Support PreToolUse permissionDecision ask
- * - openai/codex#20756（closed）：support PreToolUse allow and ask permissionDecision
- * - openai/codex#26422（closed）：[codex] Align hook output schemas with runtime
+ * - openai/codex#28437（open）：Support PreToolUse permissionDecision: ask for native approval prompts（求这个功能，未做）
+ * - openai/codex#25555（open）：Hook output schemas allow values later rejected by parser（schema 收但 parser 拒的机制）
+ * - openai/codex#27833（open）：PreToolUse deny 对 apply_patch 不生效——文件写入类 deny 拦不住，本 hook 的防护对 Bash 才可靠
+ * - openai/codex#20702 / #20756 / #26422（closed）：更早的 ask / schema 对齐请求，均未落地 ask 审批
  */
 
 const input = await Bun.stdin.text()
@@ -26,14 +36,14 @@ const input = await Bun.stdin.text()
 let toolName = ''
 let toolInput: Record<string, unknown> = {}
 let isCodex = false
+let cwd = process.cwd()
 
 try {
   const data = JSON.parse(input)
   toolName = data?.tool_name ?? ''
   toolInput = data?.tool_input ?? {}
   isCodex = typeof data?.turn_id === 'string'
-    || 'agent_id' in data
-    || 'agent_type' in data
+  cwd = typeof data?.cwd === 'string' && data.cwd ? data.cwd : cwd
 }
 catch {
   process.exit(0)
@@ -46,20 +56,19 @@ type HookDecision = PermissionDecision | 'allow'
 type HitLevel = PermissionDecision
 
 /**
- * Codex 当前不支持 hook ask 审批：ask 级规则在 Codex 中视为 allow
- * 真正需要硬拦的规则必须在收集命中时标记为 deny
+ * Codex 当前不支持 hook ask 审批：客户端不会弹审批，故 ask 级命中在 Codex 中升级为 deny（安全默认）
  */
 const resolveDecision = (decision: PermissionDecision): HookDecision => {
-  if (isCodex && decision === 'ask') return 'allow'
+  if (isCodex && decision === 'ask') return 'deny'
 
   return decision
 }
 
 /**
- * 结束 hook。hit 为命中的命令片段（可选），拼进 reason 方便在复合命令里定位被拦的那一段
+ * 发出最终决策。allow → 静默放行（exit 0）；deny/ask → 打印 PreToolUse 决策 JSON
+ * hit 为命中的命令片段（可选），拼进 reason 方便在复合命令里定位被拦的那一段
  */
-const finish = (decision: PermissionDecision, reason: string, hit?: string): never => {
-  const resolved = resolveDecision(decision)
+const emit = (resolved: HookDecision, reason: string, hit?: string): never => {
   if (resolved === 'allow') process.exit(0)
 
   const detail = hit ? `${reason}｜命中：${hit}` : reason
@@ -75,11 +84,29 @@ const finish = (decision: PermissionDecision, reason: string, hit?: string): nev
   process.exit(0)
 }
 
+/**
+ * 简单场景：把 ask/deny 经 resolveDecision（Codex 下 ask→deny）后发出
+ * 用于 Read 路径与不涉及 git/rm 放行豁免的单点命中
+ */
+const finish = (decision: PermissionDecision, reason: string, hit?: string): never =>
+  emit(resolveDecision(decision), reason, hit)
+
 // ── 敏感文件规则（Read 与 Bash 共用）─────────────────────────
 // 既拦 Read 工具直接读，也拦 Bash 里 cat/grep/cp/xxd/source/< 重定向 等迂回读取
 const HOME = process.env.HOME ?? ''
 
-const expandHome = (p: string): string => p.startsWith('~/') ? HOME + p.slice(1) : p
+/**
+ * 把路径开头的 `~`、`$HOME` 或 `${HOME}` 统一成 HOME 绝对路径
+ * 仅用于静态安全判定，不调用 shell，也不展开其他变量、glob 或命令替换
+ */
+const expandHome = (p: string): string => {
+  if (p === '~') return HOME
+  if (p.startsWith('~/')) return HOME + p.slice(1)
+
+  return p
+    .replace(/^\$\{HOME\}(?=\/|$)/, HOME)
+    .replace(/^\$HOME(?=\/|$)/, HOME)
+}
 
 /**
  * 敏感路径匹配器：对「规范化后的路径」逐条 test
@@ -163,7 +190,12 @@ if (toolName === 'Bash') {
    */
   const cmdExec = (...names: string[]): RegExp => {
     const escaped = names.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
-    return new RegExp(`(?:^|[;|&\`(\\n])\\s*(?:\\w+=\\S*\\s+)*(?:sudo\\s+(?:-\\S+\\s+)*)?(?:${escaped})\\b`, 'g')
+    // stripQuoted 会保留引号、把引号内容替换为空格，因此赋值值必须同时接受 "   " / '   '
+    // 这也覆盖 PATH="$PWD/bin:$PATH" rm 这类常见前缀，避免带引号的环境赋值绕过命令起点判断
+    const assignmentValue = `(?:"[^"]*"|'[^']*'|[^\\s"'])*`
+    const assignment = `\\w+=${assignmentValue}\\s+`
+
+    return new RegExp(`(?:^|[;|&\`(\\n])\\s*(?:${assignment})*(?:sudo\\s+(?:-\\S+\\s+)*)?(?:${escaped})\\b`, 'g')
   }
 
   /**
@@ -186,6 +218,20 @@ if (toolName === 'Bash') {
 
   // 可选的绝对路径前缀：/bin/  /usr/bin/  /usr/local/bin/
   const SHELL_PATH = `(?:/(?:usr(?:/local)?/)?bin/)?`
+
+  /**
+   * 把字面量 shell -c 的命令体暴露给后续同一套扫描规则
+   * wrapper 与引号位置替换为空格/分隔符并保持字符串长度，确保命中位置仍能映射回原命令
+   */
+  const exposeShellCommandBodies = (source: string): string => {
+    const shell = `${SHELL_PATH}(?:${SHELLS})`
+    const expose = (_match: string, prefix: string, body: string): string =>
+      `${' '.repeat(prefix.length - 1)};${body} `
+
+    return source
+      .replace(new RegExp(`(${shell}\\s+-c\\s+")((?:\\\\.|[^"\\\\])*)"`, 'g'), expose)
+      .replace(new RegExp(`(${shell}\\s+-c\\s+')([^']*)'`, 'g'), expose)
+  }
 
   const DENY_PATTERNS: Array<{ re: RegExp; reason: string; raw?: boolean }> = [
     { re: cmdExec('shutdown', 'reboot', 'poweroff', 'halt'), reason: '系统关机/重启命令' },
@@ -213,8 +259,12 @@ if (toolName === 'Bash') {
     },
   ]
 
-  const GIT_SUBCMDS =
-    'add|commit|push|pull|fetch|merge|rebase|reset|checkout|switch|branch|tag|stash|clean|am|apply|cherry-pick|revert|remote|submodule|worktree|update-index|update-ref'
+  const GIT_SUBCMDS = [
+    'add', 'am', 'apply', 'bisect', 'branch', 'checkout', 'cherry-pick', 'clean', 'clone', 'commit',
+    'config', 'fetch', 'gc', 'init', 'lfs', 'maintenance', 'merge', 'mv', 'notes', 'prune', 'pull',
+    'push', 'rebase', 'remote', 'repack', 'replace', 'reset', 'restore', 'revert', 'rm',
+    'sparse-checkout', 'stash', 'submodule', 'switch', 'tag', 'update-index', 'update-ref', 'worktree',
+  ].join('|')
 
   /**
    * git 只读子命令白名单：这些子命令不改动仓库/工作区，命中后从 git 写规则里剔除放行
@@ -232,6 +282,9 @@ if (toolName === 'Bash') {
     /^git\s+(?:-C\s+\S+\s+)?remote\s+(?:show|get-url)\b/,
     /^git\s+(?:-C\s+\S+\s+)?worktree\s+list\b/,
     /^git\s+(?:-C\s+\S+\s+)?submodule\s+(?:status|summary)\b/,
+    /^git\s+(?:-C\s+\S+\s+)?config\s+(?:-l|--list|--get|--get-all|--get-regexp|--get-urlmatch|--show-origin|--show-scope)\b/,
+    /^git\s+(?:-C\s+\S+\s+)?notes\s+(?:list|show)\b/,
+    /^git\s+(?:-C\s+\S+\s+)?lfs\s+(?:env|ls-files|status)\b/,
   ]
 
   const isGitReadonly = (segment: string): boolean => GIT_READONLY.some(re => re.test(segment))
@@ -242,30 +295,149 @@ if (toolName === 'Bash') {
   const SYSTEMCTL_WRITE =
     /\bsystemctl\s+(?:-\S+\s+)*(?!(?:status|show|list-\S*|is-active|is-enabled|is-failed|cat|help)\b)[^-\s]\S*/g
 
-  const ASK_PATTERNS: Array<{ re: RegExp; reason: string }> = [
-    { re: cmdExec('rm', 'rmdir'), reason: '危险文件删除' },
+  // git 写操作（rm 已单独处理，见下方危险判定）——Codex 下放行（codexAllow），Claude 仍 ask
+  const GIT_WRITE_PATTERNS: Array<{ re: RegExp; reason: string }> = [
     { re: new RegExp(`\\bgit\\s+(${GIT_SUBCMDS})\\b`, 'g'), reason: 'git 写操作' },
     { re: new RegExp(`\\bgit\\s+-C\\s+\\S+\\s+(${GIT_SUBCMDS})\\b`, 'g'), reason: 'git -C 跨仓库写操作' },
     { re: new RegExp(`\\bgit\\s+-\\S.*\\b(${GIT_SUBCMDS})\\b`, 'g'), reason: 'git 带选项写操作' },
   ]
 
+  // 这些目录树下的任意目标都视为危险；macOS 的 /etc、/var 实际落在 /private 下，显式覆盖两种写法
+  const RM_PROTECTED_TREES = [
+    '/bin', '/boot', '/dev', '/etc', '/lib', '/lib64', '/opt', '/proc', '/root', '/sbin', '/sys',
+    '/usr', '/var', '/System', '/Library', '/Applications', '/private/etc', '/private/var',
+  ]
+
+  // 这些只是容器根：拒绝根本身及直接 glob，但不把 HOME、挂载盘或 /private/tmp 下的普通文件全部判危险
+  const RM_PROTECTED_ROOTS = ['/private', '/Users', '/Volumes']
+
+  const isDirectGlob = (candidate: string, root: string): boolean => {
+    if (!candidate.startsWith(`${root}/`)) return false
+
+    const relative = candidate.slice(root.length + 1)
+    return !relative.includes('/') && /[*?\[\]{}]/.test(relative)
+  }
+
+  const isWithin = (candidate: string, root: string): boolean =>
+    candidate === root || candidate.startsWith(`${root}/`)
+
+  /**
+   * 按 shell 引号规则拆出参数，保留引号内空格并拼接相邻片段
+   * 这里只做静态安全分类，不执行变量、命令替换或 glob
+   */
+  const splitShellWords = (input: string): string[] => {
+    const words: string[] = []
+    let current = ''
+    let quote: '"' | '\'' | null = null
+
+    const flush = (): void => {
+      if (current === '') return
+      words.push(current)
+      current = ''
+    }
+
+    for (let i = 0; i < input.length; i++) {
+      const char = input[i]
+
+      if (char === '\\' && quote !== '\'') {
+        current += input[i + 1] ?? ''
+        i++
+        continue
+      }
+
+      if (quote !== null) {
+        if (char === quote) quote = null
+        else current += char
+        continue
+      }
+
+      if (char === '"' || char === '\'') {
+        quote = char
+        continue
+      }
+
+      if (/\s/.test(char)) {
+        flush()
+        continue
+      }
+
+      current += char
+    }
+
+    flush()
+    return words
+  }
+
+  const isDangerousRmTarget = (token: string): boolean => {
+    if (token === '') return false
+
+    // 动态命令替换无法静态确认最终目标，按危险处理
+    if (/`|\$\(/.test(token)) return true
+
+    const expanded = expandHome(token)
+
+    // 删除前先按 cwd 做词法归一化，堵住 ~/.config/..、$HOME/.、foo/.. 等等价写法
+    const normalized = path.resolve(cwd, expanded).replace(/\/+$/, '') || '/'
+
+    // 根 / 当前或上级目录整体 / 家目录（含变量、引号和父目录折叠后的等价形式）
+    if (normalized === '/' || normalized === cwd || normalized === path.dirname(cwd)) return true
+    // .git 目录（呼应「递归删除曾删光含 .git 的项目」教训）
+    if (/(?:^|\/)\.git(?:\/|$)/.test(expanded)) return true
+    if (RM_PROTECTED_TREES.some(root => isWithin(normalized, root))) return true
+    if (RM_PROTECTED_ROOTS.some(root => normalized === root || isDirectGlob(normalized, root))) return true
+
+    if (HOME && (normalized === HOME || isDirectGlob(normalized, HOME))) return true
+
+    return false
+  }
+
+  // 取某个 rm 命中起点到下一个 shell 分隔符之间的参数区（用原始 cmd，含引号内，避免漏判引号目标），
+  // 跳过命令名 / flag / 赋值前缀后，任一目标 token 命中危险判定即视为危险 rm
+  const isDangerousRm = (start: number): boolean => {
+    const rel = cmd.slice(start).search(/[;\n]|&&|\|\||\|/)
+    const end = rel === -1 ? cmd.length : start + rel
+    const tokens = splitShellWords(cmd.slice(start, end))
+    return tokens.some(
+      tok => !tok.startsWith('-')
+        && !/^(?:rm|rmdir|sudo)$/.test(tok)
+        && !tok.includes('=')
+        && isDangerousRmTarget(tok),
+    )
+  }
+
   // 剥离引号内文本后再扫描，避免引号内的正则/文本误触发命令规则
-  const scan = stripQuoted(cmd)
+  const scan = stripQuoted(exposeShellCommandBodies(cmd))
 
   // 收集全部命中（不再命中即退出），让复合命令里每一段被拦的子命令都能呈现
-  const hits: Array<{ level: HitLevel; reason: string; segment: string; index: number }> = []
+  //   codexAllow：该 ask 命中在 Codex 下是否静默放行；当前只用于用户明确允许的 git 写操作
+  const hits: Array<{ level: HitLevel; reason: string; segment: string; index: number; codexAllow?: boolean }> = []
 
-  const collect = (level: HitLevel, re: RegExp, reason: string, target: string): void => {
+  const collect = (level: HitLevel, re: RegExp, reason: string, target: string, codexAllow = false): void => {
     for (const m of target.matchAll(re)) {
-      hits.push({ level, reason, segment: segmentOf(m, target), index: m.index ?? 0 })
+      hits.push({ level, reason, segment: segmentOf(m, target), index: m.index ?? 0, codexAllow })
     }
   }
 
   for (const { re, reason, raw } of DENY_PATTERNS) collect('deny', re, reason, raw ? cmd : scan)
 
+  // rm/rmdir：普通目标两端都静默放行；只有危险目标才进入决策（Claude ask、Codex deny）
+  for (const m of scan.matchAll(cmdExec('rm', 'rmdir'))) {
+    const lead = m[0].match(/^[;|&`(\s\n]*/)?.[0].length ?? 0
+    const start = (m.index ?? 0) + lead
+    const dangerous = isDangerousRm(start)
+    if (dangerous) {
+      hits.push({
+        level: 'ask',
+        reason: '危险文件删除（根 / 家目录 / 系统目录 / .git）',
+        segment: segmentOf(m, scan),
+        index: m.index ?? 0,
+      })
+    }
+  }
+
   collect('ask', SYSTEMCTL_WRITE, 'systemctl 写操作', scan)
 
-  for (const { re, reason } of ASK_PATTERNS) collect('ask', re, reason, scan)
+  for (const { re, reason } of GIT_WRITE_PATTERNS) collect('ask', re, reason, scan, true)
 
   // 敏感文件迂回读取：cat/less/grep/cp/xxd/strings/source/< 重定向 等任意命令引用敏感路径
   //   不枚举读命令（枚举必有遗漏），改为扫描命令里出现的「敏感文件 token」，命中即 ask
@@ -320,9 +492,16 @@ if (toolName === 'Bash') {
       })
       .map(({ reason, segment }) => `${reason}｜命中：${segment}`)
 
-    // 任一 deny 级命中 → 整条命令拦死；否则走 ask。Codex 中 ask 会在 finish() 里放行
-    const decision = effectiveHits.some(h => h.level === 'deny') ? 'deny' : 'ask'
-    finish(decision, lines.join('\n'))
+    // 决策：任一 deny 级命中 → 整条拦死。否则 Claude Code 走 ask（弹审批）。
+    //   Codex 无审批弹窗：仅当全部 ask 命中都标 codexAllow（git 写）才静默放行；
+    //   一旦混入非 codexAllow 的 ask（systemctl / 敏感读 / env dump / 危险 rm）则整条 deny
+    const resolved: HookDecision = effectiveHits.some(h => h.level === 'deny')
+      ? 'deny'
+      : isCodex
+        ? (effectiveHits.every(h => h.codexAllow) ? 'allow' : 'deny')
+        : 'ask'
+
+    emit(resolved, lines.join('\n'))
   }
 }
 

