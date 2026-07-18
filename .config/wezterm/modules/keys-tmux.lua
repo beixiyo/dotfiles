@@ -26,6 +26,7 @@ function M.apply(config)
   config.keys = config.keys or {}
 
   local passthrough = {
+    { key = 'Tab', mods = 'CTRL', seq = '\x1b[9;5u' },
     { key = 'T', mods = 'CTRL|SHIFT', seq = '\x1b[116;6u' },
     { key = 't', mods = 'CTRL|SHIFT', seq = '\x1b[116;6u' },
     { key = 'W', mods = 'CTRL|SHIFT', seq = '\x1b[119;6u' },
@@ -78,9 +79,8 @@ function M.apply(config)
     })
   end
 
-  -- 禁用 WezTerm 默认 Ctrl+Tab（tmux 模式下不用 WezTerm 原生 tab）
+  -- Ctrl+Shift+Tab 无对应 tmux 绑定，禁用 WezTerm 默认行为
   local disabled = {
-    { key = 'Tab', mods = 'CTRL' },
     { key = 'Tab', mods = 'CTRL|SHIFT' },
   }
   for _, k in ipairs(disabled) do
