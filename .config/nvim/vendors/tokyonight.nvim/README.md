@@ -30,8 +30,7 @@
 | `lua/tokyonight/groups/semantic_tokens.lua` | LSP semantic tokens 高亮 |
 | `lua/tokyonight/groups/kinds.lua` | LSP 符号类型（补全菜单中的图标映射） |
 | `colors/tokyonight-*.lua` | **`:colorscheme` 入口** — `require("tokyonight").load({style="..."})` 一行，让 `:colorscheme tokyonight-pretty_cat` 这类命令能找到主题 |
-| `extras/lua/*.lua` | 预生成文件：主题导出（night、moon 等），优先级最高 |
-| `extras/` | 其他终端/工具的主题导出产物（vim、kitty、ghostty 等） |
+| `extras/` | 生成的 Vim colorscheme 导出产物（当前仅 `extras/vim/colors/` 下的 `.vim`） |
 
 ## 需要修改的核心文件
 
@@ -243,29 +242,31 @@ end
 
 ## Extras 生成机制
 
-`extras/` 下的所有文件（vim / kitty / ghostty / alacritty / tmux / lazygit 等）都是**生成产物**，不是手写的
+`extras/` 下的文件是**生成产物**，不是手写的。本 fork 只在 `M.extras` 里注册了 **vim** 一个 exporter，所以当前只会生成 `extras/vim/colors/` 下的 Vim colorscheme（`.vim`），并没有 kitty / ghostty / alacritty / tmux 等其它工具的导出
 
 - **源头**：`lua/tokyonight/colors/*.lua`（调色板） + `lua/tokyonight/groups/*.lua`（高亮组）
 - **生成器**：`lua/tokyonight/extra/init.lua` 的 `M.setup()`
+- **exporter 列表**：`extra/init.lua:7-9` 的 `M.extras`，当前只有 `vim = { ..., subdir = "colors", sep = "-" }` 一项
+- **style 列表**：`extra/init.lua:16-20` 的 `styles`，当前为 `moon / pretty_moon / pretty_cat`
+- **实际产物**：exporter × style，即 `extras/vim/colors/tokyonight-{moon,pretty_moon,pretty_cat}.vim` 三个文件
 - **生成命令**（在 fork 根目录执行）：
 
   ```bash
   nvim --headless +"lua require('tokyonight.extra')" +qa
   ```
 
-### ⚠️ pretty_dark 未加入自动生成列表
+### ⚠️ pretty_dark 未加入生成列表
 
-`lua/tokyonight/extra/init.lua:61` 的 `styles` 表里硬编码了 `storm / night / day / moon`，**不含 `pretty_dark`**。这意味着：
+`extra/init.lua:16-20` 的 `styles` 表里硬编码了 `moon / pretty_moon / pretty_cat`，**不含 `pretty_dark`**。这意味着：
 
 - ✅ **Neovim** 使用 pretty_dark 无需任何生成步骤（走 `colors/tokyonight-pretty_dark.lua` 的 lua 加载路径）
-- ❌ **Vim（非 nvim）、kitty、ghostty、alacritty、tmux 等外部工具** 当前**无法**使用 pretty_dark，因为 `extras/` 下没有对应文件
+- ❌ **经典 Vim（非 nvim）** 当前**无法**使用 pretty_dark，因为 `extras/vim/colors/` 下没有对应的 `.vim` 文件
 
-若需要在外部工具里启用 pretty_dark：
+若需要在经典 Vim 里启用 pretty_dark：
 
-1. 把 `pretty_dark = " Pretty Dark"` 加到 `extra/init.lua:61` 的 `styles` 表
+1. 把 `pretty_dark = " Pretty Dark"` 加到 `extra/init.lua:16-20` 的 `styles` 表
 2. 跑上面的生成命令
-3. `extras/` 下会多出约 40 个 pretty_dark 版本（vim/kitty/ghostty/... 各一份）
-4. 顺手把 `util.lua:165` `cache.clear()` 的 style 列表也加上 `pretty_dark`，否则自动清理漏扫
+3. `extras/vim/colors/` 下会多出**一个** `tokyonight-pretty_dark.vim`（因为 `M.extras` 只注册了 vim 一个 exporter，所以每个 style 只生成这一份；kitty / ghostty 等要先在 `M.extras` 里注册对应 exporter 才谈得上，与 `cache.clear()` 无关）
 
 ### nvim 运行时缓存 vs extras 生成产物（别混淆）
 
@@ -274,7 +275,7 @@ end
 | 机制 | 路径 | 服务对象 | 改 lua 源码后的处理 |
 |------|------|---------|-------------------|
 | **nvim 运行时缓存** | `~/.cache/nvim/tokyonight-*.json` | Neovim 本身（加速启动） | `rm -rf ~/.cache/nvim/tokyonight*` |
-| **extras 生成产物** | `extras/` 下所有文件 | Vim / kitty / ghostty 等外部工具 | 重跑生成命令 |
+| **extras 生成产物** | `extras/vim/colors/` 下的 `.vim` | 经典 Vim（非 nvim） | 重跑生成命令 |
 
-- **缓存**：运行时加速用的 JSON 序列化，删了下次自动重建
-- **extras**：编译导出产物，因为外部工具不能执行 lua，必须预先翻译成它们各自的格式（vim 的 `hi` 语句、kitty 的 `.conf`、ghostty 的 `theme` 等）
+- **缓存**：运行时加速用的 JSON 序列化，按 style 名作 key（见 `groups/init.lua:139`），靠 `inputs` 深比对自动失效（`groups/init.lua:149`），删了下次自动重建。三条路径要分清：① 主插件正常加载/换肤**不依赖**手动 `cache.clear()`，缓存靠上述 inputs 深比对自动失效；② `.lazy.lua` 的开发热重载（`BufWritePost`/`VeryLazy` → `M.reset()`）会显式调 `util.lua:164` 的 `cache.clear()` 强制清缓存；③ `cache.clear()` 内部的 `storm/day/night/moon` 列表与 extras 生成完全无关。故改色后想立即看到效果，改源码走开发热重载即可，无需手动清缓存
+- **extras**：编译导出产物，因为经典 Vim 不能执行 lua，必须预先翻译成 `.vim` 的 `hi` 语句
