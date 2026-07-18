@@ -184,6 +184,9 @@ async function main(): Promise<void> {
 
   const cmdMax = Math.max(parseInt(process.env.FP_CMD_MAX ?? '70', 10), 20)
   const clipCmd = detectClipCopy()
+  const portGuide = `Multi ⇥ │ Copy ${fzf.optHint}C │ Kill ↵`
+  const collapsedGuide = `Multi ⇥ │ Expand ^E │ Copy ${fzf.optHint}C │ Kill ↵`
+  const expandedGuide = `Multi ⇥ │ Collapse ^E │ Copy ${fzf.optHint}C │ Kill ↵`
 
   const clipBind = clipCmd !== 'cat'
     ? [`--bind`, `alt-c:execute-silent(printf '%s\\t%s\\t%s\\t%s\\n' {1} {2} {3} {5} | ${clipCmd})+abort`]
@@ -241,7 +244,7 @@ async function main(): Promise<void> {
       ...fzfBaseOpts,
       '--bind', fzf.tabToggleDown,
       ...clipBind,
-      '--header', `Port ${port} | Tab:multi | Alt-c:copy | Enter:kill`,
+      '--header', `Port ${port} │ ${portGuide}`,
       '--header-lines', '1',
       '--reverse',
     ], input)
@@ -262,8 +265,8 @@ async function main(): Promise<void> {
   } else if (argv[0] === '--render') {
     const mode = argv[1] ?? 'collapsed'
     const statusLine = mode === 'expanded'
-      ? 'Tab:multi | Ctrl-e:collapse | Alt-c:copy | Enter:kill'
-      : 'Tab:multi | Ctrl-e:expand | Alt-c:copy | Enter:kill'
+      ? expandedGuide
+      : collapsedGuide
     const psResult = Bun.spawnSync(
       ['ps', 'axo', 'pid,rss,args'],
       { stdout: 'pipe', stderr: 'pipe' },
@@ -281,7 +284,7 @@ async function main(): Promise<void> {
     )
     const groups = buildGroups(psResult.stdout.toString(), portMap)
     const list = formatCollapsed(groups, cmdMax)
-    const input = `Tab:multi | Ctrl-e:expand | Alt-c:copy | Enter:kill\nPID\tMEM(MB)\tPORT\tCOMMAND\n${list}`
+    const input = `${collapsedGuide}\nPID\tMEM(MB)\tPORT\tCOMMAND\n${list}`
 
     const self = `bun run ${import.meta.path}`
     const stateFile = `/tmp/.fp-${process.pid}`

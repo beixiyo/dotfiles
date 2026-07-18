@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# Channel switching panel for fx (unified fzf entry)
-# Config: static _FX_* vars are inherited from fx-cmd.ts through the process env
-#         (fzf forwards its env to bind action children); dynamic channel state
-#         lives in $_FX_CH_STATE, a file fx-cmd.ts pre-creates inside a private
-#         mkdtemp dir (0700) with wx + 0600.
+# fx 的搜索模式切换面板（统一 fzf 入口）
+# 配置：静态 _FX_* 变量通过进程环境从 fx-cmd.ts 继承
+#       fzf 会把环境转发给 bind 动作的子进程；动态模式状态保存在
+#       $_FX_CH_STATE 中，该文件由 fx-cmd.ts 在私有 mkdtemp 目录（0700）内
+#       以 wx + 0600 权限预先创建
 #
-# Subcommands:
-#   init                - render header, output initial actions
-#   header              - render channel tabs
-#   footer              - render action bar for current channel
-#   switch-next Q       - switch to next channel
-#   switch-prev Q       - switch to prev channel
-#   enter ITEM          - dispatch enter for current channel
-#   click WORD ITEM     - handle footer click
+# 子命令：
+#   init                - 渲染标题栏并输出初始动作
+#   header              - 渲染模式标签
+#   footer              - 渲染当前模式的操作栏
+#   switch-next Q       - 切换到下一个模式
+#   switch-prev Q       - 切换到上一个模式
+#   enter ITEM          - 分发回车操作
+#   click WORD ITEM     - 处理底部操作栏点击
 
 SCRIPT="${BASH_SOURCE[0]}"
 # 无预测性 /tmp 回退路径：未设置时 CH_STATE 为空，由 ch_get/ch_put 优雅降级
@@ -25,6 +25,8 @@ FUNC_DIR="$_FX_FUNC_DIR"
 BUN_SRC="$_FX_BUN_SRC"
 DIR="$_FX_DIR"
 CLIP_CMD="$_FX_CLIP_CMD"
+CMD_HINT="${_FX_CMD_HINT:-^}"
+OPT_HINT="${_FX_OPT_HINT:-⌥}"
 
 RG_BASE="rg --column --line-number --no-heading --color=never --smart-case --hidden --no-ignore-parent"
 [[ -n "$_FX_RG_NO_IGNORE" ]] && RG_BASE+=" $_FX_RG_NO_IGNORE"
@@ -57,7 +59,7 @@ render_header() {
   echo "$out"
 }
 
-FOOTER_ACTIONS=("Select" "Code" "nvim" "Copy")
+FOOTER_ACTIONS=("Select ↵" "Code ${CMD_HINT}O" "nvim ${OPT_HINT}O" "Copy ${OPT_HINT}C")
 
 render_footer() {
   local i out=""
@@ -129,21 +131,21 @@ dispatch_click() {
   local ch file line
   ch=$(ch_get)
   case "$word" in
-    Select)
+    Select|↵)
       dispatch_enter "$item" ;;
-    Code)
+    Code|"${CMD_HINT}O")
       case $ch in
         0) printf "execute(code %s)" "$(printf '%q' "$item")" ;;
         1) file="${item%%:*}"; line="${item#*:}"; line="${line%%:*}"
            printf "execute(code -g %s:%s)" "$(printf '%q' "$file")" "$line" ;;
       esac ;;
-    nvim)
+    nvim|"${OPT_HINT}O")
       case $ch in
         0) printf "execute(nvim %s < /dev/tty)" "$(printf '%q' "$item")" ;;
         1) file="${item%%:*}"; line="${item#*:}"; line="${line%%:*}"
            printf "execute(nvim '+%s' %s < /dev/tty)" "$line" "$(printf '%q' "$file")" ;;
       esac ;;
-    Copy)
+    Copy|"${OPT_HINT}C")
       printf "execute-silent(bun run '%s/path.ts' abs %s 2>/dev/null | %s)" \
         "$BUN_SRC" "$(printf '%q' "$item")" "$CLIP_CMD" ;;
   esac

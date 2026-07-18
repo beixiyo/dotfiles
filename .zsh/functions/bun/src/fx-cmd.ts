@@ -53,6 +53,8 @@ async function main(): Promise<void> {
       _FX_RG_NO_IGNORE: rgNoIgnore.trim(),
       _FX_CLIP_CMD: clipCmd,
       _FX_CH_STATE: chStateFile,
+      _FX_CMD_HINT: fzf.cmdHint,
+      _FX_OPT_HINT: fzf.optHint,
     }
 
     const ffReload = `bun run '${BUN_SRC}/ff-list.ts' --dir ${shellQuote(dir)} --type a${noIgnoreStr} 2>/dev/null < /dev/null`

@@ -66,11 +66,9 @@ async function main(): Promise<void> {
   ].join('; ')
 
   const header = [
-    'ENTER: cd to repo',
-    `CTRL-O: Code | ${fzf.optLabel}-O: nvim`,
-    'CTRL-N/P: navigate | CTRL-E/Y: scroll preview',
-    `${fzf.optLabel}-C: copy remote URL`,
-    `Ctrl-Alt-C: HTTPS link | ${fzf.optLabel}-P: copy path`,
+    `cd ↵ │ Code ${fzf.cmdHint}O │ nvim ${fzf.optHint}O`,
+    `Navigate ${fzf.cmdHint}N/${fzf.cmdHint}P │ Preview ^E/^Y`,
+    `Remote ${fzf.optHint}C │ HTTPS ^${fzf.optHint}C │ Path ${fzf.optHint}P`,
   ].join('\n')
 
   const [, selected] = await spawnFzfCapture([

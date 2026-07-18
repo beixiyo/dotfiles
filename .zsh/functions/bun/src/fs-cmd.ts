@@ -51,9 +51,8 @@ async function main(): Promise<void> {
   const copyAbs = `bun run '${BUN_SRC}/path.ts' abs {+2} 2>/dev/null | ${clipCmd}`
 
   const header = [
-    `CTRL-O: Code | ${fzf.optLabel}-O: nvim`,
-    'CTRL-N/P: navigate | CTRL-E/Y: scroll preview',
-    `${fzf.optLabel}-C: copy absolute path`,
+    `Select ↵ │ Code ${fzf.cmdHint}O │ nvim ${fzf.optHint}O │ Copy ${fzf.optHint}C`,
+    `Navigate ${fzf.cmdHint}N/${fzf.cmdHint}P │ Preview ^E/^Y`,
   ].join('\n')
 
   await spawnFzf([

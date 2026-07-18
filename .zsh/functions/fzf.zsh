@@ -7,6 +7,15 @@
 
   local cmd="${fzfCmdBind:-ctrl}"
   _fzf_scroll_binds="${cmd}-n:down,${cmd}-p:up,ctrl-e:preview-down+preview-down+preview-down+preview-down+preview-down,ctrl-y:preview-up+preview-up+preview-up+preview-up+preview-up"
+
+  case "${cmd:l}" in
+    ctrl) _fzf_cmd_hint='^' ;;
+    option) _fzf_cmd_hint='⌥' ;;
+    *) _fzf_cmd_hint="${(C)cmd}+" ;;
+  esac
+
+  # Alt/Option 在所有平台统一显示为同一个物理键符号，实际 fzf 绑定仍是 alt
+  _fzf_opt_hint='⌥'
 }
 
 ff() { require bun || return 1; bun run "$_FZF_BUN/ff-cmd.ts" "$@"; }

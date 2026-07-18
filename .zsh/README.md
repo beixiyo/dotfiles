@@ -67,9 +67,9 @@ ff -I          # 包含被 Git 忽略的内容
 |---|---|
 | `Enter` | 返回相对路径和绝对路径 |
 | `Ctrl+O` | 用 VS Code 打开 |
-| `Alt+O` | 用 Neovim 打开 |
-| `Alt+C` | 复制绝对路径 |
-| `Alt+F / D / A` | 切换文件、目录、全部 |
+| `⌥O` | 用 Neovim 打开 |
+| `⌥C` | 复制绝对路径 |
+| `⌥F / ⌥D / ⌥A` | 切换文件、目录、全部 |
 | `Ctrl+N / P` | 向下、向上移动 |
 | `Ctrl+E / Y` | 滚动预览 |
 
@@ -85,14 +85,14 @@ fs packages    # 搜索 packages
 fs -I          # 包含被 Git 忽略的内容
 ```
 
-`Ctrl+O` 用 VS Code 打开准确行号，`Alt+O` 用 Neovim 打开，`Alt+C` 复制路径
+`Ctrl+O` 用 VS Code 打开准确行号，`⌥O` 用 Neovim 打开，`⌥C` 复制路径
 
 ### `fx`：统一搜索面板
 
 `fx` 把 `ff` 和 `fs` 合并在同一个界面：
 
 - `Tab` / `Shift+Tab` 在 **Files** 和 **Grep** 之间切换
-- 底部操作栏支持 Select、Code、nvim 和 Copy
+- 底部操作栏显示 `Select ↵ │ Code ^O │ nvim ⌥O │ Copy ⌥C`
 - 可以直接点击底部操作
 
 ## 进程管理：`fp`
@@ -108,7 +108,7 @@ fp 9977   # 只查看监听 9977 端口的进程
 |---|---|
 | `Ctrl+E` | 展开或折叠同一应用的子进程 |
 | `Tab` | 多选 |
-| `Alt+C` | 复制进程信息 |
+| `⌥C` | 复制进程信息 |
 | `Enter` | 结束选中的进程或进程组 |
 
 ### `ports`：监听端口
@@ -163,7 +163,7 @@ ports 9977 --all  # 使用 sudo 查看指定端口
 | `gdiff [path]` | 查看 staged、unstaged 和 untracked 变更，并执行 stage / unstage |
 | `glog` | 搜索提交、预览 diff 并复制 hash |
 
-Git 面板统一支持 `Ctrl+O` 用 VS Code 打开、`Alt+O` 用 Neovim 打开、`Ctrl+E / Y` 滚动预览
+各个 fzf 面板直接显示紧凑的快捷键提示，例如 `Open ↵`、`Stage ^S`、`nvim ⌥O`；Alt/Option 在所有平台统一显示为 `⌥`
 
 ## 其它命令
 

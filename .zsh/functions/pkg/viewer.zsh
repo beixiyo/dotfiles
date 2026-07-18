@@ -46,13 +46,13 @@ pkgs() {
   local gen_list="bun run ${_list_ts} --pm=$pm 2>/dev/null"
 
   local header
-  header=":: $pm"
-  header+=$'\n'"enter:info  tab:multi  ctrl-d:uninstall  alt-c:copy name"
-  header+=$'\n'"alt-p:copy path  ctrl-f:file list  ctrl-r:refresh"
+  header="Info ↵ │ Multi ⇥ │ Uninstall ^D │ Copy name ${_fzf_opt_hint}C"
+  header+=$'\n'"Copy path ${_fzf_opt_hint}P │ Files ^F │ Refresh ^R"
 
   eval "$gen_list" < /dev/null | fzf --ansi --multi \
     --delimiter '\t' \
     --with-nth '2..' \
+    --prompt "$pm> " \
     --header "$header" \
     --preview "$preview_cmd" \
     --preview-window 'right:45%:wrap' \

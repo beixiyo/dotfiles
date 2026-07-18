@@ -18,10 +18,22 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
+/** 把 fzf 修饰键转换成紧凑、可辨认的界面提示 */
+function modifierHint(modifier: string): string {
+  switch (modifier.toLowerCase()) {
+    case 'ctrl': return '^'
+    case 'option': return '⌥'
+    case 'shift': return '⇧'
+    default: return `${capitalize(modifier)}+`
+  }
+}
+
 export const fzf = {
   cmd: cmdBind,
   opt: optBind,
-  optLabel: capitalize(process.env.optionKey ?? 'alt'),
+  cmdHint: modifierHint(cmdBind),
+  // Alt/Option 在所有平台统一显示为同一个物理键符号，实际 fzf 绑定仍是 alt
+  optHint: '⌥',
 
   scrollBinds: `${cmdBind}-n:down,${cmdBind}-p:up,ctrl-e:preview-down+preview-down+preview-down+preview-down+preview-down,ctrl-y:preview-up+preview-up+preview-up+preview-up+preview-up`,
   tabToggleDown: 'tab:toggle+down',

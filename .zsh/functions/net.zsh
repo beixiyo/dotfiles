@@ -40,7 +40,7 @@ ports() {
 
   local selected
   selected=$(echo "$lines" | fzf -m --bind tab:toggle+down \
-    --header "PID	CMD	PORT	ADDRESS | Tab:multi Enter:Kill" \
+    --header "PID	CMD	PORT	ADDRESS │ Multi ⇥ │ Kill ↵" \
     --reverse | awk -F'\t' '{print $1}')
 
   [[ -z "$selected" ]] && return 0
