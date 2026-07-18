@@ -118,7 +118,7 @@ function M.open(opts)
 
   opts.layout_config = { preview_width = 0.75 }
   local limit_label = log_limit and tostring(log_limit) or 'all'
-  opts.prompt_title = 'CR:diff  C-o:raw-diff  M-h:hash  M-y:msg  C-l:more  [' .. limit_label .. ']'
+  opts.prompt_title = 'Diff ↵  Raw diff ^O  Hash ⌥H  Message ⌥Y  More ^L  [' .. limit_label .. ']'
 
   opts.attach_mappings = function(_, map)
     -- 在普通 buffer 中打开该 commit 的 diff（可 visual 选区复制，q/<Esc> 关闭并回到 telescope）。

@@ -6,7 +6,7 @@ local M = {}
 --- @field on string 激活时显示的标签
 --- @field off string 未激活时显示的标签
 
---- 构建 picker 标题，格式：`base │ M-h:hidden  M-i:gitignore`
+--- 构建 picker 标题，格式：`base  hidden ⌥H  gitignore ⌥I`
 --- @param base string 标题前缀
 --- @param state table<string, boolean> 当前各 toggle 的开关状态
 --- @param defs ToggleDef[]
@@ -15,9 +15,14 @@ local function build_title(base, state, defs)
   local parts = {}
 
   for _, d in ipairs(defs) do
-    local hint = d.key:gsub('[<>]', '')
+    local hint = d.key
+      :gsub('[<>]', '')
+      :gsub('^C%-', '^')
+      :gsub('^M%-', '⌥')
+      :gsub('^S%-', '⇧')
+      :gsub('(%a)$', string.upper)
     local label = state[d.field] and d.on or d.off
-    parts[#parts + 1] = hint .. ':' .. label
+    parts[#parts + 1] = label .. ' ' .. hint
   end
 
   return base .. '  ' .. table.concat(parts, '  ')
@@ -127,9 +132,9 @@ function M.live_grep(base_opts)
   local function build_grep_title()
     local title = build_title('Live Grep', state, defs)
     if #state.globs > 0 then
-      title = title .. '  M-p:' .. table.concat(state.globs, ' ')
+      title = title .. '  ' .. table.concat(state.globs, ' ') .. ' ⌥P'
     else
-      title = title .. '  M-p:glob'
+      title = title .. '  glob ⌥P'
     end
     return title
   end

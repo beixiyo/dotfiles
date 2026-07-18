@@ -176,7 +176,7 @@ function M.open(opts)
   end
 
   pickers.new(opts, {
-    prompt_title = 'CR:diff  H:HEAD  M-h:hash  M-y:tag',
+    prompt_title = 'Diff ↵  HEAD H  Hash ⌥H  Tag ⌥Y',
     finder = finders.new_table({
       results = tags,
       entry_maker = make_entry,

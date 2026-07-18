@@ -38,7 +38,7 @@ function M.open(opts)
   local action_state = require('telescope.actions.state')
 
   pickers.new(opts, {
-    prompt_title = 'CR:exec  C-n:execN  C-e:edit  C-d:del',
+    prompt_title = 'Exec ↵  Exec N ^N  Edit ^E  Delete ^D',
     finder = finders.new_table({
       results = macros,
       entry_maker = function(entry)

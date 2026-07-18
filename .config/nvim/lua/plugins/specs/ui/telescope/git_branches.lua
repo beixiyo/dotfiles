@@ -234,7 +234,7 @@ function M.open(opts)
   })
 
   pickers.new(opts, {
-    prompt_title = 'CR:checkout  C-a:new  C-d:del  C-r:rebase  C-y:merge  M-f:fetch  M-y:copy',
+    prompt_title = 'Checkout ↵  New ^A  Delete ^D  Rebase ^R  Merge ^Y  Fetch ⌥F  Copy ⌥Y',
     previewer    = previewer,
     sorter       = conf.generic_sorter(opts),
     finder = finders.new_table({
