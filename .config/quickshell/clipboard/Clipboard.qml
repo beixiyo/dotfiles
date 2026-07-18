@@ -33,10 +33,10 @@ Scope {
 
   // ============ 窗口定位（来自环境变量） ============
   property string posEnv: Quickshell.env("QS_POS") || "center"
-  property int marginT: parseInt(Quickshell.env("QS_MARGIN_T")) || 8
-  property int marginR: parseInt(Quickshell.env("QS_MARGIN_R")) || 8
-  property int marginB: parseInt(Quickshell.env("QS_MARGIN_B")) || 8
-  property int marginL: parseInt(Quickshell.env("QS_MARGIN_L")) || 8
+  property int marginT: Number.isFinite(parseInt(Quickshell.env("QS_MARGIN_T"))) ? parseInt(Quickshell.env("QS_MARGIN_T")) : 8
+  property int marginR: Number.isFinite(parseInt(Quickshell.env("QS_MARGIN_R"))) ? parseInt(Quickshell.env("QS_MARGIN_R")) : 8
+  property int marginB: Number.isFinite(parseInt(Quickshell.env("QS_MARGIN_B"))) ? parseInt(Quickshell.env("QS_MARGIN_B")) : 8
+  property int marginL: Number.isFinite(parseInt(Quickshell.env("QS_MARGIN_L"))) ? parseInt(Quickshell.env("QS_MARGIN_L")) : 8
   property bool anchorTop: posEnv.indexOf("top") !== -1
   property bool anchorBottom: posEnv.indexOf("bottom") !== -1
   property bool anchorLeft: posEnv.indexOf("left") !== -1
