@@ -12,12 +12,10 @@
 #   5. 创建 Wayland 合成器 VRAM 优化配置
 #   6. 混合显卡：安装 nvidia-prime
 #
-# 不包含（因人而异，见 NVIDIA.md）：
+# 不包含（因人而异，需手动配置）：
 #   - PRIME 全局分流（niri environment）
 #   - 合成器独显渲染（render-drm-device）
 #   - Sunshine NVENC 配置
-#
-# 文档：https://github.com/beixiyo/dotfiles → StudyNote/Linux/Arch/NVIDIA.md
 
 set -euo pipefail
 
@@ -203,5 +201,5 @@ fi
 
 echo ""
 echo "  验证：nvidia-smi"
-$IS_HYBRID && echo "  混合显卡后续：见 NVIDIA.md § PRIME 分流 / 独显渲染 / Sunshine"
+$IS_HYBRID && echo "  混合显卡后续：手动配置 PRIME 分流 / 独显渲染 / Sunshine"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

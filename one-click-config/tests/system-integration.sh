@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Debian 真实系统集成测试，由 tests/run.sh 调用
 #
-# 在一次性容器中创建真实用户并写入容器自己的 sudoers，验证危险命令过滤、重复写入、
-# 非交互式只读检查、当前用户部署属主、sudo 组配置和拒绝 /root 链接后的零副作用
+# 在一次性容器中真实安装下载器、创建用户并写入容器自己的 sudoers，验证 aria2 包与
+# aria2c 命令映射、两种 includedir 语法、危险命令过滤、重复写入、非交互式只读检查、
+# 当前用户部署属主、sudo 组配置和拒绝 /root 链接后的零副作用
 #
 # 运行环境由 tests/Dockerfile 提供，项目以只读方式挂载到 /workspace。脚本只修改容器内
 # 的 /fixture、/home、/etc/sudoers.d 和 /root，容器退出后全部丢弃
@@ -30,6 +31,49 @@ printf 'tester ALL=(ALL:ALL) NOPASSWD: ALL\n' > /etc/sudoers.d/tester-bootstrap
 chmod 0440 /etc/sudoers.d/tester-bootstrap
 
 cd "$FIXTURE_ROOT"
+
+# shellcheck disable=SC1091
+source one-click-config/lib/common.sh
+# shellcheck disable=SC1091
+source one-click-config/lib/packages.sh
+# shellcheck disable=SC1091
+source one-click-config/lib/download.sh
+# shellcheck disable=SC1091
+source one-click-config/lib/sudoers.sh
+init_colors
+
+if [ -n "$(detect_downloader)" ]; then
+  printf 'FAIL: Debian fixture unexpectedly includes a downloader before installation\n' >&2
+  exit 1
+fi
+
+downloader="$(ensure_downloader)"
+[ "$downloader" = 'aria2c' ]
+command -v aria2c >/dev/null 2>&1
+printf 'PASS: installing package aria2 exposes and selects command aria2c\n'
+
+original_sudoers="$(mktemp)"
+cp /etc/sudoers "$original_sudoers"
+
+for include_directive in '#includedir /etc/sudoers.d' '@includedir /etc/sudoers.d'; do
+  printf 'root ALL=(ALL:ALL) ALL\n%s\n' "$include_directive" > /etc/sudoers
+  chmod 0440 /etc/sudoers
+
+  ensure_sudoers_group sudo >/tmp/ensure-sudoers-group.log 2>&1
+
+  group_line="$(grep -nFx '%sudo ALL=(ALL:ALL) ALL' /etc/sudoers | cut -d: -f1)"
+  include_line="$(grep -nFx "$include_directive" /etc/sudoers | cut -d: -f1)"
+  [ -n "$group_line" ]
+  [ -n "$include_line" ]
+  [ "$group_line" -lt "$include_line" ]
+  [ "$(grep -Fxc '%sudo ALL=(ALL:ALL) ALL' /etc/sudoers)" -eq 1 ]
+  visudo -c -q
+done
+
+cp "$original_sudoers" /etc/sudoers
+chmod 0440 /etc/sudoers
+rm -f "$original_sudoers"
+printf 'PASS: sudo group rule precedes both #includedir and @includedir\n'
 
 before_hash="$(sha256sum /etc/sudoers | cut -d' ' -f1)"
 bash one-click-config/setup-sudoers.sh --apply vim

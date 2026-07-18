@@ -36,8 +36,14 @@ ensure_downloader() {
   fi
 
   log_warn 'No aria2c/wget/curl; installing aria2 as downloader'
-  ensure_cmd_installed aria2 1
-  echo aria2c
+  # stdout 是下载器名称的返回通道，安装输出转到 stderr，避免污染命令替换结果
+  if install_package aria2 >&2 && command -v aria2c >/dev/null 2>&1; then
+    echo aria2c
+    return 0
+  fi
+
+  log_err 'Failed to install aria2c; no downloader available'
+  return 1
 }
 
 download_to_file() {

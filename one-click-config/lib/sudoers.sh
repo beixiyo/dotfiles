@@ -55,7 +55,7 @@ ensure_sudoers_group() {
     BEGIN {
       inserted = 0
       group_rule = "^[[:space:]]*%" grp "[[:space:]]+ALL=\\(ALL(:ALL)?\\)[[:space:]]+ALL[[:space:]]*$"
-      include_rule = "^[[:space:]]*@includedir[[:space:]]+/etc/sudoers.d([[:space:]]+.*)?$"
+      include_rule = "^[[:space:]]*[#@]includedir[[:space:]]+/etc/sudoers.d([[:space:]]+.*)?$"
     }
     $0 ~ group_rule { next }
     {

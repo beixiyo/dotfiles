@@ -203,5 +203,6 @@ one-click-config/
     ├── Dockerfile
     ├── run.sh
     ├── integration.sh
-    └── system-integration.sh
+    ├── system-integration.sh
+    └── tmux-integration.sh
 ```

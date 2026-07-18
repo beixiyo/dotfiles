@@ -172,7 +172,6 @@ show_summary() {
   log "  启动方式（任选一种）："
   log "    - TTY 启动：niri-session"
   log "    - 显示管理器：装 greetd / SDDM 等，选 Niri 会话"
-  log "    详见 display-manager.md"
   log ""
   log "  首次启动建议运行壁纸初始化："
   log "    matugen image ~/Pictures/壁纸.png --prefer saturation -q"
