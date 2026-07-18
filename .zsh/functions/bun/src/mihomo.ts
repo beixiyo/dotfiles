@@ -28,6 +28,28 @@ const TIMEOUT_MS = Number(process.env.MIHOMO_TIMEOUT_MS ?? 3000)
 const TEST_URL = process.env.MIHOMO_TEST_URL ?? 'http://www.gstatic.com/generate_204'
 const TEST_TIMEOUT_MS = Number(process.env.MIHOMO_TEST_TIMEOUT ?? 5000)
 
+// mihomo 控制器在本机回环，必须直连。Bun 在进程启动时快照代理环境变量，运行时删除
+// process.env 对 fetch 无效；只要存在任一代理变量，就用剥离代理变量的干净环境重新执行自身，
+// 确保直连（否则请求可能绕回代理自身导致死锁）。
+//
+// 不再走 NO_PROXY 快速路径：Bun 在 NO_PROXY 与 no_proxy 并存时以小写优先，判定哪个 bypass
+// 列表真正生效属实现细节；依赖它会在大小写冲突（如 NO_PROXY=127.0.0.1 + no_proxy=example.com）
+// 时误判为已 bypass 而跳过重执行，导致请求仍走死代理连不上。宁可对已设 NO_PROXY 的用户多一次
+// spawn（毫秒级），换取零边界情况。子进程 env 已剥离代理变量，顶层守卫不会再命中，故不会递归。
+const PROXY_ENV_KEYS = ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'ALL_PROXY', 'all_proxy']
+
+if (PROXY_ENV_KEYS.some(k => process.env[k])) {
+  const env = { ...process.env }
+  for (const key of PROXY_ENV_KEYS) delete env[key]
+  const child = Bun.spawn([process.execPath, import.meta.path, ...process.argv.slice(2)], {
+    env,
+    stdin: 'inherit',
+    stdout: 'inherit',
+    stderr: 'inherit',
+  })
+  process.exit(await child.exited)
+}
+
 /** 所有 mihomo 请求必须绕过代理（否则走自身会死锁）并带超时 */
 async function api(
   path: string,
@@ -40,7 +62,6 @@ async function api(
     ...init,
     headers,
     signal: AbortSignal.timeout(timeoutMs),
-    proxy: '',
   }).catch(() => null)
 }
 

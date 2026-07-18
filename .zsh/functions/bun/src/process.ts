@@ -51,7 +51,7 @@ async function showProcesses(pids: string[]): Promise<void> {
   if (pids.length === 0)
     return
 
-  const result = await $`ps -p ${pids} -o pid,ppid,user,comm,args`.nothrow()
+  const result = await $`ps -o pid,ppid,user,comm,args -p ${pids}`.nothrow()
   const stdout = result.stdout.toString().trim()
 
   if (stdout.length === 0) {

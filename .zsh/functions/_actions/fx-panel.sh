@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Channel switching panel for fx (unified fzf entry)
-# Config: /tmp/fzf-fx-env (written by fx-cmd.ts)
+# Config: static _FX_* vars are inherited from fx-cmd.ts through the process env
+#         (fzf forwards its env to bind action children); dynamic channel state
+#         lives in $_FX_CH_STATE, a file fx-cmd.ts pre-creates inside a private
+#         mkdtemp dir (0700) with wx + 0600.
 #
 # Subcommands:
 #   init                - render header, output initial actions
@@ -11,10 +14,9 @@
 #   enter ITEM          - dispatch enter for current channel
 #   click WORD ITEM     - handle footer click
 
-[[ -f /tmp/fzf-fx-env ]] && source /tmp/fzf-fx-env
-
 SCRIPT="${BASH_SOURCE[0]}"
-CH_STATE="/tmp/fzf-fx-channel"
+# 无预测性 /tmp 回退路径：未设置时 CH_STATE 为空，由 ch_get/ch_put 优雅降级
+CH_STATE="$_FX_CH_STATE"
 
 CHANNELS=("Files" "Grep")
 CH_COUNT=${#CHANNELS[@]}
@@ -30,13 +32,17 @@ RG_BASE+=" --glob '!.git'"
 
 ch_get() {
   local v
+  [[ -n "$CH_STATE" && -f "$CH_STATE" ]] || { echo 0; return; }
   v=$(cat "$CH_STATE" 2>/dev/null) || v=0
   [[ "$v" =~ ^[0-9]+$ ]] || v=0
   ((v >= CH_COUNT)) && v=0
   echo "$v"
 }
 
-ch_put() { echo "$1" > "$CH_STATE"; }
+ch_put() {
+  [[ -n "$CH_STATE" ]] || return
+  echo "$1" > "$CH_STATE" 2>/dev/null || true
+}
 
 render_header() {
   local pos="$1" out="" i
@@ -68,12 +74,12 @@ render_footer() {
 
 ff_reload() {
   local ni="${_FX_NO_IGNORE:+ $_FX_NO_IGNORE}"
-  echo "bun run '${BUN_SRC}/ff-list.ts' --dir '${DIR}' --type a${ni} 2>/dev/null < /dev/null"
+  echo "bun run '${BUN_SRC}/ff-list.ts' --dir $(printf '%q' "$DIR") --type a${ni} 2>/dev/null < /dev/null"
 }
 
 fs_reload_with_query() {
   local query="$1"
-  echo "${RG_BASE} $(printf '%q' "$query") '${DIR}' < /dev/null | bun run '${BUN_SRC}/fs-list.ts' 2>/dev/null || true"
+  echo "${RG_BASE} $(printf '%q' "$query") $(printf '%q' "$DIR") < /dev/null | bun run '${BUN_SRC}/fs-list.ts' 2>/dev/null || true"
 }
 
 switch_to() {

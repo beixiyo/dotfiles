@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { assertCmd, fzf, FUNC_DIR, BUN_SRC, detectClipCopy, spawnFzf } from './fzf-shared'
+import { assertCmd, fzf, FUNC_DIR, BUN_SRC, detectClipCopy, shellQuote, spawnFzf } from './fzf-shared'
 import { existsSync, statSync } from 'node:fs'
 
 async function main(): Promise<void> {
@@ -44,8 +44,8 @@ async function main(): Promise<void> {
 
   const rgCmdStr = `rg --column --line-number --no-heading --color=never --smart-case --hidden --no-ignore-parent${noIgnore ? ' ' + noIgnore : ''} --glob '!.git'`
 
-  const reloadStart = `${rgCmdStr} '' '${dir}' < /dev/null | bun run '${BUN_SRC}/fs-list.ts' 2>/dev/null`
-  const reloadChange = `${rgCmdStr} {q} '${dir}' < /dev/null | bun run '${BUN_SRC}/fs-list.ts' 2>/dev/null || true`
+  const reloadStart = `${rgCmdStr} '' ${shellQuote(dir)} < /dev/null | bun run '${BUN_SRC}/fs-list.ts' 2>/dev/null`
+  const reloadChange = `${rgCmdStr} {q} ${shellQuote(dir)} < /dev/null | bun run '${BUN_SRC}/fs-list.ts' 2>/dev/null || true`
 
   const clipCmd = detectClipCopy()
   const copyAbs = `bun run '${BUN_SRC}/path.ts' abs {+2} 2>/dev/null | ${clipCmd}`
