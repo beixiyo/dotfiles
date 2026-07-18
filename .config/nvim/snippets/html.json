@@ -1,5 +1,4 @@
 {
-  // vue
   "v-for": {
     "prefix": "vf",
     "body": [
@@ -10,7 +9,7 @@
   "moustache": {
     "prefix": "mm",
     "body": [
-      "{{ $1 }}",
+      "{{ $1 }}"
     ],
     "description": "moustache"
   },
@@ -18,7 +17,7 @@
     "prefix": "scr",
     "body": [
       "<script type=\"text/javascript\">\n",
-      "</script>",
+      "</script>"
     ],
     "description": "script"
   },
@@ -32,7 +31,6 @@
     "description": "template"
   },
 
-  // wechat
   "view": {
     "prefix": "view",
     "body": [
@@ -76,7 +74,6 @@
     "description": "wx:else"
   },
 
-  // xml
   "mybatis xml": {
     "prefix": "mybatis",
     "body": [
@@ -145,7 +142,7 @@
     "body": [
       "<if test=\"$1 != null and $1 != ''\">",
       "    and $2",
-      "</if>",
+      "</if>"
     ],
     "description": "mybatis if"
   },
@@ -245,7 +242,6 @@
     "description": "mybatis association"
   },
 
-  // sql
   "SQL WHERE": {
     "prefix": "where",
     "body": "WHERE ${1:condition}$0",
@@ -292,7 +288,6 @@
     "description": "SQL LIMIT clause"
   },
   
-  // svg
   "svg-a": {
     "prefix": "svg-a",
     "body": [

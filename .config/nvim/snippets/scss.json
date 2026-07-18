@@ -84,7 +84,6 @@
     ],
     "description": "include"
   },
-  // CSS
   "before": {
     "prefix": "before",
     "body": [
