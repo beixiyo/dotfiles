@@ -22,16 +22,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bun run ~/.claude/hooks/deny-compound-bypass.ts"
-          }
-        ]
-      },
-      {
-        "matcher": "Read",
+        "matcher": "Bash|Read",
         "hooks": [
           {
             "type": "command",
@@ -66,7 +57,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.zsh/notify/main.sh 'Claude Code 需要你'"
+            "command": "bash ~/.zsh/notify/main.sh 'Claude Code needs you'"
           }
         ]
       }

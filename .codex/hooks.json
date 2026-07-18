@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.zsh/notify/main.sh 'Codex 需要你'",
+            "command": "bash ~/.zsh/notify/main.sh 'Codex needs you'",
             "timeout": 5
           }
         ]

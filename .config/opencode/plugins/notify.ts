@@ -17,7 +17,7 @@ export const NotifyPlugin: Plugin = async ({ $ }) => {
     event: async ({ event }) => {
       if (event.type === "permission.asked") {
         try {
-          await $`bash ${HOME}/.zsh/notify-stop.sh ${"opencode 需要你"}`
+          await $`bash ${HOME}/.zsh/notify-stop.sh ${"opencode needs you"}`
         } catch { }
         return
       }
