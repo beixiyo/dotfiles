@@ -16,23 +16,35 @@ pkgs() {
 
   local clip="${_CLIP_COPY:-tee /dev/null}"
 
-  local preview_cmd uninstall_cmd files_cmd path_cmd
+  local preview_cmd uninstall_cmd update_cmd update_label update_confirm files_cmd path_cmd
+  local update_base
   case $pm in
     pacman)
       preview_cmd='pacman -Qi {1}'
       uninstall_cmd='sudo pacman -Rns {+1}'
+      update_base=$(_pkg_cmd sysupgrade) || return 1
+      update_cmd="$update_base"
+      update_label='Upgrade all'
+      update_confirm='Confirm full system upgrade?'
       files_cmd='pacman -Ql {1}'
       path_cmd='pacman -Ql {1} | head -1 | cut -d" " -f2'
       ;;
     apt)
       preview_cmd='dpkg -s {1} 2>/dev/null'
       uninstall_cmd='sudo apt remove {+1}'
+      update_base=$(_pkg_cmd upgrade) || return 1
+      update_cmd="$update_base {+1}"
+      update_label='Update'
+      update_confirm='Confirm update {+1}?'
       files_cmd='dpkg -L {1}'
       path_cmd='dpkg -L {1} | grep bin/ | head -1'
       ;;
     brew)
       preview_cmd='brew info {1}'
       uninstall_cmd='brew uninstall {+1}'
+      update_cmd='brew upgrade {+1}'
+      update_label='Update'
+      update_confirm='Confirm update {+1}?'
       files_cmd='brew list {1}'
       path_cmd='brew --prefix {1}'
       ;;
@@ -46,8 +58,8 @@ pkgs() {
   local gen_list="bun run ${_list_ts} --pm=$pm 2>/dev/null"
 
   local header
-  header="Info ↵ │ Multi ⇥ │ Uninstall ^D │ Copy name ${_fzf_opt_hint}C"
-  header+=$'\n'"Copy path ${_fzf_opt_hint}P │ Files ^F │ Refresh ^R"
+  header="Info ↵ │ Multi ⇥ │ ${update_label} ${_fzf_opt_hint}U │ Uninstall ^D"
+  header+=$'\n'"Copy name ${_fzf_opt_hint}C │ Copy path ${_fzf_opt_hint}P │ Files ^F │ Refresh ^R"
 
   eval "$gen_list" < /dev/null | fzf --ansi --multi \
     --delimiter '\t' \
@@ -58,6 +70,7 @@ pkgs() {
     --preview-window 'right:45%:wrap' \
     --bind "${_fzf_scroll_binds}" \
     --bind "enter:execute($preview_cmd | less < /dev/tty > /dev/tty)" \
+    --bind "alt-u:execute(echo '$update_confirm (y/N) ' && read -r ans < /dev/tty && [ \"\$ans\" = y ] && $update_cmd < /dev/tty > /dev/tty 2>&1)+reload:$gen_list < /dev/null" \
     --bind "ctrl-d:execute(echo 'Confirm uninstall {+1}? (y/N) ' && read -r ans < /dev/tty && [ \"\$ans\" = y ] && $uninstall_cmd < /dev/tty > /dev/tty 2>&1)+reload:$gen_list < /dev/null" \
     --bind "alt-c:execute-silent(echo -n {+1} | $clip)" \
     --bind "alt-p:execute-silent($path_cmd | tr -d '\\n' | $clip)" \
