@@ -173,9 +173,9 @@
     "edit": "allow",
     "read": {
       "*": "allow",
-      ".env.example": "allow",
       ".env*": "ask",
       "**/.env*": "ask",
+      ".env.example": "allow",
       "~/.ssh/**": "ask",
       "~/.gnupg/**": "ask",
       "~/.netrc": "ask",

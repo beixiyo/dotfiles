@@ -98,7 +98,7 @@
 | 规则 | 效果 |
 |------|------|
 | 普通 GUI 应用交换左 Ctrl↔左 Cmd | 左 Ctrl 发送左 Cmd、左 Cmd 发送左 Ctrl；终端、Neovide 与远程客户端豁免 |
-| Alt+Tab → Mission Control | 模拟 Windows 的 Alt+Tab 切应用 |
+| Alt+Tab → Mission Control（实际由 Hammerspoon 实现，非 Karabiner） | 打开 Mission Control 总览（Overview） |
 | Ctrl+Shift+方向键 → Option+Shift+方向键 | 单词级选择（Windows 行为） |
 | 禁用 Cmd+H | 防止误触隐藏应用 |
 
