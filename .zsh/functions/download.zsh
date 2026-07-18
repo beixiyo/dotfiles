@@ -19,8 +19,8 @@ _download_probe() {
     || return 1
 
   local size ranges
-  size=$(print -r -- "$headers" | awk 'BEGIN{IGNORECASE=1} /^content-length:/{v=$2} END{gsub(/\r/,"",v); print v+0}')
-  ranges=$(print -r -- "$headers" | awk 'BEGIN{IGNORECASE=1; r=0} /^accept-ranges:[ \t]*bytes/{r=1} /^content-range:/{r=1} END{print r}')
+  size=$(print -r -- "$headers" | awk '{l=tolower($0)} l ~ /^content-length:/ {v=$2} END{gsub(/\r/,"",v); print v+0}')
+  ranges=$(print -r -- "$headers" | awk 'BEGIN{r=0} {l=tolower($0)} l ~ /^accept-ranges:[ \t]*bytes/ {r=1} l ~ /^content-range:/ {r=1} END{print r}')
   print -r -- "${size:-0}"$'\t'"${ranges:-0}"
 }
 

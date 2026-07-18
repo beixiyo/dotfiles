@@ -20,19 +20,19 @@ pkgs() {
   case $pm in
     pacman)
       preview_cmd='pacman -Qi {1}'
-      uninstall_cmd='sudo pacman -Rns {1}'
+      uninstall_cmd='sudo pacman -Rns {+1}'
       files_cmd='pacman -Ql {1}'
       path_cmd='pacman -Ql {1} | head -1 | cut -d" " -f2'
       ;;
     apt)
       preview_cmd='dpkg -s {1} 2>/dev/null'
-      uninstall_cmd='sudo apt remove {1}'
+      uninstall_cmd='sudo apt remove {+1}'
       files_cmd='dpkg -L {1}'
       path_cmd='dpkg -L {1} | grep bin/ | head -1'
       ;;
     brew)
       preview_cmd='brew info {1}'
-      uninstall_cmd='brew uninstall {1}'
+      uninstall_cmd='brew uninstall {+1}'
       files_cmd='brew list {1}'
       path_cmd='brew --prefix {1}'
       ;;

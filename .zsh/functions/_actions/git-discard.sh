@@ -22,8 +22,16 @@ read -r -n 1 confirm
 echo
 if [[ "$confirm" == [yY] ]]; then
   if [[ "$idx" == "?" && "$wt" == "?" ]]; then
-    rm -f -- "$file"
-    echo "✓ 已删除"
+    if [[ -d "$file" ]]; then
+      rm -rf -- "$file"
+    else
+      rm -f -- "$file"
+    fi
+    if [[ $? -eq 0 ]]; then
+      echo "✓ 已删除"
+    else
+      echo "✗ 删除失败"
+    fi
   else
     git checkout -- "$file"
     echo "✓ 已还原"

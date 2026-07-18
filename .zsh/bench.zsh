@@ -4,15 +4,15 @@
 
 RUNS=${1:-7}
 RED='\033[0;31m'; YEL='\033[0;33m'; GRN='\033[0;32m'; CYN='\033[0;36m'; RST='\033[0m'
+zmodload zsh/datetime
 
 # ── 1. 总启动时间（多次取样）────────────────────────────
 echo "${CYN}── 启动时间 (${RUNS} 次)${RST}"
 times=()
 for i in $(seq 1 $RUNS); do
-  s=$(date +%s%N)
+  s=$EPOCHREALTIME
   zsh -i -c exit 2>/dev/null
-  e=$(date +%s%N)
-  ms=$(( (e - s) / 1000000 ))
+  printf -v ms '%.0f' $(( (EPOCHREALTIME - s) * 1000 ))
   times+=($ms)
   printf "  run %d: %dms\n" $i $ms
 done
@@ -41,26 +41,22 @@ fi
 echo ""
 echo "${CYN}── 逐段耗时${RST}"
 
-_bench_section() {
-  local label=$1 cmd=$2
-  local s=$(date +%s%N)
-  eval "$cmd" 2>/dev/null
-  local e=$(date +%s%N)
-  local ms=$(( (e - s) / 1000000 ))
-  local bar=$(printf '█%.0s' $(seq 1 $(( ms / 5 + 1 ))))
-  printf "  %-20s %3dms  ${CYN}%s${RST}\n" "$label" $ms "$bar"
-}
-
 # 用子 shell 避免污染当前环境
 zsh 2>/dev/null << 'BENCH_SECTIONS'
-_t() { date +%s%N; }
-_s() { local s=$(_t); eval "$2" 2>/dev/null; local e=$(_t); printf "  %-20s %3dms\n" "$1" $(( (e-s)/1000000 )); }
+zmodload zsh/datetime
+_s() {
+  local label=$1 command=$2
+  local start=$EPOCHREALTIME elapsed_ms
+  eval "$command" 2>/dev/null
+  printf -v elapsed_ms '%.0f' $(( (EPOCHREALTIME - start) * 1000 ))
+  printf "  %-20s %3dms\n" "$label" $elapsed_ms
+}
 
 _s "env.zsh"           "source ~/.zsh/env.zsh"
-_s "history.zsh"       "source ~/.zsh/history.zsh"
-_s "completions.zsh"   "source ~/.zsh/completions.zsh"
+_s "options.zsh"       "source ~/.zsh/options.zsh"
 _s "plugins.zsh"       "source ~/.zsh/plugins.zsh"
-_s "init.zsh"          "source ~/.zsh/init.zsh"
+_s "completions.zsh"   "source ~/.zsh/completions.zsh"
+_s "tools.zsh"         "source ~/.zsh/tools.zsh"
 _s "aliases.zsh"       "source ~/.zsh/aliases.zsh"
 _s "functions/"        "source ~/.zsh/functions/index.zsh"
 _s "keybindings.zsh"   "source ~/.zsh/keybindings.zsh"
@@ -73,10 +69,10 @@ echo "${CYN}── zprof Top 10（单次）${RST}"
 zsh 2>/dev/null << 'ZPROF_RUN'
 zmodload zsh/zprof
 source ~/.zsh/env.zsh
-source ~/.zsh/history.zsh
-source ~/.zsh/completions.zsh
+source ~/.zsh/options.zsh
 source ~/.zsh/plugins.zsh
-source ~/.zsh/init.zsh
+source ~/.zsh/completions.zsh
+source ~/.zsh/tools.zsh
 source ~/.zsh/aliases.zsh
 source ~/.zsh/functions/index.zsh
 source ~/.zsh/keybindings.zsh
@@ -91,9 +87,9 @@ for tool_cmd in "starship|starship init zsh" "mise|mise activate zsh" "zoxide|zo
   tool=${tool_cmd%%|*}
   cmd=${tool_cmd##*|}
   if command -v $tool &>/dev/null; then
-    s=$(date +%s%N)
+    s=$EPOCHREALTIME
     eval "$cmd" > /dev/null 2>&1
-    e=$(date +%s%N)
-    printf "  %-12s %3dms\n" "$tool" $(( (e-s)/1000000 ))
+    printf -v ms '%.0f' $(( (EPOCHREALTIME - s) * 1000 ))
+    printf "  %-12s %3dms\n" "$tool" $ms
   fi
 done

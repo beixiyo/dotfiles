@@ -33,14 +33,14 @@ rme() {
 
 ## Open directory in system file manager. Usage: open [path]
 open() {
-  local target="${1:-.}"
+  [[ $# -eq 0 ]] && set -- .
   if is_wsl; then
     require explorer.exe || return 1
-    explorer.exe "$target"
+    explorer.exe "$@"
   elif is_mac; then
-    command open "$target"
+    command open "$@"
   else
     require xdg-open || return 1
-    xdg-open "$target"
+    xdg-open "$@"
   fi
 }

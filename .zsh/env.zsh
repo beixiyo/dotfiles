@@ -28,7 +28,7 @@ if [[ "$isWSL" -eq 1 ]]; then
   # 默认浏览器（调用 Windows 侧）
   export BROWSER='cmd.exe /c start'
   # Windows 侧 VSCode/Cursor 路径
-  PATH="/mnt/c/Develop/Microsoft\ VS\ Code/bin:$PATH"
+  PATH="/mnt/c/Develop/Microsoft VS Code/bin:$PATH"
 fi
 
 
