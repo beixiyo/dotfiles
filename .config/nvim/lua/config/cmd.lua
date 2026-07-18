@@ -181,7 +181,7 @@ vim.api.nvim_create_user_command("LspInfo", function()
     local offset = #prefix
 
     for j, cap in ipairs(cap_labels) do
-      local supported = c:supports_method(cap.method, { bufnr = 0 })
+      local supported = c:supports_method(cap.method, 0)
       local icon = supported and "●" or "○"
       local label = icon .. " " .. cap.short
       local hl_group = supported and "LspInfoCap" or "LspInfoCapOff"
@@ -203,7 +203,7 @@ vim.api.nvim_create_user_command("LspInfo", function()
     local cur_offset = #prefix
 
     for j, cap in ipairs(cap_labels) do
-      local supported = c:supports_method(cap.method, { bufnr = 0 })
+      local supported = c:supports_method(cap.method, 0)
       local icon = supported and "●" or "○"
       local label = icon .. " " .. cap.short
       local hl_group = supported and "LspInfoCap" or "LspInfoCapOff"

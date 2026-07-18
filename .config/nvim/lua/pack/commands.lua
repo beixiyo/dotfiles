@@ -4,7 +4,7 @@
 --   :PackStatsEcho           在 :messages 打印性能文本（headless / 脚本用）
 
 local function managed_names()
-  local ok, list = pcall(vim.pack.get)
+  local ok, list = pcall(vim.pack.get, nil, { info = false })
   if not ok or type(list) ~= 'table' then return {} end
   local names = {}
   for _, entry in ipairs(list) do

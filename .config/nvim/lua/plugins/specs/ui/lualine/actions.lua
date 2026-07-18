@@ -71,7 +71,7 @@ function M.copy_abs_path_line()
 end
 
 function M.next_diagnostic()
-  vim.diagnostic.goto_next()
+  vim.diagnostic.jump({ count = 1, float = true })
 end
 
 function M.blame_line()

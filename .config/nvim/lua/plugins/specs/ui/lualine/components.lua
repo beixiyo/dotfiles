@@ -44,15 +44,6 @@ local function lsp_should_show()
 end
 
 local function lsp_progress()
-  local ok, msgs = pcall(vim.lsp.util.get_progress_messages)
-  if ok and type(msgs) == 'table' and #msgs > 0 then
-    local m = msgs[1] or {}
-    local parts = {}
-    if m.name or m.title then table.insert(parts, stl_escape(m.name or m.title)) end
-    if m.message and m.message ~= '' then table.insert(parts, stl_escape(m.message)) end
-    if m.percentage then table.insert(parts, tostring(m.percentage) .. '%%') end
-    return table.concat(parts, ' ')
-  end
   return stl_escape((type(vim.lsp.status) == 'function' and vim.lsp.status()) or '')
 end
 
