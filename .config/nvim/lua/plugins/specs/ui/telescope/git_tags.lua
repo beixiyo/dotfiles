@@ -6,9 +6,9 @@ local function time_fmt(ts)
   return os.date('%Y-%m-%d', ts)
 end
 
-local function query_tags()
+local function query_tags(root)
   local lines = vim.fn.systemlist({
-    'git', 'for-each-ref',
+    'git', '-C', root, 'for-each-ref',
     '--sort=-creatordate',
     '--format=%(refname:short)%00%(objecttype)%00%(objectname)%00%(*objectname)%00%(creatordate:unix)%00%(subject)%00%(*subject)',
     'refs/tags',
@@ -72,8 +72,13 @@ function M.open(opts)
   local pickers = require('telescope.pickers')
   local previewers = require('telescope.previewers')
   opts = opts or {}
+  local git_root = require('vv-utils.git').root(opts.cwd)
+  if not git_root then
+    vim.notify('Git tags: not a Git repository', vim.log.levels.ERROR)
+    return
+  end
 
-  local tags = query_tags()
+  local tags = query_tags(git_root)
   if #tags == 0 then
     vim.notify('No Git tags found', vim.log.levels.INFO)
     return
@@ -172,7 +177,22 @@ function M.open(opts)
     end
 
     actions.close(prompt_bufnr)
-    vvgit[method](entry.value, function() require('telescope.builtin').resume() end)
+    local resumed = false
+    local function resume()
+      if resumed then return end
+      resumed = true
+      require('telescope.builtin').resume()
+    end
+    vvgit[method](entry.value, {
+      root = git_root,
+      on_close = resume,
+      on_error = function()
+        if vvgit.is_open() then
+          vvgit.close()
+        end
+        resume()
+      end,
+    })
   end
 
   pickers.new(opts, {

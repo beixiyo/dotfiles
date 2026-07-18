@@ -19,6 +19,7 @@ return {
     'VVGitCompareStop',
     'VVGitCommitShow',
     'VVGitWorktree',
+    'VVGitPublish',
     'VVGitShow',
     'VVGitSubrepoDepth',
     'VVGitLoad',

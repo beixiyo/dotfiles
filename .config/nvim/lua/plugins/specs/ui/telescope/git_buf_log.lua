@@ -103,9 +103,16 @@ function M.open(opts)
       end
 
       actions.close(prompt_bufnr)
+      local resumed = false
+      local function resume()
+        if resumed then return end
+        resumed = true
+        require('telescope.builtin').resume()
+      end
       vvgit.compare_file(entry.value, {
         bufnr = source_buf,
-        on_close = function() require('telescope.builtin').resume() end,
+        on_close = resume,
+        on_error = resume,
       })
     end)
 

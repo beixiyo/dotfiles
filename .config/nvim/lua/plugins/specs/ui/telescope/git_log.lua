@@ -57,6 +57,7 @@ function M.open(opts)
   local actions = require('telescope.actions')
   local action_state = require('telescope.actions.state')
   opts = opts or {}
+  local git_root = require('vv-utils.git').root(opts.cwd)
   local log_limit = opts.git_log_limit
 
   if log_limit == nil then log_limit = log_limits[1] end
@@ -143,7 +144,22 @@ function M.open(opts)
       if vvgit and type(vvgit.show_commit) == 'function' then
         actions.close(prompt_bufnr)
         -- 按 q 关闭 vv-git 面板后，自动 resume 回到这个 git_log telescope 列表
-        vvgit.show_commit(entry.value, function() require('telescope.builtin').resume() end)
+        local resumed = false
+        local function resume()
+          if resumed then return end
+          resumed = true
+          require('telescope.builtin').resume()
+        end
+        vvgit.show_commit(entry.value, {
+          root = git_root,
+          on_close = resume,
+          on_error = function()
+            if vvgit.is_open() then
+              vvgit.close()
+            end
+            resume()
+          end,
+        })
       else
         open_diff(prompt_bufnr)
       end
