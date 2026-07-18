@@ -4,7 +4,7 @@ return {
   desc = '搜索替换（VSCode 风）',
   url  = 'beixiyo/vv-replace.nvim',
   main = 'vv-replace',
-  dependencies = { 'beixiyo/vv-icons.nvim' },
+  dependencies = { 'beixiyo/vv-utils.nvim', 'beixiyo/vv-icons.nvim' },
 
   cmd = { 'VVReplace', 'VVReplaceFile', 'VVReplaceClose', 'VVReplaceToggle' },
   keys = function()

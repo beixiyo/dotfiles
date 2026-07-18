@@ -218,6 +218,7 @@ M.config = {
 | **UI buffer 窗口样式** | 手动关 number/signcolumn/cursorline，BufWipeout 时忘记还原 | `vv-utils.ui_window.hide_chrome(win)` + 自动 restore |
 | **替换主窗后残留 [No Name]** | `nvim_buf_delete` 前自己写一堆条件判定 | `vv-utils.bufdelete.wipe_if_throwaway(prev_buf)`（详见下一节） |
 | **文件系统操作** | `vim.fn.mkdir` / `os.rename` 手拼 | `vv-utils.fs.*`（`mkdir_p` / `rename` 带 EXDEV 降级 / `copy` 递归 / `unique_dest`） |
+| **输入框历史** | 各插件自己维护 Up / Down 游标和 JSON | `vv-utils.history.new({ name, max_entries, persist })`，按字段隔离并可选持久化 |
 | **找项目根** | 手写 `.git` 向上搜 | `vv-utils.path.get_root()` |
 | **聚合 LSP 诊断** | 自己 `vim.diagnostic.get` 遍历 | `vv-utils.diagnostics.collect_by_path()` |
 | **跨平台打开外部文件** | 根据 OS 写三份命令 | `vv-utils.sys.open_default(path)` |
@@ -233,6 +234,7 @@ M.config = {
 | `vv-utils.fs` | fs 原语：`mkdir_p` / `create_file` / `delete` / `rename`（EXDEV 降级）/ `copy` / `unique_dest` / `sync_buffers` |
 | `vv-utils.git` | 异步 `git status --porcelain --ignored`：`index(root, cb, opts?)` + `is_ignored(path)` + `symbol_for(xy)` + `register_hl(augroup?)` 注册共享 `VVGit*` 调色板；`opts.untracked = 'normal'\|'all'` |
 | `vv-utils.diagnostics` | `collect_by_path()` 聚合所有 loaded buffer 的 LSP 诊断 + `symbol_for(counts)` |
+| `vv-utils.history` | `new(opts)` 创建隔离实例；`record` / `record_many` / `previous` / `next`，支持草稿恢复和 0600 原子持久化 |
 | `vv-utils.sys` | `open_default(path)` 跨平台 `open` / `start` / `xdg-open` |
 | `vv-utils.mouse` | `block_visual_drag(buf)` 给 nofile 面板挂 ModeChanged 守卫，禁止鼠标拖拽 / 多击（含跨窗口拖入）进 visual |
 | `vv-utils.ui_window` | UI buffer 窗口 chrome 管理（signcolumn / cursorline / restore） |
