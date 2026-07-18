@@ -130,7 +130,7 @@ tmux server（后台守护进程）
 | 矩形选择 | `Ctrl+V` |
 | 复制选中 | `y` |
 | 复制到行尾 | `Y` |
-| 退出 | `q` 或 `Esc` |
+| 退出 | `q`（vi 模式下 `Esc` 是清除选区，不退出） |
 
 copy mode 内同样可用 `Ctrl+Alt+H/J/K/L` 切换 pane，不会卡死
 

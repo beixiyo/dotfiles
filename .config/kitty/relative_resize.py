@@ -1,4 +1,4 @@
-# Based on MIT licensed code at https://github.com/chancez/dotfiles/blob/badc69d3895a6a942285amount26b8c372a55d77533eamount/kitty/.config/kitty/relative_resize.py
+# Based on MIT licensed code at https://github.com/chancez/dotfiles/blob/badc69d3895a6a942285d26b8c372a55d77533ed/kitty/.config/kitty/relative_resize.py
 from kittens.tui.handler import result_handler
 from kitty.key_encoding import KeyEvent, parse_shortcut
 

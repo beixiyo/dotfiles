@@ -1,5 +1,5 @@
 -- ╭─────────────────────────────────────────────────────╮
--- │       窗口尺寸 / 屏幕居中 / 背景图（可选）           │
+-- │       窗口尺寸 / 屏幕居中 / 背景比例（可选）         │
 -- ╰─────────────────────────────────────────────────────╯
 
 local wezterm = require('wezterm')
@@ -13,37 +13,33 @@ local is_windows  = target:find('windows') ~= nil
 local is_mac      = target:find('darwin')  ~= nil
 local is_linux    = not is_windows and not is_mac
 
--- true = 百分比尺寸模式；false = 根据背景图宽高比计算
+-- true = 屏幕宽高各取 80%；false = 按配置的背景图片尺寸保持宽高比
 local USE_PERCENT_SIZE = true
-local background_image_path = 'C:/pic/Camera/girl.jpg'
+local BACKGROUND_IMAGE_SIZE = {
+  width = 1440,
+  height = 1798,
+}
 
-local function get_image_dimensions(image_path)
-  local success, image = pcall(function()
-    return wezterm.image_from_file(image_path)
-  end)
-  if success and image then
-    return image:get_width(), image:get_height()
-  end
-  return 1440, 1798
-end
+---按背景图片宽高比计算不超过屏幕 80% 的窗口尺寸
+---@param screen_width number
+---@param screen_height number
+---@return number width
+---@return number height
+local function calculate_window_size(screen_width, screen_height)
+  local aspect_ratio = BACKGROUND_IMAGE_SIZE.width / BACKGROUND_IMAGE_SIZE.height
+  local max_width = screen_width * 0.8
+  local max_height = screen_height * 0.8
 
-local function calculate_window_size(image_path, screen_width, screen_height)
-  local img_width, img_height = get_image_dimensions(image_path)
-  local aspect_ratio = img_width / img_height
-
-  local max_width, max_height = screen_width * 0.8, screen_height * 0.8
-  local width, height
   if max_width / max_height > aspect_ratio then
-    height, width = max_height, max_height * aspect_ratio
-  else
-    width, height = max_width, max_width / aspect_ratio
+    return max_height * aspect_ratio, max_height
   end
-  return width, height
+
+  return max_width, max_width / aspect_ratio
 end
 
 function M.apply(_config)
--- WSL（Windows 宿主）：默认启动 WSL 到指定目录
-if is_windows then
+  -- WSL（Windows 宿主）：默认启动 WSL 到指定目录
+  if is_windows then
     _config.default_prog = { 'wsl.exe', '--cd', '~/code/frontend' }
   end
 
@@ -51,10 +47,10 @@ if is_windows then
     local screen = wezterm.gui.screens().active
     local width, height
     if USE_PERCENT_SIZE then
-      width  = screen.width * 0.8
+      width = screen.width * 0.8
       height = screen.height * 0.8
     else
-      width, height = calculate_window_size(background_image_path, screen.width, screen.height)
+      width, height = calculate_window_size(screen.width, screen.height)
     end
 
     local default_args = {
