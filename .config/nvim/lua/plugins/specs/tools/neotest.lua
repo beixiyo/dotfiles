@@ -18,18 +18,18 @@ local function register_statuscol_click()
     local ok, statuscol = pcall(require, 'vv-statuscol')
     if not ok or not statuscol.on_click then return end
 
-    statuscol.on_click(function(pos)
-      if not vim.api.nvim_win_is_valid(pos.winid) then return false end
+    statuscol.on_click(function(ctx)
+      if ctx.button ~= 'l' or ctx.clicks ~= 1 then return false end
+      if not vim.api.nvim_win_is_valid(ctx.win) then return false end
 
-      local buf = vim.api.nvim_win_get_buf(pos.winid)
-      local placed = vim.fn.sign_getplaced(buf, {
+      local placed = vim.fn.sign_getplaced(ctx.buf, {
         group = 'neotest-status',
-        lnum = pos.line,
+        lnum = ctx.line,
       })
       local signs = placed[1] and placed[1].signs or {}
       if #signs == 0 then return false end
 
-      vim.api.nvim_win_call(pos.winid, function()
+      vim.api.nvim_win_call(ctx.win, function()
         require('neotest').run.run()
       end)
 

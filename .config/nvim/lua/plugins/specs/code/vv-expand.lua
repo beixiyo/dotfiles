@@ -14,6 +14,6 @@ return {
     -- pairs = { same = {...}, nested = {...} },
     -- layers = { 'pair', 'lsp', 'treesitter', 'line' },
     -- keymaps = { init = '<CR>', expand = '<CR>', shrink = '<BS>' },
-    -- filetype_exclude = { 'qf', 'help', 'dashboard', 'vv-explorer', 'vv-task-panel' },
+    -- filetype_exclude = { 'qf', 'help', 'dashboard', 'vv-explorer', 'vv-task-panel', 'vv-task-panel-tasks' },
   },
 }
