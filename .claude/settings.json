@@ -7,7 +7,7 @@
     "allow": [
       "Bash(*)",
       "Read(*)",
-      "Write(~/tmp/**)",
+      "Edit(~/tmp/**)",
       "mcp__search-mcp__*",
       "mcp__figma-mcp__*",
       "mcp__context7-mcp__*",
