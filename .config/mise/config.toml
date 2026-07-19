@@ -1,6 +1,33 @@
+# ── 一键安装本文件全部依赖 ──────────────────────────────────────────────
+#   npm_config_strict_allow_scripts=false mise install
+#
+# 为什么要带那个环境变量：~/.npmrc 里开了 strict-allow-scripts=true，而 npm 11.17
+# 的 preflight 会在创建 prefix 目录之前就 lstat <prefix>/lib，装 npm: 后端的包必然
+# ENOENT 失败。该变量只对这一条命令生效，不改 ~/.npmrc 的全局安全设置
+# 已确认下面这些 npm 包都没有 install/preinstall/postinstall 生命周期脚本，故无风险
+#
+# 单独装某个：npm_config_strict_allow_scripts=false mise use -g npm:<包名>@<版本>
+# 升级全部：  npm_config_strict_allow_scripts=false mise up
+# ────────────────────────────────────────────────────────────────────────
+
 [tools]
 bun = "latest"
 go = "latest"
-node = "22"
+
+# 钉死精确版本：npm 全局包安装在 ~/.local/share/mise/installs/node/<版本>/ 下，
+# 写 "22" 这类模糊版本时 node 一升 patch，全局包（含 LSP 二进制）会整体失联
+# 升级 node 时需同步 npm i -g 重装全局包，或改用下面的 npm: 后端托管
+node = "22.22.3"
+pnpm = "10.24"
 python = "latest"
 rust = "stable"
+
+# ── LSP server（供 Neovim 使用，见 ~/.config/nvim/lua/plugins/specs/code/lsp/）──
+# 走 npm: 后端而非 npm i -g：后者装进 node 的版本目录，换 node 就得全部重装
+#
+# typescript 钉 major 而非 latest：nvim 靠 `tsc --lsp` 起 language server，
+# 这个 flag 是 TS7 才有的，将来 TS8 若有破坏性变更，latest 会直接让 LSP 起不来
+"npm:typescript" = "7"
+# tailwind LSP 无此顾虑，跟最新即可（Mason 那边的 registry 长期钉在 0.14.29 不更新，
+# 所以才不用 Mason 装）
+"npm:@tailwindcss/language-server" = "latest"
