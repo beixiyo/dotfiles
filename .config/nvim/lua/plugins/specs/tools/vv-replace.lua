@@ -6,7 +6,7 @@ return {
   main = 'vv-replace',
   dependencies = { 'beixiyo/vv-utils.nvim', 'beixiyo/vv-icons.nvim' },
 
-  cmd = { 'VVReplace', 'VVReplaceFile', 'VVReplaceClose', 'VVReplaceToggle' },
+  cmd = { 'VVReplace', 'VVReplaceFile', 'VVReplaceClose', 'VVReplaceToggle', 'VVReplaceUndo' },
   keys = function()
     local icon = require('vv-icons').find_text .. ' '
     return {

@@ -1,3 +1,5 @@
+local Glob = require('vv-utils.glob')
+
 local M = {}
 
 --- @class ToggleDef
@@ -121,7 +123,28 @@ end
 --- @param base_opts? table telescope.builtin.live_grep 的选项
 function M.live_grep(base_opts)
   local opts = base_opts or {}
-  local state = { hidden = false, no_ignore = false, fixed_strings = false, globs = {} }
+  local state = { hidden = false, no_ignore = false, fixed_strings = false, glob_input = '' }
+
+  -- 新输入用 VS Code 风格顶层逗号分隔；无顶层逗号时保留旧的 shell-like 空格分隔
+  -- 因此单条含空格路径可写为 "path with spaces/**"
+  local function compile_rg_input(input)
+    local comma_sources, split_error = Glob.split(input)
+    if not comma_sources then return nil, split_error end
+    if #comma_sources > 1 or not input:find('%s') then
+      return Glob.compile_rg_list(input)
+    end
+
+    local ok, sources = pcall(vim.fn.shellsplit, input)
+    if not ok then return nil, tostring(sources) end
+
+    local compiled = {}
+    for _, source in ipairs(sources) do
+      local patterns, compile_error = Glob.compile_rg(source)
+      if not patterns then return nil, compile_error end
+      vim.list_extend(compiled, patterns)
+    end
+    return compiled, nil
+  end
 
   local defs = {
     { key = '<M-h>', field = 'hidden',        on = 'hidden',    off = 'no-hidden' },
@@ -131,8 +154,8 @@ function M.live_grep(base_opts)
 
   local function build_grep_title()
     local title = build_title('Live Grep', state, defs)
-    if #state.globs > 0 then
-      title = title .. '  ' .. table.concat(state.globs, ' ') .. ' ⌥P'
+    if state.glob_input ~= '' then
+      title = title .. '  ' .. state.glob_input .. ' ⌥P'
     else
       title = title .. '  glob ⌥P'
     end
@@ -145,19 +168,14 @@ function M.live_grep(base_opts)
     if state.no_ignore then args[#args + 1] = '--no-ignore' end
     if state.fixed_strings then args[#args + 1] = '--fixed-strings' end
 
+    local globs = assert(compile_rg_input(state.glob_input))
+
     -- glob 智能大小写：全小写 → 不敏感；任一含大写 → 精确（仿 rg --smart-case）
-    if #state.globs > 0 then
-      local has_upper = false
-      for _, g in ipairs(state.globs) do
-        if g:match('%u') then
-          has_upper = true
-          break
-        end
-      end
-      if not has_upper then args[#args + 1] = '--glob-case-insensitive' end
+    if #globs > 0 and not state.glob_input:match('%u') then
+      args[#args + 1] = '--glob-case-insensitive'
     end
 
-    for _, g in ipairs(state.globs) do
+    for _, g in ipairs(globs) do
       args[#args + 1] = '--glob'
       args[#args + 1] = g
     end
@@ -204,48 +222,21 @@ function M.live_grep(base_opts)
         end)
       end
 
-      -- <M-p>：输入 glob 模式（空格分隔，! 前缀排除），自动智能补全
+      -- <M-p>：输入 VS Code 风格 glob（顶层逗号分隔，! 前缀排除）
       map('i', '<M-p>', function()
-        local function norm(pattern)
-          local negate = pattern:sub(1, 1) == '!'
-          local body = negate and pattern:sub(2) or pattern
-
-          -- 自动补 **/，让路径片段从 cwd 下任意深度匹配
-          if not (body:sub(1, 3) == '**/' or body:sub(1, 1) == '/') then
-            body = '**/' .. body
-          end
-
-          -- 末尾没通配符、且末段不像文件名（不含 .）→ 当目录名 → 补 /** 搜内部
-          local no_prefix = body:gsub('^%*%*%/', '')
-          local last_seg = no_prefix:match('[^/]*$') or ''
-          if not no_prefix:match('[*?]') and not last_seg:match('%.') then
-            body = body:match('/$') and (body .. '**') or (body .. '/**')
-          end
-
-          return (negate and '!' or '') .. body
-        end
-
-        -- 回显时把每条 glob 还原成用户当初敲的简洁形式（逐条去掉 **/ 前缀和 /** 后缀）
-        local function denorm(glob)
-          return (glob:gsub('^(!?)%*%*/', '%1'):gsub('/%*%*$', ''))
-        end
-
-        local display = {}
-        for _, g in ipairs(state.globs) do
-          display[#display + 1] = denorm(g)
-        end
-
         vim.ui.input(
           {
-            prompt = 'Glob 模式（空格分隔，! 前缀排除）: ',
-            default = table.concat(display, ' '),
+            prompt = 'Glob（逗号/空格分隔，./ 锚定根，! 排除）: ',
+            default = state.glob_input,
           },
           function(input)
             if input == nil then return end
-            state.globs = {}
-            for pattern in input:gmatch('%S+') do
-              state.globs[#state.globs + 1] = norm(pattern)
+            local _, glob_error = compile_rg_input(input)
+            if glob_error then
+              vim.notify('Telescope glob: ' .. glob_error, vim.log.levels.ERROR)
+              return
             end
+            state.glob_input = vim.trim(input)
             refresh_picker()
           end
         )

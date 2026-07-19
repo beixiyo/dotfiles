@@ -12,6 +12,7 @@ return {
     -- telescope-ui-select：把 vim.ui.select 接入 telescope
     'https://github.com/nvim-telescope/telescope-ui-select.nvim',
     'beixiyo/vv-icons.nvim',
+    'beixiyo/vv-utils.nvim',
   },
 
   -- event：UIEnter 后加载，保证 lualine 直接 require('telescope.builtin') 不炸

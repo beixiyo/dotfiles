@@ -218,7 +218,9 @@ M.config = {
 | **UI buffer 窗口样式** | 手动关 number/signcolumn/cursorline，BufWipeout 时忘记还原 | `vv-utils.ui_window.hide_chrome(win)` + 自动 restore |
 | **替换主窗后残留 [No Name]** | `nvim_buf_delete` 前自己写一堆条件判定 | `vv-utils.bufdelete.wipe_if_throwaway(prev_buf)`（详见下一节） |
 | **文件系统操作** | `vim.fn.mkdir` / `os.rename` 手拼 | `vv-utils.fs.*`（`mkdir_p` / `rename` 带 EXDEV 降级 / `copy` 递归 / `unique_dest`） |
+| **多文件内容事务 / 单层撤回** | 各插件保存 old/new 后自行校验和回滚 | `vv-utils.fs_transaction.new()`，实例隔离，统一处理快照预检、补偿回滚和 Undo |
 | **输入框历史** | 各插件自己维护 Up / Down 游标和 JSON | `vv-utils.history.new({ name, max_entries, persist })`，按字段隔离并可选持久化 |
+| **VS Code 风格搜索 glob** | 各插件自己补 `**/`、猜文件或目录 | `vv-utils.glob.split/compile_rg/compile_rg_list`，统一处理 `./` 根锚定、任意深度、brace、排除和路径本体/后代展开 |
 | **找项目根** | 手写 `.git` 向上搜 | `vv-utils.path.get_root()` |
 | **聚合 LSP 诊断** | 自己 `vim.diagnostic.get` 遍历 | `vv-utils.diagnostics.collect_by_path()` |
 | **跨平台打开外部文件** | 根据 OS 写三份命令 | `vv-utils.sys.open_default(path)` |
@@ -231,7 +233,9 @@ M.config = {
 | 模块 | 用途 |
 |---|---|
 | `vv-utils.path` | `norm` / `get_root`（找 `.git`、`package.json`）/ `get_cwd` |
+| `vv-utils.glob` | VS Code 风格搜索 glob：顶层逗号拆分、`./` 根锚定、任意深度与 ripgrep pattern 展开 |
 | `vv-utils.fs` | fs 原语：`mkdir_p` / `create_file` / `delete` / `rename`（EXDEV 降级）/ `copy` / `unique_dest` / `sync_buffers` |
+| `vv-utils.fs_transaction` | 可实例化的多文件完整内容快照、校验、补偿回滚与单层撤回 |
 | `vv-utils.git` | 异步 `git status --porcelain --ignored`：`index(root, cb, opts?)` + `is_ignored(path)` + `symbol_for(xy)` + `register_hl(augroup?)` 注册共享 `VVGit*` 调色板；`opts.untracked = 'normal'\|'all'` |
 | `vv-utils.diagnostics` | `collect_by_path()` 聚合所有 loaded buffer 的 LSP 诊断 + `symbol_for(counts)` |
 | `vv-utils.history` | `new(opts)` 创建隔离实例；`record` / `record_many` / `previous` / `next`，支持草稿恢复和 0600 原子持久化 |
