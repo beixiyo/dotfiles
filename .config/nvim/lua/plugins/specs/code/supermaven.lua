@@ -10,6 +10,7 @@ return {
   end,
   opts = {
     log_level = 'off',
+    ignore_filetypes = { gitcommit = true },
     keymaps = {
       accept_suggestion = '<M-]>',
       clear_suggestion = '<M-[>',
