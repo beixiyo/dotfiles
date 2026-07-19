@@ -1,6 +1,48 @@
 local Glob = require('vv-utils.glob')
+local PathCompletion = require('vv-utils.path_completion')
 
 local M = {}
+
+local completion_id = 0
+
+---@param input_opts table
+---@param cwd string?
+---@param on_confirm fun(input: string?)
+local function input_glob(input_opts, cwd, on_confirm)
+  completion_id = completion_id + 1
+  local callback_name = '__vv_telescope_glob_complete_' .. completion_id
+
+  _G[callback_name] = function(arglead, cmdline, cursor_pos)
+    local input = cmdline or arglead or ''
+    local cursor = math.max(0, math.min(cursor_pos or #input, #input))
+    local result = PathCompletion.glob(input, {
+      cwd = cwd or vim.fn.getcwd(),
+      cursor = cursor,
+    })
+    local before = input:sub(1, result.start_col)
+    local after = input:sub(cursor + 1)
+    local items = {}
+    for _, item in ipairs(result.items) do
+      -- input() 的 customlist 只接受 string[]，且候选会替换整段输入
+      items[#items + 1] = before .. item.word .. after
+    end
+    return items
+  end
+
+  local function cleanup()
+    _G[callback_name] = nil
+  end
+
+  input_opts.completion = 'customlist,v:lua.' .. callback_name
+  local ok, input_error = pcall(vim.ui.input, input_opts, function(input)
+    cleanup()
+    on_confirm(input)
+  end)
+  if not ok then
+    cleanup()
+    error(input_error)
+  end
+end
 
 --- @class ToggleDef
 --- @field key string 触发快捷键，如 `'<M-h>'`
@@ -224,11 +266,12 @@ function M.live_grep(base_opts)
 
       -- <M-p>：输入 VS Code 风格 glob（顶层逗号分隔，! 前缀排除）
       map('i', '<M-p>', function()
-        vim.ui.input(
+        input_glob(
           {
-            prompt = 'Glob（逗号/空格分隔，./ 锚定根，! 排除）: ',
+            prompt = 'Glob: ',
             default = state.glob_input,
           },
+          opts.cwd,
           function(input)
             if input == nil then return end
             local _, glob_error = compile_rg_input(input)

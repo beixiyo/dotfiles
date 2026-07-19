@@ -24,7 +24,17 @@ return {
         ['<C-Space>'] = { 'show' },
         ['<C-n>'] = { 'select_next', 'fallback' },
         ['<C-p>'] = { 'select_prev', 'fallback' },
-        ['<Tab>'] = { 'select_and_accept', 'fallback' },
+        ['<Tab>'] = {
+          function(cmp)
+            if vim.bo.filetype ~= 'vv-replace' then return end
+            if cmp.is_visible() then return cmp.select_and_accept() end
+
+            cmp.show()
+            return true
+          end,
+          'select_and_accept',
+          'fallback',
+        },
         ['<S-Tab>'] = { 'fallback' },
         ['<C-f>'] = { 'snippet_forward', 'fallback' },
         ['<C-b>'] = { 'snippet_backward', 'fallback' },
@@ -86,6 +96,25 @@ return {
           snippets = { score_offset = 2 },
           buffer = { score_offset = 1 },
 
+          -- vv-replace 的 Search / Replace 从所有已加载文件 buffer 取词，
+          -- Include / Exclude / Cwd 使用支持搜索简写的路径源
+          vv_replace_path = {
+            name = 'Path',
+            module = 'vv-replace.blink',
+            enabled = function() return require('vv-replace.blink').is_path_input() end,
+            score_offset = 10,
+            max_items = 200,
+          },
+          vv_replace_buffer = {
+            name = 'Buffer',
+            module = 'blink.cmp.sources.buffer',
+            enabled = function() return require('vv-replace.blink').is_text_input() end,
+            opts = {
+              get_bufnrs = function() return require('vv-replace.blink').get_bufnrs() end,
+            },
+            score_offset = 1,
+          },
+
           -- ↓↓↓ blink-cmp-words 源定义，不要可整段注释 ↓↓↓
           thesaurus = {
             name = 'blink-cmp-words',
@@ -101,6 +130,7 @@ return {
         },
         -- ↓↓↓ blink-cmp-words 按文件类型启用，不要可整段注释 ↓↓↓
         per_filetype = {
+          ['vv-replace'] = { 'vv_replace_path', 'vv_replace_buffer' },
           text = { 'buffer', 'dictionary' },
           markdown = { 'lsp', 'path', 'snippets', 'buffer', 'thesaurus' },
           tex = { 'lsp', 'snippets', 'buffer', 'thesaurus', 'dictionary' },
