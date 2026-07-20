@@ -23,20 +23,16 @@ cssh() {
   fi
 }
 
-_cscp_remote_path_expression() {
-  # 生成可安全嵌入远端 Shell 命令的路径表达式，同时保留 ~ 和 ~/ 的 HOME 语义
-  local remote_path_value="$1"
-  local quoted_path="${remote_path_value//\'/\'\\\'\'}"
+# 远端脚本开头：把位置参数 $1 解析为 path，保留 ~ 与 ~/ 的 HOME 语义
+_CSCP_REMOTE_PRELUDE='case "$1" in "~") path="$HOME" ;; "~/"*) path="$HOME/${1#??}" ;; *) path="$1" ;; esac
+'
 
-  if [[ "$remote_path_value" == "~" ]]; then
-    print -r -- '"$HOME"'
-  elif [[ "$remote_path_value" == "~/"* ]]; then
-    remote_path_value="${remote_path_value#\~/}"
-    quoted_path="${remote_path_value//\'/\'\\\'\'}"
-    print -r -- '"$HOME"/'"'$quoted_path'"
-  else
-    print -r -- "'$quoted_path'"
-  fi
+_cscp_remote_cmd() {
+  # 远端登录 Shell 未必是 POSIX Shell（如 fish），命令统一交给 sh 执行
+  # 路径以位置参数传入而非拼进脚本，只需一层引号，避免跨 Shell 的转义差异
+  local remote_path="$2"
+  local script="${_CSCP_REMOTE_PRELUDE}$1"
+  print -r -- "sh -c ${(qq)script} cscp ${(qq)remote_path}"
 }
 
 # 交互式上传或下载文件；目录使用 tar 流式传输，普通文件使用 scp
@@ -103,10 +99,9 @@ cscp() {
       done
 
       # 不传输 macOS 扩展属性，避免 GNU tar 警告未知的 LIBARCHIVE.xattr 字段
-      local remote_path_expression=$(_cscp_remote_path_expression "$remote_path")
       log "tar ${relative_paths[*]} | ssh $host:$remote_path"
       tar --no-xattrs -cf - -C "$absolute_base" -- "${relative_paths[@]}" \
-        | ssh "$host" "destination=$remote_path_expression; mkdir -p -- \"\$destination\" && tar -xf - -C \"\$destination\""
+        | ssh "$host" "$(_cscp_remote_cmd 'mkdir -p -- "$path" && tar -xf - -C "$path"' "$remote_path")"
 
       # 同时检查本地 tar 和远端 ssh/tar，任一环节失败都返回非零状态
       local transfer_status=("${pipestatus[@]}")
@@ -137,15 +132,14 @@ cscp() {
     fi
 
     # 先在远端判断资源类型：目录走 tar 管道，普通文件继续使用 scp
-    local remote_path_expression=$(_cscp_remote_path_expression "$remote_path")
     local remote_type
-    remote_type=$(ssh "$host" "source_path=$remote_path_expression; if [ -d \"\$source_path\" ]; then printf d; elif [ -f \"\$source_path\" ]; then printf f; else printf missing; fi") || return 1
+    remote_type=$(ssh "$host" "$(_cscp_remote_cmd 'if [ -d "$path" ]; then printf d; elif [ -f "$path" ]; then printf f; else printf missing; fi' "$remote_path")") || return 1
 
     case "$remote_type" in
       d)
         # 在远端从父目录打包 basename，使解包后保留所选目录名
         log "ssh $host:$remote_path | tar -C $local_path"
-        ssh "$host" "source_path=$remote_path_expression; parent=\${source_path%/*}; name=\${source_path##*/}; [ \"\$parent\" = \"\$source_path\" ] && parent=.; tar -cf - -C \"\$parent\" -- \"\$name\"" \
+        ssh "$host" "$(_cscp_remote_cmd 'parent=${path%/*}; name=${path##*/}; [ "$parent" = "$path" ] && parent=.; tar -cf - -C "$parent" -- "$name"' "$remote_path")" \
           | tar -xf - -C "$local_path"
 
         # 同时检查远端 tar/ssh 和本地解包状态
