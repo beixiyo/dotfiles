@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun run ~/.claude/hooks/deny-compound-bypass.ts"
+            "command": "bun run ~/.claude/hooks/deny-compound-bypass-ast.ts"
           }
         ]
       }
