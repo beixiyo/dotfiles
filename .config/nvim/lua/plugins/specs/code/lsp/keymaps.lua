@@ -13,10 +13,15 @@
 local M = {}
 
 -- 一次性安全应用当前文件全部可编辑修复，保留 buffer modified 状态
+--
+-- on_conflict = 'skip'：LSP 常给出互斥的备选修复（如 tailwind 对同义类既提供
+-- 「删 A」也提供「删 B」），范围重叠。整体放弃会导致一个都改不了，这里改为
+-- 先到先得，重叠的候选跳过并在通知里报数，剩余修复照常应用
 local function apply_all_quickfix()
   local result = require('vv-utils.lsp.code_actions').fix_document({
     bufnr = vim.api.nvim_get_current_buf(),
     save = false,
+    on_conflict = 'skip',
   })
   if result.error then
     local level = result.error.code == 'no_quickfixes'
@@ -24,7 +29,13 @@ local function apply_all_quickfix()
         or vim.log.levels.WARN
     return vim.notify(result.error.message, level)
   end
-  vim.notify(('Applied %d fixes'):format(result.edits_count), vim.log.levels.INFO)
+
+  local skipped = result.skipped_count or 0
+  local message = ('Applied %d fixes'):format(result.edits_count)
+  if skipped > 0 then
+    message = ('%s, skipped %d conflicting'):format(message, skipped)
+  end
+  vim.notify(message, skipped > 0 and vim.log.levels.WARN or vim.log.levels.INFO)
 end
 
 function M.setup()
