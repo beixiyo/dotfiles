@@ -1,0 +1,14 @@
+{
+  "name": "claude-code-hooks",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun run deny-compound-bypass.test.ts",
+    "test:regex": "bun run deny-compound-bypass.test.ts regex",
+    "test:ast": "bun run deny-compound-bypass.test.ts ast"
+  },
+  "dependencies": {
+    "web-tree-sitter": "^0.25.0",
+    "tree-sitter-wasms": "^0.1.12"
+  }
+}
