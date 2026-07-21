@@ -176,6 +176,7 @@ ports 9977 --all  # 使用 sudo 查看指定端口
 | 文件 | `open [path]` | 使用系统文件管理器打开 |
 | 网络 | `myip` | 查看公网 IP 和地理信息 |
 | 网络 | `ports [port] [--all]` | 查看监听端口并选择进程结束 |
+| 网络 | `adblockHosts` | 依次尝试多个镜像拉取广告屏蔽 hosts，合并进 `/etc/hosts` 的托管区块（会警告 + 自动备份，标记外内容不动） |
 | SSH | `cssh [query]` | 搜索 SSH 主机并连接 |
 | SSH | `cscp [path]` | 交互式 SCP 上传和下载 |
 | 代理 | `setProxy [port]` / `unsetProxy` | 切换 Shell 与 Git 代理 |
