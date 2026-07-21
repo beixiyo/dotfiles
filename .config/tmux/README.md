@@ -160,14 +160,30 @@ copy mode 内同样可用 `Ctrl+Alt+H/J/K/L` 切换 pane，不会卡死
 ## 文件结构
 
 ```
-tmux.conf          入口，source 所有模块
+tmux.conf            入口，source 所有模块
 conf/
-  options.conf     基础选项（prefix、颜色、鼠标、编号）
-  window.conf      window 快捷键
-  pane.conf        pane 分割、导航、调整大小
-  copy-mode.conf   vi copy mode
-  plugins.conf     tpm 插件列表及安装说明
-  status.conf      status bar 布局
+  options.conf       基础选项（prefix、颜色、鼠标、编号、剪贴板）
+  window.conf        window 快捷键
+  pane.conf          pane 分割、导航、调整大小
+  copy-mode.conf     vi copy mode
+  plugins.conf       tpm 插件列表及安装说明
+  status.conf        status bar 布局与采集器配色
+  hide-bar.conf      运行 nvim 时自动隐藏状态栏（当前停用，见 tmux.conf）
 scripts/
-  net_speed.sh     网速计算脚本（macOS / Linux 双支持）
+  status-feed.sh     常驻采集器：CPU / 内存 / 网速 → tmux 用户选项
+  pane-nav.sh        判定方向键该给 nvim 还是 tmux
+  clipboard_paste.sh 右键粘贴取系统剪贴板
+  open-url.sh        Ctrl+Click 打开 URL
+  send-to-pane.sh    从 nvim 发送内容到指定 pane
 ```
+
+## 状态栏取值
+
+CPU / 内存 / 网速由 `scripts/status-feed.sh` 常驻采集，写入 `@status_*`
+用户选项，`status-right` 只读变量
+
+这样做是因为 `status-right` 里每写一个 `#(command)`，tmux 每次刷新
+（`status-interval`，本配置为 5 秒）都会 fork 一轮子进程。改为读变量后
+渲染状态栏不再启动任何子进程
+
+配色与阈值全部在 `conf/status.conf` 顶部声明，采集器只读不写
