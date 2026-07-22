@@ -83,6 +83,9 @@ environment {
   QT_IM_MODULES "wayland;fcitx;ibus"
 
   GTK_THEME "MacTahoe-Dark"
+  // 让 Qt 加载 KDE 平台主题插件，否则 kdeglobals 的深色配色不会套进 QPalette
+  // Kvantum 只画深色背景、文字仍是浅色主题的黑色，导致 Dolphin 等 KDE 应用文字不可见
+  QT_QPA_PLATFORMTHEME "kde"
   QT_STYLE_OVERRIDE "kvantum-dark"
 }
 
