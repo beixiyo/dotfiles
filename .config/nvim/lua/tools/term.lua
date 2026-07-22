@@ -78,6 +78,35 @@ function M.open_at(dir)
   term:focus()
 end
 
+-- 开一个终端：优先 tmux popup（真 tty，nvim 的终端模拟器只是兜底）
+--
+-- nvim 的 :terminal 是它自己实现的模拟器，重绘、鼠标、Ctrl 键都打折；
+-- tmux popup 里是 tmux 原生 pane，跟平时开终端完全一致。同 leader>mp 的
+-- leaf 预览走的是一条路子
+--
+-- 收起 popup 是 tmux 层的 C-`（见 ~/.config/tmux/conf/popup.conf）：
+-- popup 打开时按键归 popup 客户端，nvim 这边收不到
+---@param dir? string 工作目录，默认 nvim cwd
+---@return boolean handled 是否已由 tmux 处理（false 表示调用方该走兜底）
+function M.popup(dir)
+  if not vim.env.TMUX or vim.env.TMUX == '' then return false end
+
+  local script = vim.env.HOME .. '/.config/tmux/scripts/popup-term.sh'
+  if vim.fn.filereadable(script) == 0 then
+    vim.notify('tools.term: popup script not found: ' .. script, vim.log.levels.WARN)
+    return false
+  end
+
+  vim.system({ script, dir or vim.fn.getcwd() })
+  return true
+end
+
+-- <leader>tt 入口：tmux 环境用 popup，否则退回 toggleterm
+function M.toggle()
+  if M.popup() then return end
+  vim.cmd('ToggleTerm')
+end
+
 -- 在专用浮窗里跑一条一次性命令（与交互 shell 分开，保留输出便于看结果/退出码）
 ---@param cmd string[]  完整 argv
 ---@param dir? string   工作目录

@@ -48,9 +48,10 @@ function M.apply(config)
     { key = '-', mods = 'CTRL', action = act.DecreaseFontSize },
     { key = '0', mods = 'CTRL', action = act.ResetFontSize },
 
-    -- ── 透传给 Neovim 的特殊键（CSI u 直注入，绕过 tmux 重编码）──
-    { key = '`', mods = 'CTRL',       action = act.SendString('\x1b[96;5u') },  -- Ctrl+`
-    { key = 'L', mods = 'CTRL|SHIFT', action = act.SendString('\x1b[108;6u') }, -- Ctrl+Shift+l
+    -- ── 终端原生编不出来的键，CSI u 直注入（绕过 tmux 重编码）──
+    -- 注入后归谁消费不一定：Ctrl+` 被 tmux 截住，Ctrl+Shift+l 才真的到 nvim
+    { key = '`', mods = 'CTRL',       action = act.SendString('\x1b[96;5u') },  -- Ctrl+` → tmux popup 浮层终端
+    { key = 'L', mods = 'CTRL|SHIFT', action = act.SendString('\x1b[108;6u') }, -- Ctrl+Shift+l → nvim vim-visual-multi Select All
 
     -- ── Shift+Enter 换行（Claude Code 等 TUI）──
     -- 默认走 legacy 编码与普通 Enter(\r) 无法区分 → 被当成提交；

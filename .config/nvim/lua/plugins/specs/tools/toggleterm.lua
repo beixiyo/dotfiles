@@ -10,7 +10,7 @@ return {
     'ToggleTermSendCurrentLine', 'ToggleTermSendVisualLines', 'ToggleTermSendVisualSelection' },
 
   keys = {
-    { '<leader>tt', '<cmd>ToggleTerm<cr>',                        mode = { 'n', 't' }, desc = 'Toggle term' },
+    -- <leader>tt 移到 config/keymaps/tmux.lua：tmux 下走 popup，不加载本插件
     { '<C-@>',      '<cmd>ToggleTerm<cr>',                        mode = { 'n', 't' }, desc = 'Toggle term' },
     { '<leader>tf', '<cmd>ToggleTerm direction=float<cr>',        desc = 'Float term' },
     { '<leader>th', '<cmd>ToggleTerm direction=horizontal<cr>',   desc = 'Horizontal term' },

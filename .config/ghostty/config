@@ -11,7 +11,7 @@ config-file = modules/appearance.config
 # ──── 窗口（尺寸、shell、鼠标、macOS）────
 config-file = modules/window.config
 
-# ──── 基础快捷键（Tab / 字体缩放 / F13 / 粘贴）────
+# ──── 基础快捷键（Tab / 字体缩放 / CSI u 注入 / 粘贴）────
 config-file = modules/keys-common.config
 
 # ──── Shader 视觉特效 ────

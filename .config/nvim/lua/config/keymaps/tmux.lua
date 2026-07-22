@@ -97,3 +97,9 @@ end
 
 map("n", "<leader>ts", send_path_to_pane(false), { desc = "Send path" })
 map("x", "<leader>ts", send_path_to_pane(true), { desc = "Send range" })
+
+-- 终端：tmux 下弹 tmux popup（真 tty），否则退回 toggleterm
+-- 放这里而不是 toggleterm 的 spec.keys，是为了让 tmux 路径不必加载该插件
+map({ "n", "t" }, "<leader>tt", function()
+  require("tools.term").toggle()
+end, { desc = "Toggle term" })
