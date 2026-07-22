@@ -3,11 +3,14 @@ patch:
 
   "menu/page_size": 9
 
-  # 有候选时按左 Shift 上屏原始编码；不要用 key_binder 绑定裸 Shift_L，否则会吃掉 Vim 的 Shift+v
-  # ascii_composer/switch_key/Shift_L: commit_code
-  # ascii_composer/switch_key/Shift_R: commit_code
+  # 左右 Shift 都能切中英；有候选时按下会先把原始编码上屏
+  # 走 ascii_composer 而不是 key_binder 绑裸 Shift_L —— 后者会吃掉 Vim 的 Shift+v
   ascii_composer/switch_key/Shift_L: commit_code
-  ascii_composer/switch_key/Shift_R: noop
+  ascii_composer/switch_key/Shift_R: commit_code
+
+  # 方案选单去掉 Control+grave：那个键位留给 tmux 的浮层终端（conf/popup.conf）
+  switcher/hotkeys:
+    - F4
 
   __patch:
     key_binder/bindings/+:
