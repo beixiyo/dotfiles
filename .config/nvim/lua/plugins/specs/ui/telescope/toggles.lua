@@ -165,7 +165,7 @@ end
 --- @param base_opts? table telescope.builtin.live_grep 的选项
 function M.live_grep(base_opts)
   local opts = base_opts or {}
-  local state = { hidden = false, no_ignore = false, fixed_strings = false, glob_input = '' }
+  local state = { hidden = false, no_ignore = false, fixed_strings = true, glob_input = '' }
 
   -- 新输入用 VS Code 风格顶层逗号分隔；无顶层逗号时保留旧的 shell-like 空格分隔
   -- 因此单条含空格路径可写为 "path with spaces/**"
