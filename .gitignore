@@ -226,6 +226,7 @@
 !.claude/hooks/**
 !.claude/CLAUDE.md
 !.claude/settings.json
+!.claude/statusline.sh
 
 !.claude/skills/
 !.claude/skills/**

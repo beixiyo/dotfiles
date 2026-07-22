@@ -65,9 +65,9 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "bunx -y ccstatusline-zh@2.2.16",
+    "command": "bash ~/.claude/statusline.sh",
     "padding": 0,
-    "refreshInterval": 3
+    "refreshInterval": 8
   },
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
