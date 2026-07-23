@@ -58,6 +58,7 @@ keep_awake_linux() {
 
 lock_linux() {
   local locked=false
+  local niri_lock_script="$HOME/.config/niri/scripts/lock.sh"
 
   # 1. loginctl lock-session
   #    兼容所有集成 systemd-logind 的环境：
@@ -66,9 +67,29 @@ lock_linux() {
   #    需要合成器（如 Niri + swayidle lock 事件）实际处理信号
   if command -v loginctl &>/dev/null; then
     loginctl lock-session
-    sleep 0.5
-    if loginctl show-session 2>/dev/null | grep -q "LockedHint=yes"; then
-      locked=true
+
+    # Niri 的 swayidle lock 回调会异步启动 locker；先等待它正常处理信号，
+    # 超时后才复用统一入口兜底，避免两边同时通过 pidof 检查并重复启动
+    if [[ -n "${NIRI_SOCKET:-}" && -x "$niri_lock_script" ]]; then
+      for _ in {1..15}; do
+        loginctl show-session auto -p LockedHint --value 2>/dev/null \
+          | grep -qx yes \
+          && {
+            locked=true
+            break
+          }
+        sleep 0.1
+      done
+
+      $locked || "$niri_lock_script" --wait
+    else
+      sleep 0.5
+    fi
+
+    if ! $locked; then
+      loginctl show-session auto -p LockedHint --value 2>/dev/null \
+        | grep -qx yes \
+        && locked=true
     fi
   fi
 
@@ -101,10 +122,7 @@ lock_linux() {
     exit 1
   fi
 
-  # 锁屏后 0.5 秒关屏（让 swayidle 接管后续息屏/唤醒）
-  if command -v niri &>/dev/null; then
-    sleep 0.5 && niri msg action power-off-monitors &
-  fi
+  # Niri 的息屏统一交给 swayidle，避免不同锁屏入口使用不同延迟
 }
 
 # ── 入口 ──────────────────────────────────────────────────────────────────

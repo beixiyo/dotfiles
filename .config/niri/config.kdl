@@ -118,14 +118,20 @@ spawn-at-startup "systemctl" "--user" "start" "waybar.service" "plasma-xembedsni
 // ExecStart 在 user drop-in 中保留 -max-items 5000
 spawn-at-startup "systemctl" "--user" "start" "cliphist.service"
 // 空闲管理（swayidle）：
-//   lock         → loginctl lock-session 信号 → 启动 hyprlock（pidof 防多开）
+//   所有拉起 hyprlock 的回调必须走 lock.sh 后台化——hyprlock 没有 -f/daemonize，
+//   而 swayidle -w 会在唯一的事件循环里同步 waitpid（main.c:141-178），
+//   前台跑 hyprlock 会让 swayidle 在整个锁屏期间冻结，积压的 idle 事件
+//   在解锁瞬间集中补跑 → 嵌套锁屏 + 锁屏后不息屏 + 解锁瞬间黑一下
+//
+//   lock         → loginctl lock-session 信号 → 后台启动 hyprlock（pidof 防多开）
 //   timeout 120  → 2 分钟无操作：若已锁屏(pidof hyprlock)则关屏，否则跳过
 //   timeout 900  → 15 分钟无操作：自动锁屏
 //   timeout 1020 → 17 分钟无操作：强制关屏（兜底走开场景，此时 timeout 120 早已空跑过）
-//   unlock       → 解锁后 SIGUSR1 重置 swayidle 计时器（workaround hyprlock #784）
-//   before-sleep → 休眠前先锁屏
+//   before-sleep → 休眠前锁屏并阻塞到 LockedHint=yes，-w 只在这一条上才有意义
+//   无 unlock 回调：SIGUSR1 的真实语义是「立刻进入 idle」（man swayidle），会当场
+//                   重锁 + 黑屏；且 niri 解锁时自己 notify_activity 已重置计时
 //   无 resume 回调：niri 收到输入自动亮屏，且避免 swayidle #193 竞态死锁
-spawn-at-startup "swayidle" "-w" "lock" "pidof hyprlock || hyprlock" "timeout" "120" "pidof hyprlock && niri msg action power-off-monitors" "timeout" "900" "pidof hyprlock || hyprlock" "timeout" "1020" "niri msg action power-off-monitors" "unlock" "pkill -SIGUSR1 swayidle" "before-sleep" "pidof hyprlock || hyprlock"
+spawn-at-startup "swayidle" "-w" "lock" "~/.config/niri/scripts/lock.sh" "timeout" "120" "pidof hyprlock && niri msg action power-off-monitors" "timeout" "900" "~/.config/niri/scripts/lock.sh" "timeout" "1020" "niri msg action power-off-monitors" "before-sleep" "~/.config/niri/scripts/lock.sh --wait"
 
 // 默认应用
 spawn-at-startup "ghostty"
