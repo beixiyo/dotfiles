@@ -21,7 +21,7 @@ return {
   keys = function()
     local icons = require('vv-icons')
     return {
-      { '<leader>fr', function() require('telescope.builtin').oldfiles() end, desc = icons.recent_files .. ' Recent files' },
+      { '<leader>fr', function() require('plugins.specs.ui.telescope.recent').open() end, desc = icons.recent_files .. ' Recent files' },
       { '<leader>fc', function() require('plugins.specs.ui.telescope.toggles').find_files({ cwd = vim.fn.stdpath('config') }) end, desc = icons.config_files .. ' Config files' },
       { '<leader>fb', function() require('telescope.builtin').buffers() end, desc = icons.buffers .. ' Buffers' },
       { '<leader>fh', function() require('telescope.builtin').command_history() end, desc = icons.command_history .. ' Command history' },
