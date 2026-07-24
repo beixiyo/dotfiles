@@ -61,7 +61,9 @@ return {
 
     local map = vim.keymap.set
 
-    -- buffer 切换沿用 Neovim 0.11+ 内置的 [b / ]b / [B / ]B
+    -- 按当前 split 的可见标签顺序切换，避免内置 :bnext 遍历全局 listed buffer
+    map('n', '[b', function() bufferline.cycle(-vim.v.count1) end, { desc = icon .. 'Previous buffer', silent = true })
+    map('n', ']b', function() bufferline.cycle(vim.v.count1) end, { desc = icon .. 'Next buffer', silent = true })
     map('n', '<leader>bd', bufferline.close_current, { desc = icon .. 'Close buffer', silent = true })
     map('n', '<leader>bD', function() bufferline.close_current({ force = true }) end, { desc = icon .. 'Force close buffer', silent = true })
     map('n', '<leader>bh', '<cmd>VVBufferlineCloseLeft<cr>', { desc = icon .. 'Close buffers left', silent = true })
