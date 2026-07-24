@@ -3,6 +3,8 @@ set -euo pipefail
 
 dir="$(cd "$(dirname "$0")" && pwd)"
 owner="beixiyo"
+max_jobs=4
+running_jobs=0
 
 repos=(
   vv-dashboard.nvim
@@ -27,11 +29,21 @@ repos=(
 
 for name in "${repos[@]}"; do
   target="$dir/$name"
-  if [ -d "$target" ]; then
-    printf '\033[33m=> %s (already exists, skip)\033[0m\n' "$name"
-    continue
+  {
+    if [ -d "$target" ]; then
+      printf '\033[33m=> %s (already exists, skip)\033[0m\n' "$name"
+      exit 0
+    fi
+
+    printf '\033[36m=> %s\033[0m\n' "$name"
+    git clone "git@github.com:$owner/$name.git" "$target" \
+      || printf '\033[31m   ✗ %s failed\033[0m\n' "$name"
+  } &
+
+  running_jobs=$((running_jobs + 1))
+  if (( running_jobs >= max_jobs )); then
+    wait -n
+    running_jobs=$((running_jobs - 1))
   fi
-  printf '\033[36m=> %s\033[0m\n' "$name"
-  git clone "git@github.com:$owner/$name.git" "$target" \
-    || printf '\033[31m   ✗ %s failed\033[0m\n' "$name"
 done
+wait
