@@ -29,9 +29,12 @@ return {
       { '<leader>fj', function() require('telescope.builtin').jumplist() end, desc = icons.jumps .. ' Jumps' },
       { '<leader>fk', function() require('telescope.builtin').keymaps() end, desc = icons.keymaps .. ' Keymaps' },
       { '<leader>fM', function() require('plugins.specs.ui.telescope.macro').open(require('telescope.themes').get_dropdown()) end, desc = icons.registers .. ' Macros' },
+      { '<leader>f?', function() require('telescope.builtin').builtin() end, desc = icons.tools .. ' Telescope tools' },
 
       { '<leader>ff', function() require('plugins.specs.ui.telescope.toggles').find_files() end, desc = icons.find_file .. ' Find files' },
+      { '<leader>sb', function() require('telescope.builtin').current_buffer_fuzzy_find() end, desc = icons.find_text .. ' Find in buffer' },
       { '<leader>sg', function() require('plugins.specs.ui.telescope.toggles').live_grep() end, desc = icons.find_text .. ' Find text' },
+      { '<leader>sh', function() require('telescope.builtin').help_tags() end, desc = icons.commands .. ' Help tags' },
       { '<leader>sw', function() require('telescope.builtin').grep_string() end, mode = { 'n', 'x' }, desc = icons.words .. ' Find word or selection' },
     }
   end,
