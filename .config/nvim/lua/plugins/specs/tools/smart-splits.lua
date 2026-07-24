@@ -2,9 +2,21 @@
 -- Ctrl+Alt+h/j/k/l 切换焦点，Ctrl+Alt+方向键调整大小
 local SCROLLBAR_FT = 'vv-scrollbar'
 
-local function action(name)
+local function resize(name)
   return function()
-    require('smart-splits')[name]()
+    local win = vim.api.nvim_get_current_win()
+    local view = require('vv-scrollbar.core.view')
+
+    -- map view 是源窗口右侧的真实 split。若直接调整，smart-splits 改到的是
+    -- 源窗口与 map view 之间的边界，随后滚动条恢复宽度，看起来只会抖一下
+    view.close_all()
+    vim.api.nvim_set_current_win(win)
+    local ok, err = xpcall(function()
+      require('smart-splits')[name]()
+    end, debug.traceback)
+    view.refresh()
+
+    if not ok then error(err) end
   end
 end
 
@@ -41,10 +53,10 @@ local function keymaps()
     { '<C-A-j>', move('move_cursor_down'),  mode = { 'n', 't' }, desc = 'Focus down' },
     { '<C-A-k>', move('move_cursor_up'),    mode = { 'n', 't' }, desc = 'Focus up' },
     { '<C-A-l>', move('move_cursor_right'), mode = { 'n', 't' }, desc = 'Focus right' },
-    { '<C-A-Left>',  action('resize_left'),  desc = 'Resize left' },
-    { '<C-A-Right>', action('resize_right'), desc = 'Resize right' },
-    { '<C-A-Up>',    action('resize_up'),    desc = 'Resize up' },
-    { '<C-A-Down>',  action('resize_down'),  desc = 'Resize down' },
+    { '<C-A-Left>',  resize('resize_left'),  desc = 'Resize left' },
+    { '<C-A-Right>', resize('resize_right'), desc = 'Resize right' },
+    { '<C-A-Up>',    resize('resize_up'),    desc = 'Resize up' },
+    { '<C-A-Down>',  resize('resize_down'),  desc = 'Resize down' },
   }
 
   if vim.g.neovide then
@@ -57,10 +69,10 @@ local function keymaps()
       { '<D-A-j>', move('move_cursor_down'),  mode = { 'n', 't' }, desc = 'Focus down' },
       { '<D-A-k>', move('move_cursor_up'),    mode = { 'n', 't' }, desc = 'Focus up' },
       { '<D-A-l>', move('move_cursor_right'), mode = { 'n', 't' }, desc = 'Focus right' },
-      { '<D-A-Left>',  action('resize_left'),  desc = 'Resize left' },
-      { '<D-A-Right>', action('resize_right'), desc = 'Resize right' },
-      { '<D-A-Up>',    action('resize_up'),    desc = 'Resize up' },
-      { '<D-A-Down>',  action('resize_down'),  desc = 'Resize down' },
+      { '<D-A-Left>',  resize('resize_left'),  desc = 'Resize left' },
+      { '<D-A-Right>', resize('resize_right'), desc = 'Resize right' },
+      { '<D-A-Up>',    resize('resize_up'),    desc = 'Resize up' },
+      { '<D-A-Down>',  resize('resize_down'),  desc = 'Resize down' },
     })
   end
 
