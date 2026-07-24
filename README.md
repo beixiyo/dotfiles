@@ -1,6 +1,6 @@
 # dotfiles
 
-> A lightweight, recoverable terminal workspace built for remote development
+> A lightweight, recoverable, terminal-first IDE workspace built for remote development
 
 <p align="center">English | <a href="README.zh-CN.md">中文</a></p>
 
@@ -23,13 +23,13 @@
   <a href="https://wezterm.org/"><img src="https://img.shields.io/badge/WezTerm-4E49EE?style=flat&amp;logo=wezterm&amp;logoColor=white" alt="WezTerm"></a>
 </p>
 
-![workflow](./docs/assets/workflow.png)
+![workflow](https://github.com/beixiyo/dotfiles/releases/download/assets-2026-07-24/workflow.png)
 
 <video muted autoplay loop controls src="https://github.com/user-attachments/assets/b26a9b91-1898-4fcb-99b3-692911eb10ed" title="Terminal workflow demo"></video>
 
 <p align="center"><strong>Neovim setup and plugin showcase: <a href=".config/nvim/README.md">Chinese guide →</a></strong></p>
 
-This repository turns a fresh terminal into a complete development workspace: Zsh provides the shell, tmux keeps sessions alive, Kitty / Ghostty / WezTerm render the terminal, and Neovim handles code, Git, notes, and AI-assisted workflows. The same shortcuts move between terminal panes and editor splits, so the tools feel like one environment instead of several unrelated apps
+This repository turns a fresh terminal into a complete IDE environment: Zsh provides the shell, tmux keeps sessions alive, Kitty / Ghostty / WezTerm render the terminal, and Neovim handles code, Git, notes, and AI-assisted workflows. The same shortcuts move between terminal panes and editor splits, so the tools feel like one environment instead of several unrelated apps
 
 <!--toc:start-->
 - [dotfiles](#dotfiles)
@@ -181,6 +181,8 @@ New to Neovim? Follow the Wiki in order: [Modes and Movement](https://github.com
 > Want configuration files only, without installing dependencies or changing the system? See the manual deployment option in the [one-click-config guide](one-click-config/README.md)
 
 ## Why a terminal-first workflow
+
+This is not a loose collection of terminal tools. It connects the terminal, multiplexer, editor, file manager, Git, LSP, scripts, and AI into one recoverable IDE workspace. The default workflow does not depend on a full desktop environment; Neovide is an optional GUI entry point when graphical rendering is useful.
 
 - **Lightweight and remote-friendly**: SSH is all you need. There is no full desktop stream and no dependency on RDP, Sunshine, or NoMachine; a terminal also remains more usable when the network becomes unstable
 - **Recoverable workspace**: [tmux](https://github.com/tmux/tmux) keeps windows, panes, and CLIs alive across SSH disconnects. tmux-resurrect and tmux-continuum periodically save layouts, directories, pane contents, and selected commands so the workspace can be reconstructed after a reboot

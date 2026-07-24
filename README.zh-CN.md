@@ -1,6 +1,6 @@
 # dotfiles
 
-> 轻量、可恢复、适合远程开发的全终端工作区
+> 轻量、可恢复、适合远程开发的纯终端 IDE 工作区
 
 <p align="center"><a href="README.md">English</a> | 中文</p>
 
@@ -23,13 +23,13 @@
   <a href="https://wezterm.org/"><img src="https://img.shields.io/badge/WezTerm-4E49EE?style=flat&amp;logo=wezterm&amp;logoColor=white" alt="WezTerm"></a>
 </p>
 
-![workflow](./docs/assets/workflow.png)
+![workflow](https://github.com/beixiyo/dotfiles/releases/download/assets-2026-07-24/workflow.png)
 
 <video muted autoplay loop controls src="https://github.com/user-attachments/assets/b26a9b91-1898-4fcb-99b3-692911eb10ed" title="终端工作流演示"></video>
 
 <p align="center"><strong>Neovim 配置、使用与插件展示：<a href=".config/nvim/README.md">快速开始 →</a></strong></p>
 
-这个仓库可以把一台新机器的终端变成完整的开发工作区：Zsh 提供 Shell，tmux 持久保存会话，Kitty / Ghostty / WezTerm 负责终端显示，Neovim 处理代码、Git、笔记和 AI 辅助工作流。终端分屏与编辑器分屏共用同一套快捷键，使用时更像一个完整环境，而不是多个互不相关的工具
+这个仓库的核心目标，是用纯终端打造一个完整的 IDE 环境：Zsh 提供 Shell，tmux 持久保存会话，Kitty / Ghostty / WezTerm 负责终端显示，Neovim 处理代码、Git、笔记和 AI 辅助工作流。终端分屏与编辑器分屏共用同一套快捷键，使用时更像一个完整环境，而不是多个互不相关的工具
 
 <!--toc:start-->
 - [dotfiles](#dotfiles)
@@ -181,6 +181,8 @@ tmux new-session -A
 > 只想复制配置文件、不安装依赖或修改系统？查看 [one-click-config 说明](one-click-config/README.md)中的手动部署方式
 
 ## 为什么选择全终端工作流
+
+这里的“全终端”不是把工具简单堆在终端里，而是把终端、复用器、编辑器、文件管理、Git、LSP、脚本和 AI 串成一个可恢复的 IDE 工作区。默认工作流不依赖完整桌面环境；Neovide 只作为需要图形渲染时的可选入口
 
 - **轻量且适合远程开发**：只需要 SSH，不必传输完整桌面画面，也不依赖 RDP、Sunshine 或 NoMachine；网络波动时，终端通常比图形桌面更容易保持可用
 - **工作状态可以恢复**：[tmux](https://github.com/tmux/tmux) 会在 SSH 断开后继续保持窗口、分屏和正在运行的 CLI。tmux-resurrect 与 tmux-continuum 还能定期保存布局、目录、pane 内容和部分启动命令，在重启后重建工作区
