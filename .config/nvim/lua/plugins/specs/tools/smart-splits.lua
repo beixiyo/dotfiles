@@ -5,12 +5,31 @@ local SCROLLBAR_FT = 'vv-scrollbar'
 local function resize(name)
   return function()
     local win = vim.api.nvim_get_current_win()
+    local state = require('vv-scrollbar.core.state')
     local view = require('vv-scrollbar.core.view')
+    local widths = {}
 
     -- map view 是源窗口右侧的真实 split。若直接调整，smart-splits 改到的是
     -- 源窗口与 map view 之间的边界，随后滚动条恢复宽度，看起来只会抖一下
+    for parent, bar in pairs(state.bars) do
+      if vim.api.nvim_win_is_valid(parent) and vim.api.nvim_win_is_valid(bar.win) then
+        widths[#widths + 1] = {
+          win = parent,
+          width = vim.api.nvim_win_get_width(parent)
+            + vim.api.nvim_win_get_width(bar.win)
+            + 1,
+        }
+      end
+    end
+
     view.close_all()
+    for _, item in ipairs(widths) do
+      if vim.api.nvim_win_is_valid(item.win) then
+        vim.api.nvim_win_set_width(item.win, item.width)
+      end
+    end
     vim.api.nvim_set_current_win(win)
+
     local ok, err = xpcall(function()
       require('smart-splits')[name]()
     end, debug.traceback)
