@@ -7,6 +7,76 @@ local M = {}
 local term     ---@type table?  toggleterm Terminal 实例（交互 shell，跟随 cwd）
 local term_dir ---@type string? 当前 cwd
 local run_term ---@type table?  一次性命令的浮窗终端（与交互 shell 分开）
+local tmux_cwd_sync_ready = false
+local tmux_popup_id
+
+local function set_tmux_pane_option(name, value)
+  local pane = vim.env.TMUX_PANE
+  if not pane or pane == '' then return end
+
+  vim.fn.system({
+    'tmux',
+    'set-option',
+    '-p',
+    '-t',
+    pane,
+    name,
+    value,
+  })
+end
+
+local function sync_tmux_cwd()
+  set_tmux_pane_option('@nvim_cwd', vim.fn.getcwd())
+end
+
+-- tmux 的 pane_current_path 只能看到 nvim 进程 cwd，看不到 :lcd / :tcd
+-- 将 nvim 实际 cwd 同步到 pane option，供 tmux 层的 C-` popup 使用
+function M.setup_tmux_cwd_sync()
+  if tmux_cwd_sync_ready or not vim.env.TMUX_PANE then return end
+  tmux_cwd_sync_ready = true
+  tmux_popup_id = ('nvim-%s-%d'):format(
+    vim.env.TMUX_PANE:gsub('[^%w_-]', ''),
+    vim.fn.getpid()
+  )
+
+  sync_tmux_cwd()
+  set_tmux_pane_option('@nvim_popup_id', tmux_popup_id)
+
+  local group = vim.api.nvim_create_augroup('NvimTmuxCwd', { clear = true })
+  vim.api.nvim_create_autocmd('DirChanged', {
+    group = group,
+    callback = sync_tmux_cwd,
+  })
+  vim.api.nvim_create_autocmd('VimLeavePre', {
+    group = group,
+    callback = function()
+      vim.fn.system({
+        'tmux',
+        'kill-session',
+        '-t',
+        '=popup-' .. tmux_popup_id,
+      })
+      vim.fn.system({
+        'tmux',
+        'set-option',
+        '-p',
+        '-u',
+        '-t',
+        vim.env.TMUX_PANE,
+        '@nvim_cwd',
+      })
+      vim.fn.system({
+        'tmux',
+        'set-option',
+        '-p',
+        '-u',
+        '-t',
+        vim.env.TMUX_PANE,
+        '@nvim_popup_id',
+      })
+    end,
+  })
+end
 
 -- toggleterm 是 opt 懒加载插件，未加载时直接 require 会失败；经 pack.loader 强制加载
 -- （幂等，会跑其 setup 注册命令，不影响其余 <leader>t* 键位）
@@ -97,7 +167,7 @@ function M.popup(dir)
     return false
   end
 
-  vim.system({ script, dir or vim.fn.getcwd() })
+  vim.system({ script, dir or vim.fn.getcwd(), tmux_popup_id or '' })
   return true
 end
 

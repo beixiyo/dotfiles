@@ -1,6 +1,8 @@
 local h = require("config.keymaps.helpers")
 local map = h.map
 
+require('tools.term').setup_tmux_cwd_sync()
+
 local severity_labels = { 'Error', 'Warn', 'Info', 'Hint' }
 
 local function panel_node_path()

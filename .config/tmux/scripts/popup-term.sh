@@ -1,7 +1,7 @@
 #!/bin/sh
 # 在 tmux popup 里开一个「持久」scratch 终端，作为 nvim 内置终端的替代
 #
-# 用法：popup-term.sh <dir>
+# 用法：popup-term.sh <dir> [id]
 #
 # 为什么不是 `display-popup -E $SHELL`：那样每次弹出都是全新 shell，
 # 关掉即丢历史与运行中的进程，比 toggleterm 还退步。这里让 popup 内部
@@ -20,9 +20,10 @@ set -eu
 dir="${1:-$PWD}"
 [ -d "$dir" ] || dir="$HOME"
 
-# session 名按目录 basename 派生：一个项目一个常驻终端，符合直觉且数量可控
+# nvim 会传入实例级 id，使终端跟随该实例销毁；普通 tmux pane 仍按目录复用
 # tmux session 名里的 . 和 : 有特殊含义（window/pane 分隔符），一律换成 -
-base=$(basename "$dir" | sed 's/[^[:alnum:]_-]/-/g')
+base="${2:-$(basename "$dir")}"
+base=$(printf '%s' "$base" | sed 's/[^[:alnum:]_-]/-/g')
 [ -n "$base" ] || base="root"
 name="popup-$base"
 
