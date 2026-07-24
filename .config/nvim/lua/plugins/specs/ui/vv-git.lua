@@ -35,6 +35,15 @@ return {
 
   ---@type VVGitConfig
   opts = {
+    before_open = function()
+      local explorer = package.loaded['vv-explorer']
+      if not explorer or not explorer.is_open() then return end
+
+      explorer.close()
+      return function()
+        if not explorer.is_open() then explorer.open() end
+      end
+    end,
     fold_staged = true, -- 打开面板时默认折叠 Staged Changes section（仅此一层）
     diff_ratio = { 4, 6 },
     diff_nowrap = false,

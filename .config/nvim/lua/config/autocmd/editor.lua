@@ -27,19 +27,25 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 })
 
 -- 窗口尺寸变化时重新平衡分割
-vim.api.nvim_create_autocmd({ "VimResized" }, {
-  group = augroup("resize_splits"),
+vim.api.nvim_create_autocmd({ 'VimResized' }, {
+  group = augroup('resize_splits'),
   callback = function()
-    -- tmux zoom 一类的终端尺寸变化会触发这里。而 `:tabdo` 每进入一个 tab，
-    -- 都会把焦点落在该 tab 的第一个窗口上——即使执行的命令什么都不做
-    -- （`tabdo echo ""` 同样会跳），跟 `wincmd =` 无关。
-    -- 只记录 tabpagenr 不够：那样跑完能回到原来的 tab，却回不到原来的窗口，
-    -- 光标会从 vv-explorer 这类侧边栏掉进右侧的编辑窗口。
-    -- 故把窗口一并记下，最后一起复位
     local current_win = vim.api.nvim_get_current_win()
-    local current_tab = vim.fn.tabpagenr()
-    vim.cmd("tabdo wincmd =")
-    vim.cmd("tabnext " .. current_tab)
+
+    for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
+      local ok, managed = pcall(vim.api.nvim_tabpage_get_var, tab, 'vv_bufferline_ignore')
+
+      if not ok or not managed then
+        local win = vim.iter(vim.api.nvim_tabpage_list_wins(tab)):find(function(candidate)
+          return vim.api.nvim_win_get_config(candidate).relative == ''
+        end)
+
+        if win then
+          vim.api.nvim_win_call(win, function() vim.cmd('wincmd =') end)
+        end
+      end
+    end
+
     if vim.api.nvim_win_is_valid(current_win) then
       vim.api.nvim_set_current_win(current_win)
     end
