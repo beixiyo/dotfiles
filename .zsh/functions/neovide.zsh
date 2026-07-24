@@ -127,12 +127,12 @@ _NVD_TMUX_PARK_SESSION='_nvd_park'
 
 _nvd_tmux_ensure_park_session() {
   local park="$_NVD_TMUX_PARK_SESSION"
+  local placeholder_pane
 
   tmux has-session -t "=$park" 2>/dev/null && return 0
 
-  tmux new-session -d -s "$park" || return 1
-  # 隐藏 session 始终处于 detached 状态，必须关掉 destroy-unattached 才能常驻复用
-  tmux set-option -t "=$park" destroy-unattached off 2>/dev/null
+  placeholder_pane="$(tmux new-session -d -P -F '#{pane_id}' -s "$park")" || return 1
+  print -r -- "$placeholder_pane"
 }
 
 _nvd_kitty_can_replace_window() {
@@ -270,8 +270,11 @@ _nvd_restore_pane_from_neovide() {
 
   local pane_id
   local pane_count
+  local grep_bin
+  local session_id
   local tmux_bin
   local window_id
+  local window_name
   local window_layout
   local pane_left
   local pane_top
@@ -280,13 +283,20 @@ _nvd_restore_pane_from_neovide() {
   local window_width
   local window_height
   local restore_pane
+  local restore_window
+  local pane_exists
+  local window_exists
+  local park_placeholder
   local -a on_exit_lines
   local -a join_args
 
+  grep_bin="$(command -v grep)" || return 1
   tmux_bin="$(command -v tmux)" || return 1
   pane_id="$(_nvd_tmux_value '#{pane_id}')"
   pane_count="$(_nvd_tmux_value '#{window_panes}')"
+  session_id="$(_nvd_tmux_value '#{session_id}')"
   window_id="$(_nvd_tmux_value '#{window_id}')"
+  window_name="$(_nvd_tmux_value '#{window_name}')"
   window_layout="$(_nvd_tmux_value '#{window_layout}')"
   pane_left="$(_nvd_tmux_value '#{pane_left}')"
   pane_top="$(_nvd_tmux_value '#{pane_top}')"
@@ -295,7 +305,7 @@ _nvd_restore_pane_from_neovide() {
   window_width="$(_nvd_tmux_value '#{window_width}')"
   window_height="$(_nvd_tmux_value '#{window_height}')"
 
-  [[ -n "$pane_id" && -n "$window_id" && "$pane_count" == <-> ]] || return 1
+  [[ -n "$pane_id" && -n "$session_id" && -n "$window_id" && "$pane_count" == <-> ]] || return 1
 
   join_args=("$tmux_bin" join-pane -d -s "$pane_id" -t "$window_id")
 
@@ -308,13 +318,21 @@ _nvd_restore_pane_from_neovide() {
   fi
 
   restore_pane="$(_nvd_quote_args "${join_args[@]}")"
+  restore_window="$(_nvd_quote_args \
+    "$tmux_bin" break-pane -d -s "$pane_id" -t "$session_id:" -n "$window_name")"
+  window_exists="$(_nvd_quote_args "$tmux_bin" list-windows -a -F '#{window_id}') | \
+$(_nvd_quote_args "$grep_bin" -Fxq -- "$window_id")"
+  pane_exists="$(_nvd_quote_args "$tmux_bin" list-panes -a -F '#{pane_id}') | \
+$(_nvd_quote_args "$grep_bin" -Fxq -- "$pane_id")"
 
-  on_exit_lines+=("if $(_nvd_quote_args "$tmux_bin" display-message -p -t "$window_id" '#{window_id}') >/dev/null 2>&1 \\")
-  on_exit_lines+=("  && $(_nvd_quote_args "$tmux_bin" display-message -p -t "$pane_id" '#{pane_id}') >/dev/null 2>&1; then")
+  on_exit_lines+=("if $window_exists && $pane_exists; then")
   on_exit_lines+=("  $restore_pane")
   if [[ -n "$window_layout" ]]; then
     on_exit_lines+=("  $(_nvd_quote_args "$tmux_bin" select-layout -t "$window_id" "$window_layout") 2>/dev/null || true")
   fi
+  on_exit_lines+=("elif $(_nvd_quote_args "$tmux_bin" has-session -t "$session_id") >/dev/null 2>&1 \\")
+  on_exit_lines+=("  && $pane_exists; then")
+  on_exit_lines+=("  $restore_window")
   on_exit_lines+=("fi")
 
   if ! NVD_TMUX_ORIGIN_PANE="$pane_id" \
@@ -325,8 +343,15 @@ _nvd_restore_pane_from_neovide() {
 
   # 把当前 pane 搬进隐藏 session 停放：tab 上不再冒出 nvd:@xxx window
   # join-pane 恢复时用全局唯一的 $pane_id 引用，跨 session 一样能拉回原窗口
-  if _nvd_tmux_ensure_park_session; then
-    tmux break-pane -d -s "$pane_id" -t "=$_NVD_TMUX_PARK_SESSION:" -n "nvd:$window_id"
+  if park_placeholder="$(_nvd_tmux_ensure_park_session)"; then
+    if tmux break-pane -d -s "$pane_id" -t "=$_NVD_TMUX_PARK_SESSION:" -n "nvd:$window_id"; then
+      # 新建 session 必须先带一个 pane；真实 pane 停入后立即删掉这个占位 pane
+      [[ -n "$park_placeholder" ]] && tmux kill-pane -t "$park_placeholder"
+    else
+      # 首次创建后停放失败时，不留下只有占位 pane 的空壳 session
+      [[ -n "$park_placeholder" ]] && tmux kill-session -t "=$_NVD_TMUX_PARK_SESSION"
+      return 1
+    fi
   else
     # 隐藏 session 建不出来时退回原行为，至少保证 pane 不丢
     tmux break-pane -d -s "$pane_id" -n "nvd:$window_id"
