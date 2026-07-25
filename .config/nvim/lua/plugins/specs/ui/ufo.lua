@@ -163,10 +163,8 @@ return {
     ---@type UfoConfig
     ufo.setup({
       open_fold_hl_timeout = 150,
-      close_fold_kinds_for_ft = {
-        default = { 'imports', 'comment' },
-        json = { 'array' },
-      },
+      -- 保留 ufo 的 provider、预览和手动折叠，但打开 buffer 时不自动关闭任何 fold
+      close_fold_kinds_for_ft = {},
       preview = {
         win_config = {
           border = 'rounded',

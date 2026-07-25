@@ -44,6 +44,7 @@ return {
         if not explorer.is_open() then explorer.open() end
       end
     end,
+    fold_unchanged = false,
     fold_staged = true, -- 打开面板时默认折叠 Staged Changes section（仅此一层）
     diff_ratio = { 4.5, 5.5 },
     diff_nowrap = false,
