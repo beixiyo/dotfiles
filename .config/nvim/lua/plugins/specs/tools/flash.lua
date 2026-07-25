@@ -14,8 +14,10 @@ return {
     return {
       { 's', function() require('flash').jump() end, mode = { 'n', 'x', 'o' }, desc = icons.jumps .. ' Flash jump' },
       { 'S', function() require('flash').treesitter() end, mode = { 'n', 'x', 'o' }, desc = icons.vscode .. ' Flash Treesitter' },
-      { 'r', function() require('flash').remote() end, mode = 'o', desc = icons.jumps .. ' Remote Flash' },
-      { 'R', function() require('flash').treesitter_search() end, mode = { 'o', 'x' }, desc = icons.vscode .. ' TS Search' },
+      { 'f', nil, mode = { 'n', 'x', 'o' }, desc = icons.jumps .. ' Flash f' },
+      { 'F', nil, mode = { 'n', 'x', 'o' }, desc = icons.jumps .. ' Flash F' },
+      { '/', nil, mode = 'n', desc = icons.jumps .. ' Flash search forward' },
+      { '?', nil, mode = 'n', desc = icons.jumps .. ' Flash search backward' },
     }
   end,
 
@@ -29,7 +31,11 @@ return {
     },
     modes = {
       search = { enabled = true },
-      char = { jump_labels = true },
+      char = {
+        jump_labels = true,
+        multi_line = true,
+        keys = { 'f', 'F' },
+      },
       treesitter = {
         labels = 'asdfghjklqwertyuiopzxcvbnm',
         label = { rainbow = { enabled = true, shade = 5 } },
