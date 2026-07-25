@@ -10,7 +10,10 @@ return {
   end,
   opts = {
     log_level = 'off',
-    ignore_filetypes = { gitcommit = true },
+    ignore_filetypes = {
+      gitcommit = true,
+      ['vv-i18n-editor'] = true,
+    },
     keymaps = {
       accept_suggestion = '<M-]>',
       clear_suggestion = '<M-[>',
