@@ -58,8 +58,8 @@ pkgs() {
   local gen_list="bun run ${_list_ts} --pm=$pm 2>/dev/null"
 
   local header
-  header="Info ↵ │ Multi ⇥ │ ${update_label} ${_fzf_opt_hint}U │ Uninstall ^D"
-  header+=$'\n'"Copy name ${_fzf_opt_hint}C │ Copy path ${_fzf_opt_hint}P │ Files ^F │ Refresh ^R"
+  header="Info ↵ │ Multi ⇥ │ ${update_label} ${_fzf_opt_hint}u │ Uninstall ^d"
+  header+=$'\n'"Cp name ${_fzf_opt_hint}c │ Cp path ${_fzf_opt_hint}p │ File ^f │ Refresh ^r"
 
   eval "$gen_list" < /dev/null | fzf --ansi --multi \
     --delimiter '\t' \

@@ -18,8 +18,8 @@ async function main(): Promise<void> {
   const list = listResult.stdout.toString()
 
   const guide = [
-    'Multi ⇥ │ Logs l │ Exec e │ Copy ID c │ Stop s │ Run r │ Restart R',
-    'Remove container d │ Remove image i │ Refresh ^R',
+    'Multi ⇥ │ Logs l │ Exec e │ Cp ID c │ Stop s │ Run r │ Restart R',
+    'Rm container d │ Rm image i │ Refresh ^r',
   ].join('\n')
 
   const [, selected] = await spawnFzfCapture([

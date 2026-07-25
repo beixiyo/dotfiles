@@ -59,7 +59,7 @@ render_header() {
   echo "$out"
 }
 
-FOOTER_ACTIONS=("Select ↵" "Code ${CMD_HINT}O" "nvim ${OPT_HINT}O" "Copy ${OPT_HINT}C")
+FOOTER_ACTIONS=("Select ↵" "Code ${CMD_HINT}o" "nvim ${OPT_HINT}o" "Cp ${OPT_HINT}c")
 
 render_footer() {
   local i out=""
@@ -133,19 +133,19 @@ dispatch_click() {
   case "$word" in
     Select|↵)
       dispatch_enter "$item" ;;
-    Code|"${CMD_HINT}O")
+    Code|"${CMD_HINT}o")
       case $ch in
         0) printf "execute(code %s)" "$(printf '%q' "$item")" ;;
         1) file="${item%%:*}"; line="${item#*:}"; line="${line%%:*}"
            printf "execute(code -g %s:%s)" "$(printf '%q' "$file")" "$line" ;;
       esac ;;
-    nvim|"${OPT_HINT}O")
+    nvim|"${OPT_HINT}o")
       case $ch in
         0) printf "execute(nvim %s < /dev/tty)" "$(printf '%q' "$item")" ;;
         1) file="${item%%:*}"; line="${item#*:}"; line="${line%%:*}"
            printf "execute(nvim '+%s' %s < /dev/tty)" "$line" "$(printf '%q' "$file")" ;;
       esac ;;
-    Copy|"${OPT_HINT}C")
+    Cp|"${OPT_HINT}c")
       printf "execute-silent(bun run '%s/path.ts' abs %s 2>/dev/null | %s)" \
         "$BUN_SRC" "$(printf '%q' "$item")" "$CLIP_CMD" ;;
   esac

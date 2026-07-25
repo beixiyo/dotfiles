@@ -94,7 +94,7 @@ function M.open(opts)
   })
 
   opts.layout_config = { preview_width = 0.65 }
-  opts.prompt_title = 'Apply ↵  Pop ^X  Drop ^D'
+  opts.prompt_title = 'Apply ↵  Pop ^x  Drop ^d'
 
   opts.attach_mappings = function(_, map)
     local function do_apply(prompt_bufnr)

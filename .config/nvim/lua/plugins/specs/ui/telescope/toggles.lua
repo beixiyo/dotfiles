@@ -50,7 +50,7 @@ end
 --- @field on string 激活时显示的标签
 --- @field off string 未激活时显示的标签
 
---- 构建 picker 标题，格式：`base  hidden ⌥H  gitignore ⌥I`
+--- 构建 picker 标题，格式：`base  hidden ⌥h  gitignore ⌥i`
 --- @param base string 标题前缀
 --- @param state table<string, boolean> 当前各 toggle 的开关状态
 --- @param defs ToggleDef[]

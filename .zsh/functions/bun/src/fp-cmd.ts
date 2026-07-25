@@ -184,9 +184,9 @@ async function main(): Promise<void> {
 
   const cmdMax = Math.max(parseInt(process.env.FP_CMD_MAX ?? '70', 10), 20)
   const clipCmd = detectClipCopy()
-  const portGuide = `Multi ⇥ │ Copy ${fzf.optHint}C │ Kill ↵`
-  const collapsedGuide = `Multi ⇥ │ Expand ^E │ Copy ${fzf.optHint}C │ Kill ↵`
-  const expandedGuide = `Multi ⇥ │ Collapse ^E │ Copy ${fzf.optHint}C │ Kill ↵`
+  const portGuide = `Multi ⇥ │ Cp ${fzf.optHint}c │ Kill ↵`
+  const collapsedGuide = `Multi ⇥ │ Expand ^e │ Cp ${fzf.optHint}c │ Kill ↵`
+  const expandedGuide = `Multi ⇥ │ Collapse ^e │ Cp ${fzf.optHint}c │ Kill ↵`
 
   const clipBind = clipCmd !== 'cat'
     ? [`--bind`, `alt-c:execute-silent(printf '%s\\t%s\\t%s\\t%s\\n' {1} {2} {3} {5} | ${clipCmd})+abort`]

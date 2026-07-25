@@ -22,7 +22,7 @@ async function main(): Promise<void> {
     '--preview', `${FUNC_DIR}/_preview/git-log.sh {}`,
     '--preview-window', fzf.gitPreviewWindow,
     '--bind', fzf.scrollBinds,
-    '--header', `Select ↵ │ Navigate ${fzf.cmdHint}N/${fzf.cmdHint}P │ Preview ^E/^Y`,
+    '--header', `Select ↵ │ Navi ${fzf.cmdHint}n/${fzf.cmdHint}p │ Scroll ^e/^y`,
   ], {
     stdin: git.stdout,
     stdout: 'inherit',

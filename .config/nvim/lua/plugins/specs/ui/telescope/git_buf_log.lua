@@ -143,7 +143,7 @@ function M.open(opts)
   end
 
   opts.layout_config = { preview_width = 0.75 }
-  opts.prompt_title = 'Diff ↵  Raw diff ^O  Hash ⌥H  Message ⌥Y'
+  opts.prompt_title = 'Diff ↵  RawDiff ^o  Hash ⌥h  Msg ⌥y'
   require('telescope.builtin').git_bcommits(opts)
 end
 

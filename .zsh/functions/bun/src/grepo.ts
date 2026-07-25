@@ -66,9 +66,9 @@ async function main(): Promise<void> {
   ].join('; ')
 
   const header = [
-    `cd ↵ │ Code ${fzf.cmdHint}O │ nvim ${fzf.optHint}O`,
-    `Navigate ${fzf.cmdHint}N/${fzf.cmdHint}P │ Preview ^E/^Y`,
-    `Remote ${fzf.optHint}C │ HTTPS ^${fzf.optHint}C │ Path ${fzf.optHint}P`,
+    `cd ↵ │ Code ${fzf.cmdHint}o │ nvim ${fzf.optHint}o`,
+    `Navi ${fzf.cmdHint}n/${fzf.cmdHint}p │ Scroll ^e/^y`,
+    `Remote ${fzf.optHint}c │ HTTPS ^${fzf.optHint}c │ Path ${fzf.optHint}p`,
   ].join('\n')
 
   const [, selected] = await spawnFzfCapture([

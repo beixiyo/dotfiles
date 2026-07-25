@@ -37,7 +37,7 @@ local function in_root(file, root)
 end
 
 local function title(project_scope)
-  return ('Recent Files  %s ⌥P'):format(project_scope and 'project' or 'global')
+  return ('Recent Files  %s ⌥p'):format(project_scope and 'project' or 'global')
 end
 
 function M.open()

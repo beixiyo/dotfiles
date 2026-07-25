@@ -40,8 +40,8 @@ async function main(): Promise<void> {
   const editor = process.env.EDITOR ?? 'nvim'
 
   const header = [
-    `Open ↵ │ Stage/unstage ${fzf.cmdHint}S │ Discard ${fzf.cmdHint}X`,
-    `Navigate ${fzf.cmdHint}N/${fzf.cmdHint}P │ Preview ^E/^Y`,
+    `Open ↵ │ Stage/unstage ${fzf.cmdHint}s │ Discard ${fzf.cmdHint}x`,
+    `Navi ${fzf.cmdHint}n/${fzf.cmdHint}p │ Scroll ^e/^y`,
   ].join('\n')
 
   await spawnFzf([
