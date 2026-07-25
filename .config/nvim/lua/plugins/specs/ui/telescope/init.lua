@@ -2,6 +2,45 @@
 -- 布局：全屏水平，左侧 ~40 列（prompt+list），右侧预览占剩余
 -- C sorter 由 telescope-fzf-native 提供（FFI），pcall load_extension 兜底
 -- 检查 fzf-native 是否启用: lua print(require('telescope').extensions.fzf and '✓' or '✗')
+local function get_visual_selection()
+  local mode = vim.fn.mode()
+  if not vim.tbl_contains({ 'v', 'V', '\22' }, mode) then return nil end
+
+  local lines = vim.fn.getregion(vim.fn.getpos('v'), vim.fn.getpos('.'), { type = mode })
+  return table.concat(lines, '\n')
+end
+
+local function live_grep_selection_opts(selection)
+  if not selection:find('\n', 1, true) then
+    return selection, nil, nil
+  end
+
+  local pattern = selection:gsub('([\\%^%$%.%*%+%?%(%)%[%]%{%}%|])', '\\%1')
+  return pattern:gsub('\n', '\\n'), { '--multiline' }, false
+end
+
+local function visual_grep_string()
+  local selection = get_visual_selection()
+  if not selection or selection == '' then return end
+
+  require('plugins.specs.ui.telescope.toggles').grep_string({
+    search = selection,
+    additional_args = selection:find('\n', 1, true) and { '--multiline' } or nil,
+  })
+end
+
+local function visual_live_grep()
+  local selection = get_visual_selection()
+  if not selection or selection == '' then return end
+
+  local default_text, additional_args, initial_fixed_strings = live_grep_selection_opts(selection)
+  require('plugins.specs.ui.telescope.toggles').live_grep({
+    default_text = default_text,
+    additional_args = additional_args,
+    initial_fixed_strings = initial_fixed_strings,
+  })
+end
+
 ---@type PackSpec
 return {
   desc = '通用 picker（recent/buffers/keymaps/marks/jumps/cmd history/config files）',
@@ -34,8 +73,10 @@ return {
       { '<leader>ff', function() require('plugins.specs.ui.telescope.toggles').find_files() end, desc = icons.find_file .. ' Find files' },
       { '<leader>sb', function() require('telescope.builtin').current_buffer_fuzzy_find() end, desc = icons.find_text .. ' Find in buffer' },
       { '<leader>sg', function() require('plugins.specs.ui.telescope.toggles').live_grep() end, desc = icons.find_text .. ' Find text' },
+      { '<leader>sg', visual_live_grep, mode = 'x', desc = icons.find_text .. ' Search selection' },
       { '<leader>sh', function() require('telescope.builtin').help_tags() end, desc = icons.commands .. ' Help tags' },
-      { '<leader>sw', function() require('telescope.builtin').grep_string() end, mode = { 'n', 'x' }, desc = icons.words .. ' Find word or selection' },
+      { '<leader>sw', function() require('plugins.specs.ui.telescope.toggles').grep_string() end, desc = icons.words .. ' Find word' },
+      { '<leader>sw', visual_grep_string, mode = 'x', desc = icons.words .. ' Find selection' },
     }
   end,
 

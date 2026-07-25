@@ -64,7 +64,7 @@ local function build_title(base, state, defs)
       :gsub('^C%-', '^')
       :gsub('^M%-', '⌥')
       :gsub('^S%-', '⇧')
-      :gsub('(%a)$', string.upper)
+      :gsub('(%a)$', string.lower)
     local label = state[d.field] and d.on or d.off
     parts[#parts + 1] = label .. ' ' .. hint
   end
@@ -164,8 +164,16 @@ end
 --- 带 toggle 的 live_grep，支持切换 hidden / no-ignore / fixed-strings，以及 glob 范围过滤
 --- @param base_opts? table telescope.builtin.live_grep 的选项
 function M.live_grep(base_opts)
-  local opts = base_opts or {}
-  local state = { hidden = false, no_ignore = false, fixed_strings = true, glob_input = '' }
+  local opts = vim.tbl_extend('force', {}, base_opts or {})
+  local base_additional_args = opts.additional_args
+  local initial_fixed_strings = opts.initial_fixed_strings
+  opts.initial_fixed_strings = nil
+  local state = {
+    hidden = false,
+    no_ignore = false,
+    fixed_strings = initial_fixed_strings ~= false,
+    glob_input = '',
+  }
 
   -- 新输入用 VS Code 风格顶层逗号分隔；无顶层逗号时保留旧的 shell-like 空格分隔
   -- 因此单条含空格路径可写为 "path with spaces/**"
@@ -197,15 +205,21 @@ function M.live_grep(base_opts)
   local function build_grep_title()
     local title = build_title('Live Grep', state, defs)
     if state.glob_input ~= '' then
-      title = title .. '  ' .. state.glob_input .. ' ⌥P'
+      title = title .. '  ' .. state.glob_input .. ' ⌥p'
     else
-      title = title .. '  glob ⌥P'
+      title = title .. '  glob ⌥p'
     end
     return title
   end
 
   local function build_extra_args()
     local args = {}
+    if type(base_additional_args) == 'function' then
+      vim.list_extend(args, base_additional_args(opts) or {})
+    elseif type(base_additional_args) == 'table' then
+      vim.list_extend(args, base_additional_args)
+    end
+
     if state.hidden then args[#args + 1] = '--hidden' end
     if state.no_ignore then args[#args + 1] = '--no-ignore' end
     if state.fixed_strings then args[#args + 1] = '--fixed-strings' end
@@ -288,6 +302,141 @@ function M.live_grep(base_opts)
       return true
     end,
   }))
+end
+
+--- 带 toggle 的 grep_string：首轮 rg 固定搜索词，输入框只过滤已召回结果
+--- @param base_opts? table telescope.builtin.grep_string 的选项
+function M.grep_string(base_opts)
+  local opts = vim.tbl_extend('force', {}, base_opts or {})
+  local search = tostring(opts.search or vim.fn.expand('<cword>'))
+  local base_additional_args = opts.additional_args
+  local state = {
+    hidden = false,
+    no_ignore = false,
+    fixed_strings = true,
+    glob_input = '',
+  }
+
+  local function compile_rg_input(input)
+    local comma_sources, split_error = Glob.split(input)
+    if not comma_sources then return nil, split_error end
+    if #comma_sources > 1 or not input:find('%s') then
+      return Glob.compile_rg_list(input)
+    end
+
+    local ok, sources = pcall(vim.fn.shellsplit, input)
+    if not ok then return nil, tostring(sources) end
+
+    local compiled = {}
+    for _, source in ipairs(sources) do
+      local patterns, compile_error = Glob.compile_rg(source)
+      if not patterns then return nil, compile_error end
+      vim.list_extend(compiled, patterns)
+    end
+    return compiled, nil
+  end
+
+  local defs = {
+    { key = '<M-h>', field = 'hidden',        on = 'hidden',    off = 'no-hidden' },
+    { key = '<M-i>', field = 'no_ignore',     on = 'no-ignore', off = 'gitignore' },
+    { key = '<M-f>', field = 'fixed_strings', on = 'Fixed-str', off = 'Regex'     },
+  }
+
+  local function build_grep_string_title()
+    local title = build_title('Find Word (' .. search:gsub('\n', '\\n') .. ')', state, defs)
+    if state.glob_input ~= '' then
+      return title .. '  ' .. state.glob_input .. ' ⌥p'
+    end
+    return title .. '  glob ⌥p'
+  end
+
+  local function build_extra_args()
+    local args = {}
+    if type(base_additional_args) == 'function' then
+      vim.list_extend(args, base_additional_args(opts) or {})
+    elseif type(base_additional_args) == 'table' then
+      vim.list_extend(args, base_additional_args)
+    end
+
+    if state.hidden then args[#args + 1] = '--hidden' end
+    if state.no_ignore then args[#args + 1] = '--no-ignore' end
+    if state.fixed_strings then args[#args + 1] = '--fixed-strings' end
+
+    local globs = assert(compile_rg_input(state.glob_input))
+    if #globs > 0 and not state.glob_input:match('%u') then
+      args[#args + 1] = '--glob-case-insensitive'
+    end
+
+    for _, glob in ipairs(globs) do
+      args[#args + 1] = '--glob'
+      args[#args + 1] = glob
+    end
+    return args
+  end
+
+  local function create_finder()
+    local conf = require('telescope.config').values
+    local args = vim.deepcopy(conf.vimgrep_arguments)
+    vim.list_extend(args, build_extra_args())
+    vim.list_extend(args, { '--', search })
+
+    if opts.grep_open_files then
+      for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_is_loaded(bufnr) and vim.bo[bufnr].buftype == '' then
+          local path = vim.api.nvim_buf_get_name(bufnr)
+          if path ~= '' then args[#args + 1] = path end
+        end
+      end
+    elseif opts.search_dirs then
+      for _, path in ipairs(opts.search_dirs) do
+        args[#args + 1] = vim.fs.normalize(vim.fn.expand(path))
+      end
+    end
+
+    return require('telescope.finders').new_oneshot_job(args, {
+      entry_maker = require('telescope.make_entry').gen_from_vimgrep(opts),
+      cwd = opts.cwd,
+    })
+  end
+
+  require('telescope.pickers').new(opts, {
+    prompt_title = build_grep_string_title(),
+    finder = create_finder(),
+    previewer = require('telescope.config').values.grep_previewer(opts),
+    sorter = require('telescope.config').values.generic_sorter(opts),
+    push_cursor_on_edit = true,
+    attach_mappings = function(prompt_bufnr, map)
+      local action_state = require('telescope.actions.state')
+
+      local function refresh_picker()
+        local picker = action_state.get_current_picker(prompt_bufnr)
+        pcall(function() picker.prompt_border:change_title(build_grep_string_title()) end)
+        picker:refresh(create_finder(), { reset_prompt = false })
+      end
+
+      for _, def in ipairs(defs) do
+        map('i', def.key, function()
+          state[def.field] = not state[def.field]
+          refresh_picker()
+        end)
+      end
+
+      map('i', '<M-p>', function()
+        input_glob({ prompt = 'Glob: ', default = state.glob_input }, opts.cwd, function(input)
+          if input == nil then return end
+          local _, glob_error = compile_rg_input(input)
+          if glob_error then
+            vim.notify('Telescope glob: ' .. glob_error, vim.log.levels.ERROR)
+            return
+          end
+          state.glob_input = vim.trim(input)
+          refresh_picker()
+        end)
+      end)
+
+      return true
+    end,
+  }):find()
 end
 
 return M
