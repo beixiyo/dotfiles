@@ -2,6 +2,7 @@
 -- telescope 每次 preview_fn 已创建新 buffer（无 get_buffer_by_name 时）
 -- 直接在 self.state.bufnr 上 nvim_open_term，让 telescope 自己管 buffer 生命周期
 local M = {}
+local Git = require('plugins.specs.ui.telescope.git.shared')
 
 local log_limits = { 300, 2000, 10000, false }
 
@@ -11,45 +12,6 @@ local function next_log_limit(current)
       return log_limits[index + 1]
     end
   end
-end
-
-local function yank(text, label)
-  vim.fn.setreg('+', text)
-  vim.fn.setreg('"', text)
-  vim.notify('已复制 ' .. label .. ': ' .. text, vim.log.levels.INFO)
-end
-
-local function open_in_buf(hash, on_close)
-  local lines = vim.fn.systemlist('git show ' .. hash)
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  vim.bo[buf].filetype = 'diff'
-  vim.bo[buf].modifiable = false
-  vim.bo[buf].bufhidden = 'wipe'
-
-  vim.cmd('botright split')
-  local win = vim.api.nvim_get_current_win()
-  vim.api.nvim_win_set_buf(win, buf)
-  vim.api.nvim_buf_set_name(buf, hash:sub(1, 7) .. ' diff')
-
-  for _, key in ipairs({ 'q', '<Esc>' }) do
-    vim.keymap.set('n', key, function()
-      vim.api.nvim_win_close(win, true)
-      if on_close then vim.schedule(on_close) end
-    end, { buffer = buf, nowait = true })
-  end
-end
-
-local function load_vv_git()
-  local ok, vvgit = pcall(require, 'vv-git')
-  if ok then return vvgit end
-
-  if vim.fn.exists(':VVGitLoad') == 2 then
-    pcall(vim.cmd, 'VVGitLoad')
-  end
-
-  ok, vvgit = pcall(require, 'vv-git')
-  return ok and vvgit or nil
 end
 
 function M.open(opts)
@@ -129,7 +91,7 @@ function M.open(opts)
       local entry = action_state.get_selected_entry(prompt_bufnr)
       if not entry then return end
       actions.close(prompt_bufnr)
-      open_in_buf(entry.value, function() require('telescope.builtin').resume() end)
+      Git.open_show_buffer(entry.value, function() require('telescope.builtin').resume() end)
     end
 
     -- <CR>：用 vv-git 的 commit diff 视图（commit^..commit，文件树 + 并排 diff，更好看），
@@ -140,7 +102,7 @@ function M.open(opts)
     actions.select_default:replace(function(prompt_bufnr)
       local entry = action_state.get_selected_entry(prompt_bufnr)
       if not entry then return end
-      local vvgit = load_vv_git()
+      local vvgit = Git.load_vv_git()
       if vvgit and type(vvgit.show_commit) == 'function' then
         actions.close(prompt_bufnr)
         -- 按 q 关闭 vv-git 面板后，自动 resume 回到这个 git_log telescope 列表
@@ -191,15 +153,14 @@ function M.open(opts)
     map({ 'i', 'n' }, '<M-h>', function(prompt_bufnr)
       local entry = action_state.get_selected_entry(prompt_bufnr)
       if not entry then return end
-      yank(entry.value, 'hash')
+      Git.yank(entry.value, 'hash')
     end)
 
     -- 复制 commit 标题（留在 telescope）
     map({ 'i', 'n' }, '<M-y>', function(prompt_bufnr)
       local entry = action_state.get_selected_entry(prompt_bufnr)
       if not entry then return end
-      local subject = vim.trim(vim.fn.system('git log -1 --format=%s ' .. entry.value))
-      yank(subject, 'message')
+      Git.yank(Git.commit_subject(entry.value), 'message')
     end)
 
     return true

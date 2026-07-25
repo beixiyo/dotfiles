@@ -1,5 +1,6 @@
 -- Git tag picker：按创建时间浏览 tag，预览 annotation/commit diff，并接入 vv-git
 local M = {}
+local Git = require('plugins.specs.ui.telescope.git.shared')
 
 local function time_fmt(ts)
   if ts <= 0 then return '---- -- --' end
@@ -49,18 +50,6 @@ local function yank(text, label)
   vim.fn.setreg('+', text)
   vim.fn.setreg('"', text)
   vim.notify('Copied ' .. label .. ': ' .. text, vim.log.levels.INFO)
-end
-
-local function load_vv_git()
-  local ok, vvgit = pcall(require, 'vv-git')
-  if ok then return vvgit end
-
-  if vim.fn.exists(':VVGitLoad') == 2 then
-    pcall(vim.cmd, 'VVGitLoad')
-  end
-
-  ok, vvgit = pcall(require, 'vv-git')
-  return ok and vvgit or nil
 end
 
 function M.open(opts)
@@ -170,7 +159,7 @@ function M.open(opts)
     local entry = action_state.get_selected_entry(prompt_bufnr)
     if not entry then return end
 
-    local vvgit = load_vv_git()
+    local vvgit = Git.load_vv_git()
     if not vvgit or type(vvgit[method]) ~= 'function' then
       vim.notify('vv-git does not support ' .. method, vim.log.levels.ERROR)
       return

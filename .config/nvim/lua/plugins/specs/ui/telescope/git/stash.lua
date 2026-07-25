@@ -1,12 +1,7 @@
 -- stash 管理：apply / pop / drop + delta diff 预览
 -- stash push：push_all / push_staged / push_untracked / push_message
 local M = {}
-
-local function yank(text, label)
-  vim.fn.setreg('+', text)
-  vim.fn.setreg('"', text)
-  vim.notify('已复制 ' .. label .. ': ' .. text, vim.log.levels.INFO)
-end
+local Git = require('plugins.specs.ui.telescope.git.shared')
 
 ---执行 git stash push 并弹通知
 ---@param args string[]   额外的 CLI 参数
@@ -23,25 +18,25 @@ end
 
 --- 暂存所有已跟踪变更（working tree + index）
 function M.push_all()
-  do_push({}, 'Stash: 已暂存所有变更')
+  do_push({}, 'Stash created')
 end
 
 --- 只暂存 index（staged）区域，working tree 不动
 function M.push_staged()
-  do_push({ '--staged' }, 'Stash: 已暂存 staged 变更')
+  do_push({ '--staged' }, 'Stash created from staged changes')
 end
 
 --- 暂存所有变更，包含 untracked 文件
 function M.push_untracked()
-  do_push({ '--include-untracked' }, 'Stash: 已暂存变更（含 untracked）')
+  do_push({ '--include-untracked' }, 'Stash created with untracked files')
 end
 
 --- 弹出输入框，以自定义消息暂存所有变更
 function M.push_message()
-  vim.ui.input({ prompt = 'Stash 描述: ' }, function(msg)
+  vim.ui.input({ prompt = 'Stash message: ' }, function(msg)
     if msg == nil then return end -- 按 Esc 取消
     local args = msg ~= '' and { '-m', msg } or {}
-    do_push(args, 'Stash: 已创建 "' .. (msg ~= '' and msg or '(无描述)') .. '"')
+    do_push(args, 'Stash created: ' .. (msg ~= '' and ('"' .. msg .. '"') or '(no message)'))
   end)
 end
 
@@ -139,7 +134,7 @@ function M.open(opts)
     map({ 'i', 'n' }, '<M-h>', function(prompt_bufnr)
       local entry = action_state.get_selected_entry(prompt_bufnr)
       if not entry then return end
-      yank(entry.value, 'stash ref')
+      Git.yank(entry.value, 'stash ref')
     end)
 
     return true

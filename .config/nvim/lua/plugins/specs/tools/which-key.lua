@@ -1,7 +1,7 @@
 -- which-key 键位提示
 ---@type PackSpec
 return {
-  desc = '快捷键提示',
+  desc = 'Keymap hints',
   url = 'https://github.com/folke/which-key.nvim',
   main = 'which-key',
   dependencies = { 'beixiyo/vv-icons.nvim' },
@@ -73,14 +73,14 @@ return {
     wk.setup(opts)
 
     vim.keymap.set('n', '<leader>?', function() wk.show({ global = false }) end, { desc = icons.keymaps .. ' Buffer keymaps' })
-    vim.keymap.set('n', '<leader>gl', function() require('plugins.specs.ui.telescope.git_log').open() end, { desc = icons.git_log .. ' Git log' })
-    vim.keymap.set('n', '<leader>gL', function() require('plugins.specs.ui.telescope.git_buf_log').open() end, { desc = icons.git_log .. ' Buffer git log' })
-    vim.keymap.set('n', '<leader>gb', function() require('plugins.specs.ui.telescope.git_branches').open() end, { desc = icons.git_branches .. ' Git branches' })
-    vim.keymap.set('n', '<leader>gs', function() require('plugins.specs.ui.telescope.git_stash').open() end, { desc = icons.git_stash .. ' Git stashes' })
-    vim.keymap.set('n', '<leader>gt', function() require('plugins.specs.ui.telescope.git_tags').open() end, { desc = icons.git_log .. ' Git tags' })
+    vim.keymap.set('n', '<leader>gl', function() require('plugins.specs.ui.telescope.git.log').open() end, { desc = icons.git_log .. ' Git log' })
+    vim.keymap.set('n', '<leader>gL', function() require('plugins.specs.ui.telescope.git.buffer_log').open() end, { desc = icons.git_log .. ' Buffer git log' })
+    vim.keymap.set('n', '<leader>gb', function() require('plugins.specs.ui.telescope.git.branches').open() end, { desc = icons.git_branches .. ' Git branches' })
+    vim.keymap.set('n', '<leader>gs', function() require('plugins.specs.ui.telescope.git.stash').open() end, { desc = icons.git_stash .. ' Git stashes' })
+    vim.keymap.set('n', '<leader>gt', function() require('plugins.specs.ui.telescope.git.tags').open() end, { desc = icons.git_log .. ' Git tags' })
 
     -- Stash push 操作（<leader>gS 前缀）
-    local stash = function() return require('plugins.specs.ui.telescope.git_stash') end
+    local stash = function() return require('plugins.specs.ui.telescope.git.stash') end
     vim.keymap.set('n', '<leader>gSp', function() stash().push_all() end,       { desc = 'Stash: push all' })
     vim.keymap.set('n', '<leader>gSs', function() stash().push_staged() end,    { desc = 'Stash: push staged only' })
     vim.keymap.set('n', '<leader>gSu', function() stash().push_untracked() end, { desc = 'Stash: push + untracked' })

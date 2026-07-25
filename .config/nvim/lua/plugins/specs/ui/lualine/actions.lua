@@ -23,7 +23,7 @@ end
 function M.quick_commit_push()
   local check = vim.system({ 'git', 'diff', '--cached', '--quiet' }):wait()
   if check.code == 0 then
-    vim.notify('没有已暂存的文件，请先 git add', vim.log.levels.WARN)
+    vim.notify('No staged files. Run git add first', vim.log.levels.WARN)
     return
   end
 
@@ -32,17 +32,17 @@ function M.quick_commit_push()
 
     vim.system({ 'git', 'commit', '-m', msg }, {}, function(cm)
       if cm.code ~= 0 then
-        vim.schedule(function() vim.notify('commit 失败: ' .. (cm.stderr or ''), vim.log.levels.ERROR) end)
+        vim.schedule(function() vim.notify('Commit failed: ' .. (cm.stderr or ''), vim.log.levels.ERROR) end)
         return
       end
 
-      vim.schedule(function() vim.notify('已提交: ' .. msg, vim.log.levels.INFO) end)
+      vim.schedule(function() vim.notify('Committed: ' .. msg, vim.log.levels.INFO) end)
       vim.system({ 'git', 'push' }, {}, function(ps)
         vim.schedule(function()
           if ps.code == 0 then
-            vim.notify('已推送到远程', vim.log.levels.INFO)
+            vim.notify('Pushed to remote', vim.log.levels.INFO)
           else
-            vim.notify('push 失败: ' .. (ps.stderr or ''), vim.log.levels.WARN)
+            vim.notify('Push failed: ' .. (ps.stderr or ''), vim.log.levels.WARN)
           end
         end)
       end)
@@ -50,15 +50,15 @@ function M.quick_commit_push()
   end)
 end
 
-M.open_branch_view = tele_or('git_branches', function() vim.notify('telescope 未加载', vim.log.levels.WARN) end)
-M.open_git_status  = tele_or('git_status',   function() vim.notify('telescope 未加载', vim.log.levels.WARN) end)
+M.open_branch_view = tele_or('git_branches', function() vim.notify('Telescope is not loaded', vim.log.levels.WARN) end)
+M.open_git_status  = tele_or('git_status',   function() vim.notify('Telescope is not loaded', vim.log.levels.WARN) end)
 
 function M.open_git_log()
-  local ok, git_log = pcall(require, 'plugins.specs.ui.telescope.git_log')
+  local ok, git_log = pcall(require, 'plugins.specs.ui.telescope.git.log')
   if ok then
     git_log.open()
   else
-    vim.notify('telescope git_log 未加载', vim.log.levels.WARN)
+    vim.notify('Telescope git_log is not loaded', vim.log.levels.WARN)
   end
 end
 
