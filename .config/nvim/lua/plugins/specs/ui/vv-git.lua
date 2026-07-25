@@ -45,7 +45,7 @@ return {
       end
     end,
     fold_staged = true, -- 打开面板时默认折叠 Staged Changes section（仅此一层）
-    diff_ratio = { 4, 6 },
+    diff_ratio = { 4.5, 5.5 },
     diff_nowrap = false,
     mappings = {
       -- t：在光标节点目录开/切换浮动终端（目录用自身，文件用父目录），cwd 跟随光标
