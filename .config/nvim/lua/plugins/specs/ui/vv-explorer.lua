@@ -6,6 +6,7 @@ return {
   main = 'vv-explorer',
   dependencies = { 'beixiyo/vv-utils.nvim', 'beixiyo/vv-icons.nvim' },
 
+  event = 'VimEnter',
   cmd = { 'VVExplorerToggle', 'VVExplorerOpen', 'VVExplorerClose', 'VVExplorerReveal', 'VVExplorerFocus', 'VVExplorerTrash', 'VVExplorerExecute' },
   keys = function()
     local icons = require('vv-icons')
