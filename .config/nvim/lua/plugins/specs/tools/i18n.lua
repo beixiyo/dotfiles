@@ -6,6 +6,12 @@
 -- - app / desktop renderer：react-i18next filename 布局
 -- - tiptap-editor：flat 布局 + tiptap 固定前缀
 -- 非匹配项目索引空 → 不激活、无噪声
+local function typescript_locale_lang(path)
+  local filename = vim.fs.basename(path)
+  if filename == 'index.ts' then return nil end
+  return filename:match('^(.+)%.ts$')
+end
+
 ---@type PackSpec
 return {
   desc = 'i18n 预览/跳转/同步改（自研，tree-sitter）',
@@ -14,10 +20,10 @@ return {
   dependencies = { 'beixiyo/vv-utils.nvim', 'beixiyo/vv-icons.nvim' },
 
   -- 源码 / locale 文件打开即生效
-  ft  = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
+  ft  = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact', 'json', 'jsonc' },
   cmd = {
     'VVI18nInfo', 'VVI18nJump', 'VVI18nSetValue', 'VVI18nEdit', 'VVI18nKeys',
-    'VVI18nMissing', 'VVI18nAddKey', 'VVI18nReload',
+    'VVI18nMissing', 'VVI18nReferences', 'VVI18nAddKey', 'VVI18nReload',
     'VVI18n', 'VVI18nEnable', 'VVI18nDisable', 'VVI18nToggle',
   },
   keys = function()
@@ -26,8 +32,9 @@ return {
       { '<leader>ik', '<cmd>VVI18nKeys<cr>',   desc = icon .. 'Browse keys' },
       { '<leader>ip', '<cmd>VVI18nInfo<cr>',   desc = icon .. 'Show translations' },
       { '<leader>id', '<cmd>VVI18nJump<cr>',   desc = icon .. 'Go to translation' },
-      { '<leader>is', '<cmd>VVI18nEdit<cr>',   desc = icon .. 'Edit translations' },
+      { '<leader>ie', '<cmd>VVI18nEdit<cr>',   desc = icon .. 'Edit translations' },
       { '<leader>ia', '<cmd>VVI18nAddKey<cr>', desc = icon .. 'Add translation' },
+      { '<leader>iu', '<cmd>VVI18nReferences<cr>', desc = icon .. 'Show references' },
       { '<leader>it', '<cmd>VVI18nToggle<cr>', desc = icon .. 'Toggle preview' },
       { '<leader>ir', '<cmd>VVI18nReload<cr>', desc = icon .. 'Reload translations' },
     }
@@ -43,7 +50,7 @@ return {
         discover  = { 'components/*/locales', 'i18n/common' },
         mount     = 'top-key',     -- 命名空间在文件内顶层 key
         namespace = 'two-level',   -- useT() → comps、useT('common') → comps.common
-        lang      = '{lang}.ts',
+        lang      = typescript_locale_lang,
         hooks     = { 'useT' },
       },
       {
@@ -83,7 +90,7 @@ return {
             return 'tiptap'
           end
         end,
-        lang      = '{lang}.ts',
+        lang      = typescript_locale_lang,
         hooks     = { 'useTiptapEditorT', 'useT' },
         t         = { 't' },
       },
