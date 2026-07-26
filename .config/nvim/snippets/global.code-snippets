@@ -42,7 +42,7 @@
     "description": "print"
   },
   "pythonPrint": {
-    "scope": "py",
+    "scope": "python",
     "prefix": "pri",
     "body": [
       "print($1)"
@@ -50,7 +50,7 @@
     "description": "print"
   },
   "kotlinPrint": {
-    "scope": "kt",
+    "scope": "kotlin",
     "prefix": "pri",
     "body": [
       "println($1)"

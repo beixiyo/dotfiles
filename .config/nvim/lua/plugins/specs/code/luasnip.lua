@@ -103,9 +103,16 @@ return {
       desc = 'Cancel the active snippet session',
     })
 
-    -- 加载 ~/.config/nvim/snippets：读 package.json + *.json + *.code-snippets
+    -- 加载 ~/.config/nvim/snippets 中由 package.json 声明的片段
+    local snippets = vim.fn.stdpath('config') .. '/snippets'
     require('luasnip.loaders.from_vscode').lazy_load({
-      paths = { vim.fn.stdpath('config') .. '/snippets' },
+      paths = { snippets },
+    })
+
+    -- package.json loader 会忽略 VSCode 片段内部的 scope；单独加载 global
+    -- 片段才能让同一个 prefix 按当前 filetype 过滤
+    require('luasnip.loaders.from_vscode').load_standalone({
+      path = snippets .. '/global.code-snippets',
     })
   end,
 }

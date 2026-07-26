@@ -11,14 +11,7 @@
       { "language": ["vue"], "path": "./vue.json" },
       { "language": ["javascript", "typescript", "javascriptreact", "typescriptreact"], "path": "./jts.code-snippets" },
       { "language": ["typescriptreact", "javascriptreact"], "path": "./jtsx.code-snippets" },
-      { "language": ["glsl", "hlsl", "wgsl"], "path": "./shader.code-snippets" },
-      {
-        "language": [
-          "javascript", "typescript", "javascriptreact", "typescriptreact",
-          "vue", "java", "cpp", "python", "kotlin", "shellscript"
-        ],
-        "path": "./global.code-snippets"
-      }
+      { "language": ["glsl", "hlsl", "wgsl"], "path": "./shader.code-snippets" }
     ]
   }
 }
