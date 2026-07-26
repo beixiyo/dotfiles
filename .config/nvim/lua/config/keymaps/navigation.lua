@@ -26,8 +26,8 @@ map("n", "N", "Nzz", { desc = "Previous match" })
 map("n", "*", "*zz", { desc = "Find word forward" })
 map("n", "#", "#zz", { desc = "Find word backward" })
 
-map("n", "<A-Left>", "<C-o>", { desc = icons.prev .. " " .. "Previous jump", remap = true })
-map("n", "<A-Right>", "<C-i>", { desc = icons.next .. " " .. "Next jump", remap = true })
+map("n", "<A-Left>", "<C-o>", { desc = icons.prev .. " " .. "Previous jump" })
+map("n", "<A-Right>", "<C-i>", { desc = icons.next .. " " .. "Next jump" })
 
 -- <C-e>/<C-y>：hover 文档（vv-hover 浮窗 / 原生 K 的 noice hover）打开时滚动文档，
 -- 否则滚当前窗。一律走 vv-utils.scroll 平滑滚动（不自己造轮子；保留 count，如 3<C-e>）
