@@ -25,6 +25,19 @@ function M.setup()
         '.git',
       },
     },
+    before_init = function(_, config)
+      local libraries = require('pack.luarc').libraries_for(config.root_dir)
+      if #libraries == 0 then return end
+
+      -- Client.create() 会在 before_init 之前保存 settings 引用，因此必须原地修改，
+      -- 不能用 tbl_deep_extend() 替换整个 table，否则 server 收不到新增配置
+      local lua_settings = config.settings.Lua
+      lua_settings.runtime = lua_settings.runtime or {}
+      lua_settings.runtime.version = 'LuaJIT'
+      lua_settings.runtime.path = { 'lua/?.lua', 'lua/?/init.lua' }
+      lua_settings.workspace = lua_settings.workspace or {}
+      lua_settings.workspace.library = libraries
+    end,
   })
 
   require('mason').setup({})

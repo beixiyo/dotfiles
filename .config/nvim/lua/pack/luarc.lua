@@ -2,6 +2,32 @@
 local M = {}
 
 local pending
+local manifest_path = vim.fn.stdpath('config') .. '/.luarc-libraries.json'
+
+local function load_manifest()
+  local file = io.open(manifest_path, 'r')
+  if not file then return nil end
+
+  local content = file:read('*a')
+  file:close()
+
+  local ok, manifest = pcall(vim.json.decode, content)
+  return ok and type(manifest) == 'table' and manifest or nil
+end
+
+---@param root string?
+---@return string[]
+function M.libraries_for(root)
+  local manifest = load_manifest()
+  if not (manifest and root and manifest.projects) then return {} end
+
+  local project = manifest.projects[vim.fs.normalize(root)]
+  if not project then return {} end
+
+  local libraries = vim.deepcopy(manifest.base or {})
+  vim.list_extend(libraries, project)
+  return libraries
+end
 
 function M.generate()
   if vim.fn.executable('bun') == 0 then
@@ -40,11 +66,16 @@ function M.schedule()
 end
 
 local function needs_generate()
-  local path = vim.fn.stdpath('config') .. '/.luarc.json'
-  if vim.fn.filereadable(path) == 0 then return true end
-  local content = vim.fn.readfile(path)
-  local text = table.concat(content):gsub('%s', '')
-  return text == '' or text == '{}'
+  for _, path in ipairs({
+    vim.fn.stdpath('config') .. '/.luarc.json',
+    manifest_path,
+  }) do
+    if vim.fn.filereadable(path) == 0 then return true end
+    local content = vim.fn.readfile(path)
+    local text = table.concat(content):gsub('%s', '')
+    if text == '' or text == '{}' then return true end
+  end
+  return false
 end
 
 function M.setup()
