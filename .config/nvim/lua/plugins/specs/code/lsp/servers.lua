@@ -7,6 +7,26 @@
 local M = {}
 
 function M.setup()
+  -- 上游 lua_ls 默认按「Lua 配置 > formatter 配置 > .git」分组查找，
+  -- 父级 nvim 的 .luarc.json 会因此压过 vendor 子仓里更近的 .git
+  -- 所有 marker 设为同优先级后，按最近祖先选 root：
+  -- 主配置仍以自身 .luarc.json 为根，vendor 插件则以各自 .git 为根
+  vim.lsp.config('lua_ls', {
+    root_markers = {
+      {
+        '.emmyrc.json',
+        '.luarc.json',
+        '.luarc.jsonc',
+        '.luacheckrc',
+        '.stylua.toml',
+        'stylua.toml',
+        'selene.toml',
+        'selene.yml',
+        '.git',
+      },
+    },
+  })
+
   require('mason').setup({})
   require('mason-lspconfig').setup({
     ensure_installed = { 'dprint' },
