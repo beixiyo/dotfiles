@@ -1,0 +1,113 @@
+{
+  "function": {
+    "prefix": "fn",
+    "body": [
+      "func ${1:name}(${2:args})${3: ${4:returnType}} {",
+      "  $5",
+      "}"
+    ],
+    "description": "function"
+  },
+  "main": {
+    "prefix": "main",
+    "body": [
+      "func main() {",
+      "  $1",
+      "}"
+    ],
+    "description": "main function"
+  },
+  "for": {
+    "prefix": "forr",
+    "body": [
+      "for ${1:index}, ${2:item} := range ${3:items} {",
+      "  $4",
+      "}"
+    ],
+    "description": "for range"
+  },
+  "for condition": {
+    "prefix": "fori",
+    "body": [
+      "for ${1:i := 0}; ${2:i < len(items)}; ${3:i++} {",
+      "  $4",
+      "}"
+    ],
+    "description": "for loop"
+  },
+  "if error": {
+    "prefix": "iferr",
+    "body": [
+      "if err != nil {",
+      "  return ${1:err}",
+      "}"
+    ],
+    "description": "error guard"
+  },
+  "switch": {
+    "prefix": "switch",
+    "body": [
+      "switch ${1:value} {",
+      "case ${2:condition}:",
+      "  $3",
+      "default:",
+      "  $4",
+      "}"
+    ],
+    "description": "switch"
+  },
+  "struct": {
+    "prefix": "struct",
+    "body": [
+      "type ${1:Name} struct {",
+      "  ${2:Field} ${3:Type}`json:\"${4:field}\"`",
+      "}"
+    ],
+    "description": "struct"
+  },
+  "interface": {
+    "prefix": "interface",
+    "body": [
+      "type ${1:Name} interface {",
+      "  ${2:Method}(${3:args}) ${4:returnType}",
+      "}"
+    ],
+    "description": "interface"
+  },
+  "method": {
+    "prefix": "meth",
+    "body": [
+      "func (${1:receiver} *${2:Type}) ${3:Name}(${4:args})${5: ${6:returnType}} {",
+      "  $7",
+      "}"
+    ],
+    "description": "method"
+  },
+  "goroutine": {
+    "prefix": "gor",
+    "body": [
+      "go func() {",
+      "  $1",
+      "}()"
+    ],
+    "description": "goroutine"
+  },
+  "defer": {
+    "prefix": "defer",
+    "body": [
+      "defer func() {",
+      "  $1",
+      "}()"
+    ],
+    "description": "defer function"
+  },
+  "test": {
+    "prefix": "test",
+    "body": [
+      "func Test${1:Name}(t *testing.T) {",
+      "  $2",
+      "}"
+    ],
+    "description": "test function"
+  }
+}

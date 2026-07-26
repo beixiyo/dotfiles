@@ -1,0 +1,112 @@
+{
+  "function": {
+    "prefix": "fn",
+    "body": [
+      "fn ${1:name}(${2:args})${3: -> ${4:ReturnType}} {",
+      "  $5",
+      "}"
+    ],
+    "description": "function"
+  },
+  "main": {
+    "prefix": "main",
+    "body": [
+      "fn main() {",
+      "  $1",
+      "}"
+    ],
+    "description": "main function"
+  },
+  "for": {
+    "prefix": "forr",
+    "body": [
+      "for ${1:item} in ${2:items} {",
+      "  $3",
+      "}"
+    ],
+    "description": "for range"
+  },
+  "for enumerate": {
+    "prefix": "fori",
+    "body": [
+      "for (${1:i}, ${2:item}) in ${3:items}.iter().enumerate() {",
+      "  $4",
+      "}"
+    ],
+    "description": "for loop"
+  },
+  "if let": {
+    "prefix": "iflet",
+    "body": [
+      "if let ${1:Some(value)} = ${2:result} {",
+      "  $3",
+      "}"
+    ],
+    "description": "if let"
+  },
+  "match": {
+    "prefix": "match",
+    "body": [
+      "match ${1:value} {",
+      "  ${2:Some(value)} => $3,",
+      "  _ => $4,",
+      "}"
+    ],
+    "description": "match expression"
+  },
+  "result function": {
+    "prefix": "fnr",
+    "body": [
+      "fn ${1:name}(${2:args}) -> Result<${3:Value}, ${4:Error}> {",
+      "  $5",
+      "}"
+    ],
+    "description": "Result function"
+  },
+  "struct": {
+    "prefix": "struct",
+    "body": [
+      "struct ${1:Name} {",
+      "  ${2:field}: ${3:Type},",
+      "}"
+    ],
+    "description": "struct"
+  },
+  "impl": {
+    "prefix": "impl",
+    "body": [
+      "impl ${1:Type} {",
+      "  ${2:fn new}(${3:args}) -> Self {",
+      "    $4",
+      "  }",
+      "}"
+    ],
+    "description": "impl block"
+  },
+  "derive": {
+    "prefix": "derive",
+    "body": [
+      "#[derive(${1(Debug, Clone, PartialEq)})]"
+    ],
+    "description": "derive attributes"
+  },
+  "test": {
+    "prefix": "test",
+    "body": [
+      "#[test]",
+      "fn ${1:name}() {",
+      "  $2",
+      "}"
+    ],
+    "description": "test function"
+  },
+  "async function": {
+    "prefix": "asy",
+    "body": [
+      "async fn ${1:name}(${2:args}) -> ${3:ResultType} {",
+      "  $4",
+      "}"
+    ],
+    "description": "async function"
+  }
+}

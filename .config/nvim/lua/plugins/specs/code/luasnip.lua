@@ -93,10 +93,20 @@ return {
       },
     })
 
+    -- LuaSnip 跳到占位点后会进入 Select 模式；blink 的 keymap 只覆盖 Insert 模式
+    local function jump(direction)
+      if luasnip.jumpable(direction) then
+        luasnip.jump(direction)
+      end
+    end
+
+    vim.keymap.set('s', '<Tab>', function() jump(1) end, { silent = true, desc = 'Snippet: next placeholder' })
+    vim.keymap.set('s', '<S-Tab>', function() jump(-1) end, { silent = true, desc = 'Snippet: previous placeholder' })
+
     vim.api.nvim_create_autocmd('InsertLeave', {
       group = vim.api.nvim_create_augroup('LuaSnipCancelOnInsertLeave', { clear = true }),
       callback = function()
-        if luasnip.in_snippet() then
+        if luasnip.in_snippet() and not luasnip.session.jump_active then
           luasnip.unlink_current()
         end
       end,

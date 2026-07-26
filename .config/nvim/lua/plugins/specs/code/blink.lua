@@ -32,12 +32,11 @@ return {
             cmp.show()
             return true
           end,
+          'snippet_forward',
           'select_and_accept',
           'fallback',
         },
-        ['<S-Tab>'] = { 'fallback' },
-        ['<C-f>'] = { 'snippet_forward', 'fallback' },
-        ['<C-b>'] = { 'snippet_backward', 'fallback' },
+        ['<S-Tab>'] = { 'snippet_backward', 'fallback' },
         ['<C-k>'] = { 'show_documentation', 'hide_documentation' },
         ['<C-e>'] = { 'scroll_documentation_down', 'fallback' },
         ['<C-y>'] = { 'scroll_documentation_up', 'fallback' },

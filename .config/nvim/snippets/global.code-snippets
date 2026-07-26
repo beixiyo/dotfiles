@@ -73,6 +73,22 @@
     ],
     "description": "print"
   },
+  "rustPrint": {
+    "scope": "rust",
+    "prefix": "pri",
+    "body": [
+      "println!(\"$1\")"
+    ],
+    "description": "print"
+  },
+  "goPrint": {
+    "scope": "go",
+    "prefix": "pri",
+    "body": [
+      "fmt.Println($1)"
+    ],
+    "description": "print"
+  },
 
   "comment": {
     "prefix": "comment",
