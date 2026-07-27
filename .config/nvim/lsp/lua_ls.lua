@@ -23,6 +23,7 @@ return {
         libraryFiles = 'Disable',
         -- 不扫描未打开的工作区文件
         workspaceEvent = 'None',
+        disable = { 'trailing-space' },
       },
     },
   },
