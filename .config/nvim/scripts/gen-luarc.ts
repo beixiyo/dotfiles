@@ -126,7 +126,8 @@ const luarc = {
     path: ['lua/?.lua', 'lua/?/init.lua'],
   },
   workspace: {
-    library: ['${3rd}/luv/library', ...libraries.map(toPosix)],
+    library: base,
+    ignoreDir: ['vendors'],
   },
 }
 
@@ -135,6 +136,6 @@ const manifest = { base, projects }
 writeFileSync(join(CONFIG, '.luarc.json'), JSON.stringify(luarc, null, 2) + '\n')
 writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2) + '\n')
 console.log(
-  `.luarc.json: ${libraries.length} plugin libraries; `
+  `.luarc.json: Neovim runtime only; `
   + `.luarc-libraries.json: ${Object.keys(projects).length} vendor projects`
 )

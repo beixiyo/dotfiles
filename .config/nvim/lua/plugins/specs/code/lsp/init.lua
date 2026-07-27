@@ -1,7 +1,7 @@
 -- LSP 与代码诊断
 --
 --   watchfiles.lua  —— 修复工作区根落到 $HOME 时 inotify 配额被打爆
---   servers.lua     —— Mason 安装 / server 定义 / vim.lsp.enable
+--   servers/        —— Mason 安装 / server 定义 / vim.lsp.enable
 --   diagnostics.lua —— 诊断外观（sign icon、virtual_text、悬浮窗）
 --   symbols.lua     —— gO 全局符号、go 文档符号（无 LSP 时降级 treesitter）
 --   keymaps.lua     —— LspAttach 后的 buffer 级键位
