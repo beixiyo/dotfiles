@@ -1,70 +1,125 @@
-## 项目规范
-优先参考项目配置文件（`package.json`、`vite.config.js` 等），mono-repo 注意 `pnpm-workspace.yaml`。这些是理解技术栈的唯一真实来源，不要基于通用知识假设
+# 开发规范
 
-- 包管理：默认 pnpm or bun，根据项目 lock 文件判断
+## 核心原则
+
+- **项目事实优先**：先读项目内的 `AGENTS.md`、`CLAUDE.md`、`README.md` 和配置文件，再理解和修改代码
+- **证据优先**：API、配置语义和文件路径都要查实，不凭通用知识猜测。除非是基本不变的标准库
+- **兼容优先**：设计公共 API 时考虑调用方和未来演进，避免一次内部重构迫使所有调用方同步修改
+- **简单优先**：遵循 SRP、OCP、LSP、ISP、DRY、KISS，但不为原则本身制造抽象层
+- **边界清晰**：模块负责机制，调用方负责策略；通过参数、回调或适配器组合，不在底层硬编码外部业务
+
+## 开发流程
+
+1. **读取项目约定**：优先读最近层级的 `AGENTS.md`、`CLAUDE.md`、`README.md`
+2. **确认真实技术栈**：以 lock 文件、`package.json`、`pnpm-workspace.yaml`、`vite.config.*`、`tsconfig.json` 等为准
+3. **评估可行性**：先确认架构和上游能力是否支持目标，不用 hook、monkey-patch 强行实现不可达方案
+4. **探索真实代码**：优先使用 LSP MCP 定位符号、定义、引用、调用关系、类型和诊断；配置、文本或 LSP 无结果时再用文件搜索
+5. **调研不确定项**：不完全确定的库用法先调用 `search` skill；GitHub 项目先调用 `github` skill；大型项目需要深度理解时克隆源码
+6. **实施最小完整改动**：只修改目标所需边界，不顺手扩张功能或重构无关代码
+7. **验证真实行为**：区分“已修改”和“已验证”；未运行的代码不得声称已经实现
+8. **提供测试方式**：适合测试的代码改动完成后调用 `how-to-test` skill；纯文档、注释或无有效测试信号的简单改动除外
+
+不确定时提问或使用 `// @TODO` 标明，不得编造函数、API 或运行结果
+
+## 项目与工具链
+
+- 前端包管理器根据 lock 文件判断，默认候选为 pnpm 或 Bun
 - 工具链管理优先级：mise > vfox > 语言自带管理器 > Homebrew / pacman 等系统包管理器
-- 技术栈：JS 项目默认 TypeScript + Vite（已有其他构建工具则忽略）
-- 路径别名：检查 `tsconfig.json` 的 `paths` 配置
-- 内部包：`@jl-org/*` 系列均为**本人编写**——理解其行为 / 排查相关 bug 时**优先读源码 README**，勿凭通用知识假设其实现。源码多在本地 `~/Documents/code/frontend/<repo> or ~/code/frontend/<repo>` `@jl-org/tool` 在 https://github.com/beixiyo/jl-tool，如 `gh` cli 可用并且找不到本地源码，可自行查找，或者看 https://github.com/beixiyo 仓库 
+- JS 项目在没有既有约束时使用 TypeScript + Vite
+- 路径别名以 `tsconfig.json` 的 `paths` 为准
+- 运行独立 TypeScript 文件使用 `bun run /path/xx.ts`
+- mono-repo 必须检查 `pnpm-workspace.yaml` 和各 package 的局部配置
+
+`@jl-org/*` 均为本人编写。理解行为或排查 bug 时优先读源码和 README，不得套用同类库的通用假设。源码通常位于：
+
+- `~/Documents/code/frontend/<repo>`
+- `~/code/frontend/<repo>`
+- `@jl-org/tool`：本地找不到时使用 `gh` 查询 `https://github.com/beixiyo/jl-tool`
+
+## API 设计
+
+### 参数与兼容性
+
+- 潜在会增加、删除或调整参数的公共函数使用 options 对象，避免位置参数变化破坏调用方
+- 单一且语义稳定的必要参数可以直接传值；不要为了形式统一把所有函数都包装成对象
+- options 字段优先新增为可选字段，并提供合理默认值；默认值必须在 API 边界统一归一化，避免散落在内部实现
+- 默认值属于公共契约，导出的类型和 JSDoc 必须通过 `@default` 明确记录
+- 具有多个结果或未来可能扩展的返回值使用具名对象，避免依赖 tuple 顺序
+
+### 原子化与解耦
+
+- 函数只完成一个可描述、可独立验证的动作，不同时承担策略决策、状态持久化和 UI 副作用
+- 模块提供通用机制，调用方通过 options、回调、依赖注入或 adapter 决定策略
+- 禁止底层模块直接依赖具体外部插件、路由、全局状态或业务模块
+- 不隐藏重要副作用；会修改文件、全局状态、窗口、网络或持久化数据的 API 必须从命名、类型或文档中可见
+- 生命周期 API 必须成对且幂等，例如 `open/close`、`attach/detach`、`suspend/resume`
+- 回调和异步结果必须防止过期状态回写；资源所有者负责清理 timer、autocmd、listener、buffer、window 等资源
+- 错误语义保持一致：同一层级统一选择抛错、返回 `Result` 或回调错误，不混用静默失败和异常
+
+### 类型与导出
+
+- 使用严格 TypeScript 类型，能用字符串字面量或联合类型时不用宽泛的 `string`
+- 导出的 `type`、`interface` 和公共函数提供 JSDoc；TS JSDoc 不重复类型信息
+- 避免 `export default`，使用具名 `export const/function`
+- 可使用 `index.ts` / `init.lua` 统一导出同类模块并保持稳定的公共入口
+
+## 模块与代码组织
+
+- 按职责拆分模块，不把不同职责混入同一文件
+- 同类模块优先使用文件夹组织，由 `index` / `init` 统一导出
+- TS 类型定义放在文件底部，方便阅读源码而不是看类型
+- 同类逻辑用空行分组，保持代码呼吸感
+- 避免硬编码、隐式全局状态和不必要的抽象层
+- 优先组合而非继承
 
 ## 代码风格
-- 格式：无分号、两格缩进、单引号、末尾无句号
-- 变量：不可变用 `const`
-- 三元：多行编写
-- 导出：避免 `export default`，用 `export const/function` 具名导出，可创建 `**/index.ts` 统一导出，可以 `export * from 'xx'`
-- 类型：类型定义放在底部，确保不影响代码阅读
-- 分组：同类逻辑用空行分块，避免密密麻麻的代码；多换行，保持呼吸感
-- 避免不必要的抽象层
 
-## 代码质量
-- 设计原则：SRP、OCP、LSP、ISP、DRY、KISS、避免硬编码
-- 类型：严格 TS 类型，能用字符串字面量就别用 `string`，导出的 `type`/`interface` 提供 JSDoc（含 `@default`），TS 中 JSDoc 无需类型信息
-- 模块化：必须根据职责划分，避免有任何不同职责混入一个文件。推荐用文件夹格式组织，index/init 导出（根据不同语言的包语法灵活处理）
-- 运行 TS：`bun run /path/xx.ts`
+- 无分号、两格缩进、单引号、末尾无句号
 
 ## 组件设计
-- 避免硬编码：通过 props/slots/children 暴露可变部分
-- 单一职责：只负责 UI 渲染与交互，不掺杂业务数据/状态管理
-- 最大化可控性：插槽、回调、受控模式
-- 无副作用：不直接操作 DOM/全局状态/路由，依赖通过 props 注入
-- 样式：TailwindCSS，支持 className/style 覆盖
-- 组合优于继承
-- 动画：自然流畅 motion/react(React) | motion-v(Vue)，UI 简洁冷静（参考 Vercel、Grok、Lovable）
 
-## 文档撰写
-- 代码即文档：函数加文档注释，复杂逻辑说明流程，文件开头说明作用
-- 文本格式：英文用空格隔开，markdown 特殊词用斜体、重点加粗、两格缩进
-- 语言：永远中文回答（除非明确要求其他语言），搜索优先英文
+- 组件只负责 UI 渲染和交互，不混入业务数据获取或全局状态管理
+- 可变内容通过 props、slots、children、回调和受控模式暴露
+- 依赖通过 props 注入，不直接操作全局状态、路由或无关 DOM
+- 使用 TailwindCSS，并支持 `className` / `style` 覆盖
+- 动画使用 motion/react 或 motion-v，保持自然流畅
+- UI 保持简洁冷静，参考 Vercel、Grok、Lovable
 
-## 交互
-- 获取 Web: 若有更好方式（如 MCP、WebFetch、已有可用内容等）可不使用 jina；否则可用 `curl "https://r.jina.ai/https://www.example.com" -H "Authorization: Bearer $JINA_KEY"`，它会返回干净的 Markdown
+## 文档与交流
 
-## Skill / Agent 自动调用
-**处理以下情况时，必须先调用对应 Skill 再执行**
+- 永远使用中文回答，除非用户明确要求其他语言；检索优先使用英文
+- 文件开头说明职责，函数使用文档注释，复杂逻辑解释流程和边界
+- 获取 Web 内容时优先使用 MCP、WebFetch 或已有内容；没有更好方式时可使用：
 
-| 情况 | 类型 | 名称 |
-|------|------|------|
-| 编写 React（组件、Hooks、TSX、JSX 等） | Skill | `react` |
-| 编写 Vue（组件、SFC、组合式 API 等） | Skill | `vue` |
-| 编写 UI 设计（html、tsx、jsx、vue 页面/样式） | Skill | `ui-design` |
-| 检测/审查当前 git 变更中的 i18n、多语言一致性 | Skill | `i18n` |
-| 调试复杂 Bug、日志采集、运行时上下文收集 | Skill | `debug` |
-| 前端布局（高度传递、定高管理、flex/grid 结构） | Skill | `layout` |
-| 响应式布局（mobile-first、断点适配） | Skill | `responsive` |
-| 浏览器查询等数据获取、自动化操作 | Skill | `playwright-cli` |
-| 查询或操作 GitHub（仓库、文件、分支、Issue/PR） | Skill | `github` |
-| 查文档、搜代码示例、联网检索 | Skill | `search` |
-| 代码审查、重构、优化代码 | Skill | `code-review` |
-| 提交代码（commit / push / git ci） | Skill | `commit` |
+```bash
+curl "https://r.jina.ai/https://www.example.com" \
+  -H "Authorization: Bearer $JINA_KEY"
+```
 
+## Git 与测试边界
 
-## 开发流程规范
-1. **优先读 AGENTS.md / CLAUDE.md / README.md**：项目根目录或子目录出现这类约定文件时，下手前必须读完，不要凭印象做事
-2. **以证据为准，不靠猜测**：API 行为、库能力、文件路径、配置语义都要查实。未证实前不说「可以/已支持」；区分「已改」与「已验证」——未跑过的代码不说「改好了」「已实现」，明确标注待用户验证
-3. **先评估可行性再动手**：架构上做不到的事不要硬改 hook / monkey-patch；实现前先确认目标可达，不确定一定先问用户，避免最后一场空还污染代码
-4. **调研先行**：不 100% 确定的技术点 / 库用法 → 必须先 `search` skill；GitHub 为主的项目 → 必须先 `github` skill；大型项目深度学习 → 克隆下来读源码
-5. **用户自测**：完成代码改动后，如果方便测试，必须自动调用 `how-to-test` skill，告知用户如何测试，纯文档/注释改动/简单改动除外
-6. **不主动改动 git 状态**：未经明确要求，禁止执行任何会改写工作区/暂存区/提交历史的 git 命令——`add`/暂存、`commit`、`push`、`reset`、`restore`、`checkout`/`switch`（丢弃改动）、`stash`、`rm`、`clean`、`merge`/`rebase`、删分支等。只读命令（`status`/`diff`/`log`/`show`）随意。需要写操作时先问、或只给出命令让用户自己跑；即便用户要求「提交」，也只处理已暂存内容，不擅自 `git add` 其它文件
-7. 不确定时用 `// @TODO` 占位或提问，禁止编造函数/API，优先检索英文资料
-8. **优先使用 LSP MCP 探索代码**：如果 `lsp-mcp` 可用，定位符号、定义、引用、调用关系、类型信息、诊断、重命名等操作时优先使用它；在 LSP 不适用、无结果或需要查看配置与文本内容时再使用文件搜索等工具
-9. **禁止无意义测试**：测试必须调用生产代码并验证行为；禁止复制实现、扫描源码文本或为现有实现反推断言，不要有先射箭后画靶的行为
+- 未经明确要求，不执行任何会修改工作区、暂存区或历史的 Git 命令
+- 禁止擅自执行 `add`、`commit`、`push`、`reset` 等修改 Git 状态命令
+- `status`、`diff`、`log`、`show` 等只读命令可以执行
+- 用户要求提交时只处理已经暂存的内容，不擅自 `git add`
+- 测试必须调用生产代码并验证真实行为
+- 禁止无意义测试，测试必须调用生产代码并验证行为；禁止复制实现、扫描源码文本或为现有实现反推断言，不要有先射箭后画靶的行为
+
+## Skill 自动调用
+
+处理以下情况时，必须先调用对应 Skill：
+
+| 情况 | Skill |
+|------|------|
+| 编写 React 组件、Hooks、TSX、JSX | `react` |
+| 编写 Vue、SFC、组合式 API | `vue` |
+| 编写 UI 页面或样式 | `ui-design` |
+| 审查 i18n、多语言一致性 | `i18n` |
+| 调试复杂 Bug、采集日志或运行时上下文 | `debug` |
+| 处理高度传递、flex/grid 布局 | `layout` |
+| 处理 mobile-first、断点适配 | `responsive` |
+| 浏览器数据获取或自动化 | `playwright-cli` |
+| 查询或操作 GitHub | `github` |
+| 查文档、代码示例或联网检索 | `search` |
+| 代码审查、重构或优化 | `code-review` |
+| 提交或推送代码 | `commit` |
