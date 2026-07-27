@@ -1,7 +1,7 @@
--- vv-task-panel：可扩展任务面板（provider 模式，默认启用 npm provider）
+-- vv-task-panel：可扩展任务面板
 ---@type PackSpec
 return {
-  desc = '可扩展的任务面板（TS monorepo scripts）',
+  desc = '可扩展的项目任务面板',
   url  = 'beixiyo/vv-task-panel.nvim',
   main = 'vv-task-panel',
   dependencies = { 'beixiyo/vv-utils.nvim', 'beixiyo/vv-icons.nvim' },
@@ -11,7 +11,9 @@ return {
   -- 其 BufReadPost 被 autocmd 嵌套规则吞掉，真正 promote 只触发 BufEnter，故两类事件都挂上才能可靠懒加载
   event = {
     'BufReadPost */package.json', 'BufReadPost */deno.json', 'BufReadPost */deno.jsonc',
+    'BufReadPost */Cargo.toml', 'BufReadPost */go.mod',
     'BufEnter */package.json', 'BufEnter */deno.json', 'BufEnter */deno.jsonc',
+    'BufEnter */Cargo.toml', 'BufEnter */go.mod',
   },
   keys = {
     { '<leader>tp', '<cmd>VVTaskPanel<cr>',      desc = 'Task panel' },
@@ -24,6 +26,16 @@ return {
     position = 'right',
     term_position = 'bottom',
     term_height = 15,
-    exclude_dirs = { 'node_modules', '.git', 'dist', 'build', '.next', '.turbo', '.cache', 'coverage', '.nuxt', 'out' },
+    provider_options = {
+      package_json = {
+        filter = function(script)
+          local function startWith(prefix)
+            return vim.startswith(script.name, prefix)
+          end
+
+          return not (startWith('//') or startWith('--'))
+        end,
+      },
+    },
   },
 }
