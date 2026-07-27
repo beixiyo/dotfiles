@@ -10,7 +10,7 @@ return {
     'BufReadPost syslog', 'BufReadPost messages',
   },
 
-  ---@type VVLogHlConfig
+  ---@type VVLogHl.Config
   opts = {
     extension = { 'log', 'out', 'jsonl', 'ndjson' },
     filename = { 'syslog', 'messages' },

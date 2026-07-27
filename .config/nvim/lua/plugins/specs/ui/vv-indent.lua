@@ -7,6 +7,6 @@ return {
   main = 'vv-indent',
   cmd = { 'VVIndentEnable', 'VVIndentDisable', 'VVIndentToggle' },
   event = { 'BufReadPost', 'BufNewFile' },
-  ---@type VVIndentConfig
+  ---@type VVIndent.Config
   opts = {},
 }
