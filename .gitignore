@@ -71,6 +71,7 @@
 !.config/nvim/vendors/tokyonight.nvim/**
 !.config/nvim/vendors/clone-all.sh
 !.config/nvim/vendors/pull-all.sh
+!.config/nvim/vendors/check-clean.sh
 
 # ── Neovide ──
 !.config/neovide/
