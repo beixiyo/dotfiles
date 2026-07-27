@@ -198,6 +198,13 @@ function M.open(opts)
     }
   end
 
+  local function new_finder()
+    return finders.new_table({
+      results = get_branches(),
+      entry_maker = make_entry,
+    })
+  end
+
   local previewer = previewers.new_buffer_previewer({
     title = 'Branch Log',
     define_preview = function(self, entry)
@@ -237,13 +244,20 @@ function M.open(opts)
     prompt_title = 'Checkout ↵  New ^a  Delete ^d  Rebase ^r  Merge ^y  Fetch ⌥f  Cp ⌥y',
     previewer    = previewer,
     sorter       = conf.generic_sorter(opts),
-    finder = finders.new_table({
-      results = get_branches(),
-      entry_maker = make_entry,
-    }),
+    finder = new_finder(),
 
     attach_mappings = function(prompt_bufnr, map)
       local checktime = function() vim.cmd('checktime') end
+      local refresh_branches = function()
+        local ok, picker = pcall(action_state.get_current_picker, prompt_bufnr)
+        if not ok or not picker then return end
+        picker:refresh(new_finder(), { reset_prompt = false })
+      end
+
+      local checktime_and_refresh = function()
+        checktime()
+        refresh_branches()
+      end
 
       -- CR: checkout。本地直接切；远程自动建本地 tracking branch（避免 detached HEAD）
       actions.select_default:replace(function()
@@ -308,7 +322,6 @@ function M.open(opts)
       map({ 'i', 'n' }, '<C-d>', function()
         local entry = action_state.get_selected_entry()
         if not entry then return end
-        actions.close(prompt_bufnr)
 
         if not entry.is_remote then
           if not confirm('Delete branch ' .. entry.value .. ' ?') then return end
@@ -316,7 +329,7 @@ function M.open(opts)
             return code == 0
               and ('Deleted branch: ' .. entry.value)
               or  ('Delete failed (exit ' .. code .. ')')
-          end)
+          end, refresh_branches)
           return
         end
 
@@ -326,33 +339,31 @@ function M.open(opts)
           return code == 0
             and ('Deleted remote branch: ' .. entry.value)
             or  ('Delete failed (exit ' .. code .. ')')
-        end)
+        end, refresh_branches)
       end)
 
       -- C-r: rebase（全局 defaults 绑成了 preview scroll，重绑回来）
       map({ 'i', 'n' }, '<C-r>', function()
         local entry = action_state.get_selected_entry()
         if not entry then return end
-        actions.close(prompt_bufnr)
         if not confirm('Rebase current branch onto ' .. entry.value .. ' ?') then return end
         git_async({ 'git', 'rebase', entry.value }, function(code)
           return code == 0
             and ('Rebased onto: ' .. entry.value)
             or  ('Rebase failed (exit ' .. code .. ')')
-        end, checktime)
+        end, checktime_and_refresh)
       end)
 
       -- C-y: merge（全局 defaults 绑成了 preview scroll，重绑回来）
       map({ 'i', 'n' }, '<C-y>', function()
         local entry = action_state.get_selected_entry()
         if not entry then return end
-        actions.close(prompt_bufnr)
         if not confirm('Merge ' .. entry.value .. ' into current branch ?') then return end
         git_async({ 'git', 'merge', entry.value }, function(code)
           return code == 0
             and ('Merged: ' .. entry.value)
             or  ('Merge failed (exit ' .. code .. ')')
-        end, checktime)
+        end, checktime_and_refresh)
       end)
 
       -- M-f: fetch --all，成功后静默关闭并重开 picker（保留原 opts）
