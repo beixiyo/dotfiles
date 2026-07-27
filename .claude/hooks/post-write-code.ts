@@ -20,8 +20,11 @@ const CODE_EXTENSIONS = new Set([
   '.css', '.scss', '.less',
   '.c', '.cc', '.cpp', '.cs',
   '.go', '.java', '.kt', '.kts', '.rs', '.swift',
-  '.py', '.rb', '.lua',
+  '.py', '.rb',
 ])
+
+const VV_MCP_REQUEST_TIMEOUT_MS = 2_800
+const VV_MCP_PROCESS_TIMEOUT_MS = 3_000
 
 const data = parseInput(await Bun.stdin.text())
 if (!data) process.exit(0)
@@ -127,8 +130,18 @@ function formatFile(filePath: string, cwd: string): void {
 
   if (/\.(?:js|jsx|ts|tsx)$/.test(filePath)) runEslintFix(filePath)
 
-  Bun.spawnSync(['vv-mcp', 'fix', filePath], {
+  runVvMcpFix(filePath, cwd)
+}
+
+function runVvMcpFix(filePath: string, cwd: string): void {
+  Bun.spawnSync([
+    'vv-mcp',
+    'fix',
+    '--timeout-ms', String(VV_MCP_REQUEST_TIMEOUT_MS),
+    filePath,
+  ], {
     cwd,
+    timeout: VV_MCP_PROCESS_TIMEOUT_MS,
     stdout: 'ignore',
     stderr: 'inherit',
   })
