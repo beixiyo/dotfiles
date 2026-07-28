@@ -8,13 +8,11 @@ local severity_labels = { 'Error', 'Warn', 'Info', 'Hint' }
 local function panel_node_path()
   local ft = vim.bo.filetype
   if ft == 'vv-explorer' then
-    return require('vv-explorer').get_node_path()
+    local paths = require('vv-explorer').get_target_paths()
+    return #paths > 0 and table.concat(paths, '\n') or nil
   elseif ft == 'vv-git-panel' or vim.b.vv_git_scratch then
-    -- vv-git-panel = 文件树；vv_git_scratch = diff1 scratch buffer（无 buffer name）
-    local s = require('vv-git.state').get()
-    if s.cur_path and s.git_root then
-      return s.git_root .. '/' .. s.cur_path
-    end
+    local paths = require('vv-git').get_target_paths()
+    return #paths > 0 and table.concat(paths, '\n') or nil
   end
 end
 

@@ -57,6 +57,12 @@ vim.api.nvim_create_user_command("CopyPathLine", function(opts)
 
   local editor = require("vv-utils.editor")
   local p = editor.build_path({ line = line_arg })
+  if not p and vim.b.vv_git_source_path then
+    p = editor.build_path({
+      path = vim.b.vv_git_source_path,
+      line = line_arg,
+    })
+  end
   if not p then return end
 
   local diags = vim.diagnostic.get(0, { lnum = vim.fn.line('.') - 1 })
