@@ -161,6 +161,7 @@ end
 ---@param dir? string 工作目录，默认 nvim cwd
 ---@return boolean handled 是否已由 tmux 处理（false 表示调用方该走兜底）
 function M.popup(dir)
+  if vim.g.neovide then return false end
   if not vim.env.TMUX or vim.env.TMUX == '' then return false end
 
   local script = vim.env.HOME .. '/.config/tmux/scripts/popup-term.sh'
@@ -173,7 +174,7 @@ function M.popup(dir)
   return true
 end
 
--- <leader>tt 入口：tmux 环境用 popup，否则退回 toggleterm
+-- <leader>tt 入口：终端内的 tmux 环境用 popup，Neovide 等 GUI 退回 toggleterm
 function M.toggle()
   if M.popup() then return end
   vim.cmd('ToggleTerm')
