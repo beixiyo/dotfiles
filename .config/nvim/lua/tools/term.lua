@@ -107,13 +107,15 @@ local function set_term_keys(t)
   vim.keymap.set('n', '<esc>', function() t:close() end, o)
 end
 
--- 在 dir 打开/切换专用浮动终端，cwd 跟随调用方（非 toggle）
+-- 在 dir 打开终端，优先 tmux popup（真 tty），否则开/切换专用浮动终端
+-- cwd 跟随调用方（非 toggle）
 --   * 未创建 → 在该目录新建浮窗终端
 --   * 已存在但目录变了 → cd 到新目录（保留会话）
 --   * 已存在且同目录 → 直接聚焦
 ---@param dir string  目标工作目录
 function M.open_at(dir)
   if not dir or dir == '' then return end
+  if M.popup(dir) then return end
 
   local mod = get_terminal_mod()
   if not mod then
