@@ -67,6 +67,7 @@
 !.config/nvim/**
 # vendors/ 目录下除 tokyonight.nvim 和管理脚本外全部忽略
 .config/nvim/vendors/*
+!.config/nvim/vendors/AGENTS.md
 !.config/nvim/vendors/tokyonight.nvim/
 !.config/nvim/vendors/tokyonight.nvim/**
 !.config/nvim/vendors/clone-all.sh

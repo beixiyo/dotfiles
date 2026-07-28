@@ -26,7 +26,7 @@
 ---@field cond? boolean|fun(): boolean
 ---@field loadInVSCode? boolean
 ---@field dependencies? (string|{src: string, version?: string})[]
----@field build? string|string[]|fun(plugin: PackSpec)
+---@field build? string|string[]
 ---@field init? fun(plugin: PackSpec)
 ---@field opts? table|fun(plugin: PackSpec): table
 ---@field config? fun(plugin: PackSpec, opts?: table)
