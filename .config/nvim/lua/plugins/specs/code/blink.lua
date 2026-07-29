@@ -95,23 +95,17 @@ return {
           snippets = { score_offset = 2 },
           buffer = { score_offset = 1 },
 
-          -- vv-replace 的 Search / Replace 从所有已加载文件 buffer 取词，
-          -- Include / Exclude / Cwd 使用支持搜索简写的路径源
-          vv_replace_path = {
-            name = 'Path',
-            module = 'vv-replace.blink',
-            enabled = function() return require('vv-replace.blink').is_path_input() end,
+          -- vv-* 输入 buffer 统一通过 vv-utils.completion 声明候选策略；
+          -- source 只注册一次，当前 buffer 没有 descriptor 时自动禁用
+          vv_completion = {
+            name = 'VV',
+            module = 'vv-utils.blink',
             score_offset = 10,
-            max_items = 200,
-          },
-          vv_replace_buffer = {
-            name = 'Buffer',
-            module = 'blink.cmp.sources.buffer',
-            enabled = function() return require('vv-replace.blink').is_text_input() end,
             opts = {
-              get_bufnrs = function() return require('vv-replace.blink').get_bufnrs() end,
+              max_items = 50,
+              scan_max_items = 1000,
+              timeout_ms = 250,
             },
-            score_offset = 1,
           },
 
           -- ↓↓↓ blink-cmp-words 源定义，不要可整段注释 ↓↓↓
@@ -129,7 +123,12 @@ return {
         },
         -- ↓↓↓ blink-cmp-words 按文件类型启用，不要可整段注释 ↓↓↓
         per_filetype = {
-          ['vv-replace'] = { 'vv_replace_path', 'vv_replace_buffer' },
+          ['vv-replace'] = function()
+            local field = require('vv-replace.completion').current_field()
+            if field == 'search' or field == 'replace' then return { 'buffer' } end
+            return { 'vv_completion' }
+          end,
+          ['vv-explorer-filter'] = { 'vv_completion' },
           text = { 'buffer', 'dictionary' },
           markdown = { 'lsp', 'path', 'snippets', 'buffer', 'thesaurus' },
           tex = { 'lsp', 'snippets', 'buffer', 'thesaurus', 'dictionary' },
