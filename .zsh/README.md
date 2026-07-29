@@ -162,6 +162,7 @@ ports 9977 --all  # 使用 sudo 查看指定端口
 | `grepo [path]` | 递归发现 Git 仓库，预览状态并进入所选仓库 |
 | `gdiff [path]` | 查看 staged、unstaged 和 untracked 变更，并执行 stage / unstage |
 | `glog` | 搜索提交、预览 diff 并复制 hash |
+| `gitpt [version] [-r remote]` | 发布 SemVer tag；无参数时确认下一个 patch 或手动输入 tag，默认推送到 `origin` |
 
 各个 fzf 面板直接显示紧凑的快捷键提示，例如 `Open ↵`、`Stage ^S`、`nvim ⌥O`；Alt/Option 在所有平台统一显示为 `⌥`
 
