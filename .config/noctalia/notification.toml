@@ -30,3 +30,17 @@ history_retention_hours = 336
 # 音量、亮度等按键反馈浮层
 [osd]
 enabled = true
+
+# 横向 OSD 固定在底部居中，避开顶部 Bar 和主要阅读区域
+position = "bottom_center"
+position_vertical = "bottom_center"
+orientation = "horizontal"
+
+# 略微缩小并降低背景不透明度，保持数值和进度条清晰
+scale = 0.9
+background_opacity = 0.9
+border = true
+
+# 与屏幕底边保持悬浮距离
+offset_x = 20
+offset_y = 18
