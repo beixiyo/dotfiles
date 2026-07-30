@@ -1,0 +1,44 @@
+# Noctalia 锁屏登录框
+#
+# 只保留解锁所需信息；不在未认证界面暴露媒体、天气或会话操作
+
+[lockscreen_widgets]
+enabled = true
+schema_version = 2
+widget_order = ["lockscreen-login-box@eDP-1"]
+
+[lockscreen_widgets.grid]
+cell_size = 16
+major_interval = 4
+visible = false
+
+[lockscreen_widgets.widget."lockscreen-login-box@eDP-1"]
+type = "login_box"
+output = "eDP-1"
+cx = 960.0
+cy = 898.0
+box_width = 340.0
+box_height = 140.0
+rotation = 0.0
+
+[lockscreen_widgets.widget."lockscreen-login-box@eDP-1".settings]
+# compact 将默认 810px 的信息面板收敛为纯登录框
+layout = "compact"
+
+# 弱化外围面板，避免密码框外再套一层厚重的大边框
+background_color = "surface_variant"
+background_opacity = 0.28
+background_radius = 20.0
+input_radius = 16.0
+
+# 保留必要的登录反馈
+center_password_text = true
+show_login_button = true
+show_caps_lock = true
+
+# 锁屏隐私：不显示媒体、天气或电源/会话按钮
+show_media = false
+show_weather = false
+show_session_buttons = false
+show_keyboard_layout = false
+show_unlock_hint = false

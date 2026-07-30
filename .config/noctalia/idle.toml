@@ -6,6 +6,13 @@
 [lockscreen]
 enabled = true
 
+# 使用桌面壁纸而非锁屏前的桌面截图，避免泄露窗口内容
+blurred_desktop = false
+
+# 适度模糊并加深主题色遮罩，让紧凑登录框保持清晰
+blur_intensity = 0.35
+tint_intensity = 0.45
+
 # 两个 timeout 都从最后一次输入开始计算
 [idle]
 behavior_order = ["lock", "screen-off"]
