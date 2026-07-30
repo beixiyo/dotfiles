@@ -36,7 +36,7 @@ CORE_PACKAGES=(
 
 # shellcheck disable=SC2034 # 数组名由 install_packages 的 nameref 参数读取
 UI_PACKAGES=(
-  noctalia-git
+  noctalia
   libnotify
   wl-clipboard
   xdg-user-dirs
