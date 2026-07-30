@@ -12,21 +12,28 @@ smart_auto_hide = false
 layer = "overlay"
 reserve_space = false
 
-# 使用偏紧凑的图标和间距，减少 Dock 的视觉体积
-icon_size = 42
-item_spacing = 5
-main_axis_padding = 12
-cross_axis_padding = 7
+# 图标略大于紧凑模式，并用均匀留白保持点击目标和视觉节奏
+icon_size = 32
+item_spacing = 6
+main_axis_padding = 14
+cross_axis_padding = 8
 
-# 半透明背景配合轻量阴影，保持层次但不过分抢眼
-background_opacity = 0.72
+# 与屏幕底边留出距离，形成独立悬浮 Dock
+margin_edge = 8
+
+# 半透明背景配合轻量阴影和更柔和的圆角
+background_opacity = 0.78
 shadow = true
-radius = 14
+radius = 20
 
-# 悬停时轻微放大，避免默认倍率造成明显跳动
+# 悬停时自然放大，仍限制倍率避免明显跳动
 magnification = true
-magnification_scale = 1.25
+magnification_scale = 1.35
 inactive_scale = 0.9
 active_scale = 1.0
 inactive_opacity = 0.88
 active_opacity = 1.0
+
+# 显示运行状态圆点；同一应用有多个窗口时显示数量
+show_dots = true
+show_instance_count = true
