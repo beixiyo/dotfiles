@@ -21,3 +21,22 @@ settings_show_advanced = true
 
 # 界面使用简体中文
 lang = "zh-Hans"
+
+# 浮动面板的统一视觉与定位
+[shell.panel]
+# 面板透明模式：solid 不透明 | soft 轻透 | glass 明显透底
+transparency_mode = "soft"
+
+# 为浮动面板保留细描边和投影，使其与壁纸保持边界
+borders = true
+shadow = true
+
+# 控制中心脱离 Bar，固定在屏幕右上角
+control_center_placement = "floating"
+control_center_position = "top_right"
+
+# 浮动面板与屏幕边缘的距离，单位为逻辑像素
+floating_offset = 10
+
+# 固定位置后不跟随 Bar 组件的点击位置
+open_near_click_control_center = false
