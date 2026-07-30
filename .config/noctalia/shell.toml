@@ -1,0 +1,23 @@
+# Noctalia Shell 基础行为
+#
+# Noctalia 负责状态栏、Dock、通知、OSD、剪贴板、壁纸与主题取色
+# Hyprlock、Swayidle 和 polkit-gnome 暂时保留，作为尚未迁移功能与回退方案
+
+[shell]
+# 不上传匿名遥测数据
+telemetry_enabled = false
+
+# 只使用本地功能，不主动访问 Noctalia 在线服务
+offline_mode = true
+
+# 由 Noctalia 提供图形化 Polkit 提权认证
+polkit_agent = true
+
+# 启用 Noctalia 剪贴板历史
+clipboard_enabled = true
+
+# 在设置界面显示高级选项
+settings_show_advanced = true
+
+# 界面使用简体中文
+lang = "zh-Hans"

@@ -8,7 +8,11 @@ include "rules.kdl"
 include "animations.kdl"
 include "binds.kdl"
 include optional=true "output.kdl"
-include optional=true "colors.kdl"
+
+// 旧 Matugen 动态配色；已由 Noctalia 官方 Niri 模板替代
+// include optional=true "colors.kdl"
+// Noctalia 官方 Niri 模板输出；文件未生成时可选 include 保持配置可用
+include optional=true "noctalia.kdl"
 include optional=true "nvidia.kdl"
 
 input {
@@ -92,46 +96,53 @@ environment {
 // 自启动
 // 检测 NVIDIA 驱动，生成/删除 nvidia.kdl（首次需重启 niri 生效）
 spawn-at-startup "sh" "-c" "$HOME/.config/niri/scripts/detect-nvidia.sh"
+
 // 自动登录后立即锁屏（SDDM 跳过了密码验证）
-spawn-at-startup "hyprlock"
-// 通知守护进程（systemd 托管，复用 org.freedesktop.Notifications DBus 名称）
-spawn-at-startup "systemctl" "--user" "start" "mako.service"
+spawn-sh-at-startup "~/.config/niri/scripts/lock.sh"
+// 旧 Hyprlock 登录锁屏（Noctalia 已接管，保留作回退）
+// spawn-at-startup "hyprlock"
+// 旧通知守护进程（已由 Noctalia 替代，保留作回退）
+// spawn-at-startup "systemctl" "--user" "start" "mako.service"
+
 // 输入法（XDG autostart 生成的 systemd user unit，避免重复实例）
 spawn-at-startup "systemctl" "--user" "start" "app-org.fcitx.Fcitx5@autostart.service"
-// 提权弹窗
-spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
+// Noctalia 已接管 Polkit 提权弹窗
+// 旧 polkit-gnome agent（保留作回退）
+// spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
 
-// 壁纸守护进程
-spawn-at-startup "awww-daemon"
-// 总览界面背景壁纸
-spawn-at-startup "awww-daemon" "-n" "overview"
-// 壁纸自动循环切换（内部 matugen 生成配色后自动 reload waybar/mako/niri）
-spawn-sh-at-startup "~/.config/niri/scripts/wallpaper-cycle.sh"
+// 旧壁纸链路（已由 Noctalia 的壁纸选择、轮播和取色替代，保留作回退）
+// spawn-at-startup "awww-daemon"
+// spawn-at-startup "awww-daemon" "-n" "overview"
+// spawn-sh-at-startup "~/.config/niri/scripts/wallpaper-cycle.sh"
 
-// 音量/亮度 OSD
-spawn-at-startup "swayosd-server"
+// 旧状态栏（已由 Noctalia 替代，保留作回退）
+// spawn-at-startup "systemctl" "--user" "start" "waybar.service"
+// XEmbed 托盘桥继续把旧协议图标转换为 StatusNotifierItem，交给 Noctalia 显示
+spawn-at-startup "systemctl" "--user" "start" "plasma-xembedsniproxy.service"
 
-// 状态栏（systemd 托管，限制内存并自动重启；同时启动 XEmbed 托盘桥）
-spawn-at-startup "systemctl" "--user" "start" "waybar.service" "plasma-xembedsniproxy.service"
-
-// 剪贴板历史监听（cliphist，保留最近 5000 条，单条超 5MB 跳过）
+// 旧剪贴板历史监听（已由 Noctalia 替代，保留作回退）
 // ExecStart 在 user drop-in 中保留 -max-items 5000
-spawn-at-startup "systemctl" "--user" "start" "cliphist.service"
-// 空闲管理（swayidle）：
-//   所有拉起 hyprlock 的回调必须走 lock.sh 后台化——hyprlock 没有 -f/daemonize，
-//   而 swayidle -w 会在唯一的事件循环里同步 waitpid（main.c:141-178），
-//   前台跑 hyprlock 会让 swayidle 在整个锁屏期间冻结，积压的 idle 事件
-//   在解锁瞬间集中补跑 → 嵌套锁屏 + 锁屏后不息屏 + 解锁瞬间黑一下
-//
-//   lock         → loginctl lock-session 信号 → 后台启动 hyprlock（pidof 防多开）
-//   timeout 120  → 2 分钟无操作：若已锁屏(pidof hyprlock)则关屏，否则跳过
+// spawn-at-startup "systemctl" "--user" "start" "cliphist.service"
+
+// 旧音量/亮度 OSD（已由 Noctalia 替代，保留作回退）
+// spawn-at-startup "swayosd-server"
+
+// 空闲管理已由 Noctalia 接管：15 分钟锁屏、17 分钟关显示器，不自动休眠。
+// 旧 Swayidle 参数完整保留作回退：
+//   lock         → loginctl lock-session 信号 → lock.sh 请求 Noctalia 锁屏
+//   timeout 120  → 2 分钟无操作：若 LockedHint=yes 则关屏，否则跳过
 //   timeout 900  → 15 分钟无操作：自动锁屏
-//   timeout 1020 → 17 分钟无操作：强制关屏（兜底走开场景，此时 timeout 120 早已空跑过）
-//   before-sleep → 休眠前锁屏并阻塞到 LockedHint=yes，-w 只在这一条上才有意义
+//   timeout 1020 → 17 分钟无操作：强制关屏（兜底走开场景）
+//   before-sleep → 休眠前请求 Noctalia 锁屏并等待 LockedHint=yes
+//
+//   lock.sh 保持幂等且普通回调不阻塞 Swayidle；Noctalia 不可用时回退 Hyprlock。
 //   无 unlock 回调：SIGUSR1 的真实语义是「立刻进入 idle」（man swayidle），会当场
 //                   重锁 + 黑屏；且 niri 解锁时自己 notify_activity 已重置计时
 //   无 resume 回调：niri 收到输入自动亮屏，且避免 swayidle #193 竞态死锁
-spawn-at-startup "swayidle" "-w" "lock" "~/.config/niri/scripts/lock.sh" "timeout" "120" "pidof hyprlock && niri msg action power-off-monitors" "timeout" "900" "~/.config/niri/scripts/lock.sh" "timeout" "1020" "niri msg action power-off-monitors" "before-sleep" "~/.config/niri/scripts/lock.sh --wait"
+// spawn-at-startup "swayidle" "-w" "lock" "~/.config/niri/scripts/lock.sh" "timeout" "120" "loginctl show-session auto -p LockedHint --value 2>/dev/null | grep -qx yes && niri msg action power-off-monitors" "timeout" "900" "~/.config/niri/scripts/lock.sh" "timeout" "1020" "niri msg action power-off-monitors" "before-sleep" "~/.config/niri/scripts/lock.sh --wait"
+
+// 旧 Hyprlock-only Swayidle 参数（Noctalia 已接管，保留作回退）
+// spawn-at-startup "swayidle" "-w" "lock" "~/.config/niri/scripts/lock.sh" "timeout" "120" "pidof hyprlock && niri msg action power-off-monitors" "timeout" "900" "~/.config/niri/scripts/lock.sh" "timeout" "1020" "niri msg action power-off-monitors" "before-sleep" "~/.config/niri/scripts/lock.sh --wait"
 
 // 默认应用（按需启动）
 // spawn-at-startup "ghostty"

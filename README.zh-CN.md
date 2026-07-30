@@ -234,6 +234,7 @@ Kitty、Ghostty 和 WezTerm 都分别提供了 tmux 与裸 / 原生模式的快�
 | 层级 | 选择 | 说明 |
 |---|---|---|
 | 系统 | [Arch Linux](https://archlinux.org/) + [Niri](https://github.com/niri-wm/niri) | 我的基础桌面栈 |
+| 桌面 Shell | [Noctalia](https://noctalia.dev/) | 状态栏、托盘、启动器、通知、OSD、剪贴板、壁纸、动态配色、锁屏、空闲管理与 Polkit |
 | Shell | [Zsh](https://www.zsh.org/) | 和 Bash 足够接近，AI 生成的 shell 片段更不容易写错 |
 | 终端复用器 | [tmux](https://github.com/tmux/tmux) | 默认会话层，轻量、稳定、可定制 |
 | 终端 | [Kitty](https://sw.kovidgoyal.net/kitty/) | 主力终端；扩展性最强，原生模式可实现接近 tmux 的完整工作流，并支持平滑光标 |
@@ -274,8 +275,9 @@ vv-* 插件覆盖导航、Git、搜索、重构、Markdown 和工作流面板
 | 终端 | `~/.config/{kitty,ghostty,wezterm}/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/terminal-guide-keymaps) |
 | Yazi | `~/.config/yazi/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/yazi-guide-keymaps) |
 | Niri | `~/.config/niri/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/niri-guide-usage) |
+| Noctalia | `~/.config/noctalia/` | [Niri Wiki](https://github.com/beixiyo/dotfiles/wiki/niri-guide-usage) |
 | Karabiner | `~/.config/karabiner/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/karabiner-guide-windows-keymap) |
-| 剪贴板 | `~/.config/quickshell/clipboard/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/linux-guide-clipboard) |
+| 剪贴板 | `~/.config/noctalia/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/linux-guide-clipboard) |
 | 安装脚本 | `one-click-config/` | [说明](one-click-config/README.md) |
 
 完整架构图见 [AGENTS.md](AGENTS.md)

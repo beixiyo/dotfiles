@@ -1,0 +1,35 @@
+# Noctalia 主题与模板
+
+[theme]
+# 配色来源：builtin | wallpaper | community | custom
+source = "wallpaper"
+
+# 内置调色板名称，仅在 source = "builtin" 时生效
+builtin = "Noctalia"
+# 社区调色板名称，仅在 source = "community" 时生效
+community_palette = "Oxocarbon"
+
+# 自定义调色板，仅在 source = "custom" 时生效
+custom_palette = ""
+# 显示模式：dark | light | auto
+mode = "dark"
+
+# 壁纸取色算法：m3-tonal-spot | m3-content | m3-fruit-salad | m3-rainbow | m3-monochrome | vibrant | faithful | soft | dysfunctional | muted
+wallpaper_scheme = "m3-content"
+# 深色模式使用纯黑背景，适合 OLED 屏幕
+pure_black_dark = false
+
+[theme.templates]
+# 是否运行 Noctalia 内置模板
+enable_builtin_templates = true
+
+# 合成器：hyprland | labwc | mango | niri | scroll | sway
+# 终端：alacritty | foot | ghostty | kitty | wezterm
+# 系统：gtk3 | gtk4 | kcolorscheme | qt
+# 其他：cava | emacs | helix | btop | starship
+builtin_ids = ["niri"]
+
+# 是否运行已安装的社区模板
+enable_community_templates = true
+# 启用的社区模板 ID
+community_ids = []

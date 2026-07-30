@@ -112,6 +112,10 @@
 !.config/niri/
 !.config/niri/**
 
+# -- Noctalia（桌面 Shell）
+!.config/noctalia/
+!.config/noctalia/**
+
 # -- Fontconfig（CJK 回退等字体规则）
 !.config/fontconfig/
 !.config/fontconfig/fonts.conf
@@ -151,6 +155,7 @@
 # matugen 自动生成，不跟踪
 .config/waybar/colors.css
 .config/niri/colors.kdl
+.config/niri/noctalia.kdl
 .config/mako/colors.conf
 .config/cava/themes/matugen
 .local/share/fcitx5/themes/Matugen/theme.conf
@@ -173,6 +178,7 @@
 !.config/systemd/user/cliphist.service.d/10-user-config.conf
 !.config/systemd/user/dbus-broker.service.d/
 !.config/systemd/user/dbus-broker.service.d/override.conf
+!.config/systemd/user/noctalia.service
 
 # -- dprint --
 !.config/dprint/

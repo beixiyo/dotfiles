@@ -1,0 +1,13 @@
+# Noctalia 桌面 Shell，由图形会话和音频栈共同管理生命周期
+[Unit]
+Description=Noctalia desktop shell
+PartOf=graphical-session.target pipewire.service pipewire-pulse.service wireplumber.service
+After=pipewire.service pipewire-pulse.service wireplumber.service
+
+[Service]
+ExecStart=/usr/bin/noctalia
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target

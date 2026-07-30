@@ -1,5 +1,9 @@
 # 剪贴板组件（clipboard）
 
+> [!NOTE]
+> 当前默认剪贴板 UI 已迁移到 Noctalia（`Alt+V`）。本目录是旧版
+> Cliphist + Quickshell 实现的技术文档和回退配置，不再由 Niri 默认启动
+
 基于 **cliphist + Quickshell** 的剪贴板弹窗:HUD 式搜索、类型分类、图片/视频/HTML 预览、置顶收藏、二次激活复制(回写系统剪贴板)
 
 启动:`qs-popup clipboard`(详见上级 `../AGENTS.md`)

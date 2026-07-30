@@ -1,0 +1,32 @@
+# Noctalia 底部 Dock
+
+[dock]
+# 平时隐藏，鼠标触碰屏幕底边时显示
+enabled = true
+position = "bottom"
+auto_hide = true
+
+# 不根据工作区是否有窗口改变显示逻辑，只由底边悬停控制
+smart_auto_hide = false
+# 覆盖在窗口上方，不长期占用桌面空间
+layer = "overlay"
+reserve_space = false
+
+# 使用偏紧凑的图标和间距，减少 Dock 的视觉体积
+icon_size = 42
+item_spacing = 5
+main_axis_padding = 12
+cross_axis_padding = 7
+
+# 半透明背景配合轻量阴影，保持层次但不过分抢眼
+background_opacity = 0.72
+shadow = true
+radius = 14
+
+# 悬停时轻微放大，避免默认倍率造成明显跳动
+magnification = true
+magnification_scale = 1.25
+inactive_scale = 0.9
+active_scale = 1.0
+inactive_opacity = 0.88
+active_opacity = 1.0

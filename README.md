@@ -234,6 +234,7 @@ Kitty, Ghostty, and WezTerm all have tmux and standalone/native keymap files. Th
 | Layer | Choice | Notes |
 |---|---|---|
 | System | [Arch Linux](https://archlinux.org/) + [Niri](https://github.com/niri-wm/niri) | My base desktop stack |
+| Desktop shell | [Noctalia](https://noctalia.dev/) | Bar, tray, launcher, notifications, OSD, clipboard, wallpaper, dynamic colors, lock screen, idle handling, and Polkit |
 | Shell | [Zsh](https://www.zsh.org/) | Close enough to Bash that AI-written shell snippets are less likely to drift |
 | Multiplexer | [tmux](https://github.com/tmux/tmux) | Default session layer, lightweight and stable |
 | Terminal | [Kitty](https://sw.kovidgoyal.net/kitty/) | Primary terminal; the most extensible, with a complete tmux-like native workflow and smooth cursor support |
@@ -274,8 +275,9 @@ Each plugin repository has its own bilingual README. The [Neovim guide (Chinese)
 | Terminals | `~/.config/{kitty,ghostty,wezterm}/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/terminal-guide-keymaps) |
 | Yazi | `~/.config/yazi/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/yazi-guide-keymaps) |
 | Niri | `~/.config/niri/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/niri-guide-usage) |
+| Noctalia | `~/.config/noctalia/` | [Niri Wiki](https://github.com/beixiyo/dotfiles/wiki/niri-guide-usage) |
 | Karabiner | `~/.config/karabiner/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/karabiner-guide-windows-keymap) |
-| Clipboard | `~/.config/quickshell/clipboard/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/linux-guide-clipboard) |
+| Clipboard | `~/.config/noctalia/` | [Wiki](https://github.com/beixiyo/dotfiles/wiki/linux-guide-clipboard) |
 | Setup scripts | `one-click-config/` | [README](one-click-config/README.md) |
 
 See [AGENTS.md](AGENTS.md) for the full architecture map

@@ -30,54 +30,50 @@ CORE_PACKAGES=(
 )
 
 UI_PACKAGES=(
-  waybar
-  fuzzel
-  mako
+  noctalia-git
   libnotify
-  polkit-gnome
-  awww
-  imagemagick
-  swayosd
-)
-
-LOCK_IDLE_PACKAGES=(
-  hyprlock
-  swayidle
-)
-
-CLIPBOARD_PACKAGES=(
   wl-clipboard
-  cliphist
-  quickshell
   xdg-user-dirs
-)
-
-# 视频缩略图 + 元数据（clipboard PreviewOverlay 用；不装则视频条目无缩略图）
-# 注意：ffprobe 由 ffmpeg 提供，无独立同名包，单独安装会 target not found 并在 set -e 下中止整脚本
-CLIPBOARD_VIDEO_PACKAGES=(
-  ffmpeg
 )
 
 MEDIA_PACKAGES=(
   brightnessctl
-  cava
   playerctl
 )
 
 KEYRING_PACKAGES=(
   gnome-keyring
-  libsecret
 )
 
-THEME_PACKAGES=(
-  matugen
+# XEmbed 托盘桥由 plasma-workspace 提供，将旧协议图标转换为 StatusNotifierItem
+COMPAT_PACKAGES=(
+  plasma-workspace
 )
 
 SCREENSHOT_PACKAGES=(
   mark-shot
 )
 
-WAYBAR_EXTRA_PACKAGES=(
+# ── 旧桌面方案（仅作回退参考，不再默认安装）───────────────
+#
+# Noctalia 已统一接管状态栏、启动器、通知、Polkit、壁纸、动态配色、
+# 锁屏、空闲管理、OSD 和剪贴板。下列软件的配置仍保留在 dotfiles 中，
+# 但 setup-niri.sh 不会安装它们
+LEGACY_DESKTOP_PACKAGES=(
+  waybar
+  fuzzel
+  mako
+  polkit-gnome
+  awww
+  imagemagick
+  swayosd
+  hyprlock
+  swayidle
+  cliphist
+  quickshell
+  ffmpeg
+  cava
+  matugen
   gnome-clocks
   gnome-calendar
   bluetui
@@ -103,22 +99,10 @@ install_packages() {
 
 setup_deps() {
   install_packages CORE_PACKAGES "核心（合成器 + Portal + XWayland）"
-  install_packages UI_PACKAGES "UI 工具（Waybar + Fuzzel + Mako + 壁纸 + 通知）"
-  install_packages LOCK_IDLE_PACKAGES "锁屏与空闲管理"
-  install_packages CLIPBOARD_PACKAGES "剪贴板"
-  install_packages CLIPBOARD_VIDEO_PACKAGES "剪贴板视频支持（ffmpeg，含 ffprobe）"
-  install_packages MEDIA_PACKAGES "媒体控制（亮度 + Cava + Playerctl）"
-  install_packages KEYRING_PACKAGES "密钥环（gnome-keyring + libsecret）"
-  install_packages THEME_PACKAGES "动态配色（Matugen）"
-
-  printf '\n' >&2
-  printf '[%s] Install Waybar extras (gnome-clocks, bluetui ...)? [y/N] ' "$(date +'%F %T')" >&2
-  read -r resp || resp=''
-  if [[ "$resp" =~ ^[yY] ]]; then
-    install_packages WAYBAR_EXTRA_PACKAGES "Waybar 增强模块"
-  else
-    log "Skipping Waybar extras"
-  fi
+  install_packages UI_PACKAGES "Noctalia 桌面 Shell 与基础集成"
+  install_packages MEDIA_PACKAGES "媒体控制（亮度 + Playerctl）"
+  install_packages KEYRING_PACKAGES "密钥环（加密剪贴板历史）"
+  install_packages COMPAT_PACKAGES "旧托盘图标兼容桥"
 
   printf '\n' >&2
   printf '[%s] Install mark-shot (截图+标注)? [y/N] ' "$(date +'%F %T')" >&2
@@ -138,6 +122,27 @@ setup_deps() {
     fi
   else
     log "Skipping mark-shot"
+  fi
+}
+
+setup_noctalia_service() {
+  local service_file="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/noctalia.service"
+
+  if ! command -v systemctl >/dev/null 2>&1; then
+    log_warn "systemctl not found; enable noctalia.service manually"
+    return
+  fi
+
+  if [ ! -f "$service_file" ]; then
+    log_warn "$service_file not found; deploy dotfiles before enabling Noctalia"
+    return
+  fi
+
+  log "Enabling Noctalia user service ..."
+  if systemctl --user daemon-reload && systemctl --user enable noctalia.service; then
+    log_ok "Noctalia user service enabled"
+  else
+    log_warn "Could not enable noctalia.service; run systemctl --user enable noctalia.service after login"
   fi
 }
 
@@ -161,20 +166,15 @@ show_summary() {
   log ""
   log "  配置文件已在 dotfiles 仓库中，无需额外操作："
   log "    ~/.config/niri/       合成器配置"
-  log "    ~/.config/waybar/     状态栏"
-  log "    ~/.config/hypr/       锁屏"
-  log "    ~/.config/fuzzel/     启动器"
-  log "    ~/.config/mako/       通知"
-  log "    ~/.config/swayosd/    音量/亮度 OSD"
-  log "    ~/.config/matugen/    动态配色模板"
-  log "    ~/.config/quickshell/ 剪贴板弹窗（qs-popup clipboard）"
+  log "    ~/.config/noctalia/   状态栏、通知、启动器、锁屏、壁纸与动态配色"
+  log "    ~/.config/systemd/user/noctalia.service"
   log ""
   log "  启动方式（任选一种）："
   log "    - TTY 启动：niri-session"
   log "    - 显示管理器：装 greetd / SDDM 等，选 Niri 会话"
   log ""
-  log "  首次启动建议运行壁纸初始化："
-  log "    matugen image ~/Pictures/壁纸.png --prefer saturation -q"
+  log "  Noctalia 会随图形会话启动，并从 ~/Pictures 选择壁纸和生成主题。"
+  log "  Waybar、Mako、Awww、Matugen、Hyprlock 等旧配置仅保留作回退。"
   log ""
 }
 
@@ -186,6 +186,7 @@ case "${1:-all}" in
   all)
     setup_deps
     setup_locale
+    setup_noctalia_service
     show_summary
     ;;
   *)

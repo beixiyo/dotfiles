@@ -29,25 +29,37 @@ _notify_close() {
 }
 
 # _enforce_notification_cap: 本 app 在屏通知超过 NOTIFY_MAX 时，关掉最旧的若干条（FIFO）
-# mako id 单调递增 ⇒ id 越小越旧。关闭最旧的会让其 notify-send --wait 退出 → 连进程一起回收
-# 解析的是本机 makoctl list 的【文本】输出（非 JSON）：
-#   Notification <id>: <summary>
-#     App name: <app>
+# 优先使用 Noctalia 的 GetNotifications 扩展；不可用时回退解析 makoctl list
+# 两者的通知 id 都单调递增，因此 id 越小越旧。关闭最旧通知会让对应
+# notify-send --wait 退出，连同 watcher 一起回收
 # 默认上限 10，可用 NOTIFY_MAX 调整；NOTIFY_MAX=0 关闭该限制
 _enforce_notification_cap() {
   local _max="${NOTIFY_MAX:-10}"
   [[ "$_max" =~ ^[0-9]+$ ]] || return
   (( _max <= 0 )) && return
-  command -v makoctl &>/dev/null || return
 
-  # 取本 app（claude-code）所有通知 id，升序（旧→新）
-  local _ids
-  _ids=$(makoctl list 2>/dev/null | awk '
-    /^Notification [0-9]+:/ { id = $2; sub(/:$/, "", id) }
-    /^[[:space:]]+App name: / {
-      app = $0; sub(/^[[:space:]]+App name: /, "", app)
-      if (app == "claude-code") print id
-    }' | sort -n)
+  # 取本 app（claude-code）所有在屏通知 id，升序（旧→新）
+  local _ids _notifications
+  if command -v busctl &>/dev/null \
+    && command -v jq &>/dev/null \
+    && _notifications=$(busctl --user --json=short call \
+      org.freedesktop.Notifications /org/freedesktop/Notifications \
+      org.freedesktop.Notifications GetNotifications 2>/dev/null); then
+    _ids=$(printf '%s' "$_notifications" | jq -r '
+      .data[0][]?
+      | select(.app_name.data == "claude-code")
+      | .id.data
+    ' 2>/dev/null | sort -n)
+  elif command -v makoctl &>/dev/null; then
+    _ids=$(makoctl list 2>/dev/null | awk '
+      /^Notification [0-9]+:/ { id = $2; sub(/:$/, "", id) }
+      /^[[:space:]]+App name: / {
+        app = $0; sub(/^[[:space:]]+App name: /, "", app)
+        if (app == "claude-code") print id
+      }' | sort -n)
+  else
+    return
+  fi
 
   local _count
   _count=$(printf '%s\n' "$_ids" | grep -c .)

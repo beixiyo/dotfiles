@@ -1,0 +1,4 @@
+# Noctalia 顶部主状态栏
+
+[bar.main]
+enabled = true

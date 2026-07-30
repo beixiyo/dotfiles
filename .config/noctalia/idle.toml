@@ -1,0 +1,24 @@
+# 锁屏与空闲行为
+#
+# 远程使用策略：允许自动锁屏和关闭显示器，但绝不因空闲自动休眠。
+
+# 启用 Noctalia 锁屏 UI
+[lockscreen]
+enabled = true
+
+# 两个 timeout 都从最后一次输入开始计算
+[idle]
+behavior_order = ["lock", "screen-off"]
+pre_action_fade_seconds = 2.0
+
+# 15 分钟无操作后锁屏
+[idle.behavior.lock]
+enabled = true
+timeout = 900
+action = "lock"
+
+# 17 分钟无操作后关闭显示器；输入恢复时 Noctalia 自动重新点亮
+[idle.behavior.screen-off]
+enabled = true
+timeout = 1020
+action = "screen_off"

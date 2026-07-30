@@ -1,4 +1,10 @@
-// overview 壁纸放到总览背景层
+// Noctalia 的模糊背景只显示在 Niri 总览中，不覆盖普通桌面壁纸
+layer-rule {
+  match namespace="noctalia-backdrop"
+  place-within-backdrop true
+}
+
+// 旧 awww overview 壁纸规则（Noctalia 已接管，保留作回退）
 layer-rule {
   match namespace="awww-daemonoverview"
   place-within-backdrop true

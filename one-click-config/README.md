@@ -160,6 +160,20 @@ tmux 插件目录不会提交到 Git，新机器部署后需要执行：
 sudo ./setup-nvidia.sh
 ```
 
+`setup-niri.sh` 默认安装 `noctalia-git`，由 Noctalia 统一提供状态栏、托盘、
+启动器、通知历史、OSD、剪贴板、壁纸与动态配色、锁屏、空闲管理和
+Polkit，并启用 `noctalia.service`。脚本仍安装 Niri、Portal、XWayland、
+通知/剪贴板命令、媒体控制、GNOME Keyring 和 XEmbed 托盘兼容桥
+
+脚本生成的 `zh_CN.UTF-8` 是系统 locale；Noctalia 的界面语言由
+`~/.config/noctalia/shell.toml` 中的 `lang = "zh-Hans"` 独立控制
+部署当前 dotfiles 后 Noctalia 默认使用简体中文，修改该字段后可热重载
+
+Waybar、Fuzzel、Mako、Polkit-GNOME、Awww、SwayOSD、Hyprlock、Swayidle、
+Cliphist、Quickshell、Cava 和 Matugen 已归入脚本中的旧方案回退清单，
+不会在新机器上默认安装。仓库中的旧配置暂时保留，便于迁移故障时人工
+恢复
+
 `setup-sudoers.sh` 中部分候选命令可以间接获得 root Shell。启用前必须阅读脚本输出的安全提示，不要把不信任的本地用户加入对应 sudo 组
 
 ## 权限边界
@@ -191,7 +205,7 @@ one-click-config/
 ├── setup-tmux.sh          # 安装或更新 TPM 插件
 ├── setup-sudoers.sh       # 管理 NOPASSWD 命令白名单
 ├── setup-kde.sh           # KDE 主题与桌面环境
-├── setup-niri.sh          # Niri 桌面环境
+├── setup-niri.sh          # Niri + Noctalia 桌面环境
 ├── setup-nvidia.sh        # NVIDIA 驱动与 Wayland 配置
 ├── lib/
 │   ├── common.sh          # 日志、颜色与权限辅助

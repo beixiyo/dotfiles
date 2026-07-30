@@ -1,0 +1,18 @@
+# 壁纸、自动轮换与 Overview 背景
+
+[wallpaper]
+enabled = true
+directory = "/home/dev/Pictures"
+transition_duration = 2000
+transition_on_startup = true
+
+# 自动轮换壁纸，并触发 Noctalia 主题重新取色
+[wallpaper.automation]
+enabled = true
+interval_seconds = 600
+order = "alphabetical"
+recursive = false
+
+# 为 Niri Overview 提供模糊背景；Niri 图层规则限制其只在总览中显示
+[backdrop]
+enabled = true

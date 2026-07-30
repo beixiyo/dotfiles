@@ -1,0 +1,9 @@
+# 通知与按键反馈浮层
+
+# 由 Noctalia 接管通知并提供通知历史和精细操作
+[notification]
+enable_daemon = true
+
+# 音量、亮度等按键反馈浮层
+[osd]
+enabled = true

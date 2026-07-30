@@ -1,0 +1,21 @@
+# 可选系统服务与桌面集成
+
+# Noctalia 系统监控数据源，当前没有组件依赖它
+[system.monitor]
+enabled = false
+
+# 桌面时钟、媒体和音频波形等小组件，因资源占用暂不启用
+[desktop_widgets]
+enabled = false
+
+# 在线日历集成暂不启用；状态栏日期与基础日历仍可使用
+[calendar]
+enabled = false
+
+# 在线天气数据暂不启用
+[weather]
+enabled = false
+
+# 夜间色温调节暂不启用
+[nightlight]
+enabled = false

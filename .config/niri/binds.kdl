@@ -3,17 +3,17 @@ binds {
 
   // 启动
   Mod+T { spawn "kitty"; }
-  Mod+D { spawn "fuzzel"; }
+  Mod+D { spawn "noctalia" "msg" "panel-toggle" "launcher"; }
   Mod+E { spawn "dolphin"; }
 
-  // 剪贴板（cliphist + quickshell 组件，手动 Ctrl+V 粘贴）
-  Alt+V { spawn-sh "qs-popup clipboard"; }
+  // 剪贴板（Noctalia 历史面板）
+  Alt+V { spawn "noctalia" "msg" "panel-toggle" "clipboard"; }
 
-  // 音量（swayosd 显示 OSD，wpctl 兜底）
-  XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "swayosd-client --output-volume +5 || wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05+"; }
-  XF86AudioLowerVolume allow-when-locked=true { spawn-sh "swayosd-client --output-volume -5 || wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05-"; }
-  XF86AudioMute        allow-when-locked=true { spawn-sh "swayosd-client --output-volume mute-toggle || wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"; }
-  XF86AudioMicMute     allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"; }
+  // 音量（Noctalia 负责控制和 OSD）
+  XF86AudioRaiseVolume allow-when-locked=true { spawn "noctalia" "msg" "volume-up" "5"; }
+  XF86AudioLowerVolume allow-when-locked=true { spawn "noctalia" "msg" "volume-down" "5"; }
+  XF86AudioMute        allow-when-locked=true { spawn "noctalia" "msg" "volume-mute"; }
+  XF86AudioMicMute     allow-when-locked=true { spawn "noctalia" "msg" "mic-mute"; }
 
   // 媒体
   XF86AudioPlay allow-when-locked=true { spawn-sh "playerctl play-pause"; }
@@ -21,9 +21,19 @@ binds {
   XF86AudioPrev allow-when-locked=true { spawn-sh "playerctl previous"; }
   XF86AudioNext allow-when-locked=true { spawn-sh "playerctl next"; }
 
-  // 亮度（swayosd 显示 OSD，brightnessctl 兜底）
-  XF86MonBrightnessUp   allow-when-locked=true { spawn-sh "swayosd-client --brightness +5 || brightnessctl --class=backlight set +5%"; }
-  XF86MonBrightnessDown allow-when-locked=true { spawn-sh "swayosd-client --brightness -5 || brightnessctl --class=backlight set 5%-"; }
+  // 亮度（Noctalia 负责控制和 OSD）
+  XF86MonBrightnessUp   allow-when-locked=true { spawn "noctalia" "msg" "brightness-up" "5"; }
+  XF86MonBrightnessDown allow-when-locked=true { spawn "noctalia" "msg" "brightness-down" "5"; }
+
+  // 旧桌面组件快捷键（已由 Noctalia 替代，保留作回退）
+  // Mod+D { spawn "fuzzel"; }
+  // Alt+V { spawn-sh "qs-popup clipboard"; }
+  // XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "swayosd-client --output-volume +5 || wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05+"; }
+  // XF86AudioLowerVolume allow-when-locked=true { spawn-sh "swayosd-client --output-volume -5 || wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05-"; }
+  // XF86AudioMute        allow-when-locked=true { spawn-sh "swayosd-client --output-volume mute-toggle || wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"; }
+  // XF86AudioMicMute     allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"; }
+  // XF86MonBrightnessUp   allow-when-locked=true { spawn-sh "swayosd-client --brightness +5 || brightnessctl --class=backlight set +5%"; }
+  // XF86MonBrightnessDown allow-when-locked=true { spawn-sh "swayosd-client --brightness -5 || brightnessctl --class=backlight set 5%-"; }
 
   // 总览
   Mod+Tab repeat=false { toggle-overview; }

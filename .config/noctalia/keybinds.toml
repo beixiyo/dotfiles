@@ -1,0 +1,5 @@
+# Noctalia 弹窗和选择器内的导航键
+
+[keybinds]
+up = ["Up", "Ctrl+p"]
+down = ["Down", "Ctrl+n"]
