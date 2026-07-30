@@ -40,3 +40,10 @@ floating_offset = 10
 
 # 固定位置后不跟随 Bar 组件的点击位置
 open_near_click_control_center = false
+
+# 壁纸选择器使用独立居中浮层，避免全屏透出壁纸导致文字失去对比度
+wallpaper_placement = "floating"
+wallpaper_position = "center"
+
+# 固定居中后不跟随 Bar 壁纸按钮的位置
+open_near_click_wallpaper = false
