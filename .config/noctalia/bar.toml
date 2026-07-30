@@ -1,4 +1,177 @@
 # Noctalia 顶部主状态栏
+#
+# 官方文档：https://docs.noctalia.dev/v5/bar/
+# 当前只启用 main；所有以 `# 参数 = 值` 保留的行都是可选配置模板
+
+[bar]
+# Bar 的创建和堆叠顺序；配置多个 Bar 时按数组顺序创建
+order = ["main"]
 
 [bar.main]
+# 是否创建这条 Bar
 enabled = true
+
+# Bar 所在边缘：top | bottom | left | right
+# position = "top"
+
+# 鼠标离开后自动收起，触碰屏幕边缘重新显示
+# auto_hide = false
+
+# 当前工作区有窗口时隐藏、空工作区显示；可与 auto_hide 配合
+# smart_auto_hide = false
+
+# 启用 auto_hide 后，切换工作区时是否临时显示 Bar
+# show_on_workspace_switch = true
+
+# 是否为 Bar 保留 Niri 布局空间；false 时 Bar 悬浮覆盖窗口
+# reserve_space = true
+
+# Wayland layer-shell 层级：top | overlay
+# overlay 会显示在全屏窗口上方
+# layer = "top"
+
+# Bar 高度；竖向 Bar 时表示宽度，单位为逻辑像素
+thickness = 30
+
+# 整条 Bar 背景透明度：0.0 完全透明，1.0 完全不透明
+background_opacity = 0.0
+
+# Bar 外轮廓颜色，可用 Material 色彩角色或 #RRGGBB
+# border = "outline"
+
+# Bar 内侧轮廓宽度；0.0 表示不绘制
+border_width = 0.0
+
+# 是否使用全局 [shell.shadow] 设置为整条 Bar 绘制阴影
+shadow = false
+
+# 附着面板与 Bar 接缝处是否显示深色渐变阴影
+# contact_shadow = false
+
+# 附着面板覆盖 Bar 边缘的距离，用于隐藏两者之间的缝隙
+# 0 表示不重叠，负值会让面板与 Bar 分开
+panel_overlap = 12
+
+# Bar 的统一圆角；单独设置四角时作为回退值
+# radius = 12
+
+# 四个角的独立圆角
+# radius_top_left = 12
+# radius_top_right = 12
+# radius_bottom_left = 12
+# radius_bottom_right = 12
+
+# 当 Bar 贴紧屏幕边缘时，将两端切成向内凹角；要求 margin_edge = 0
+# concave_edge_corners = true
+
+# Bar 沿长轴两端的缩进：横向时是左右，竖向时是上下
+margin_ends = 0
+
+# Bar 与所在屏幕边缘的距离；大于 0 时形成悬浮 Bar
+margin_edge = 0
+
+# Bar 内侧额外预留空间：顶部 Bar 时位于下方
+# margin_opposite_edge = 0
+
+# Bar 两端到 start/end 组件区之间的内部留白
+# padding = 14
+
+# 同一 start/center/end 分区内相邻组件的间距
+# widget_spacing = 6
+
+# 鼠标悬停组件时，是否用该组件前景色显示柔和高亮
+# hover_highlight = true
+
+# 图标和文字的整体缩放倍率
+scale = 1.0
+
+# Bar 主标签字重：100–1000，400 常规，500 中等，700 粗体
+# font_weight = 500
+
+# Bar 字体；空字符串继承 [shell] 的全局字体
+# font_family = ""
+
+# 是否让每个组件使用独立胶囊背景
+capsule = true
+
+# 胶囊填充色，可用 Material 色彩角色或 #RRGGBB
+# 常用角色：surface_variant | primary | secondary
+# capsule_fill = "surface_variant"
+
+# 胶囊文字/图标颜色，可用 Material 色彩角色或 #RRGGBB
+capsule_foreground = "secondary"
+
+# 胶囊描边颜色；空字符串表示无描边
+capsule_border = ""
+
+# 胶囊背景透明度：0.0 完全透明，1.0 完全不透明
+capsule_opacity = 0.75
+
+# 胶囊内容两侧的内部留白，单位为逻辑像素
+capsule_padding = 10.0
+
+# 胶囊圆角；省略时自动使用药丸形圆角，0.0 为直角
+capsule_radius = 80
+
+# 胶囊横截面占 Bar 厚度的比例；1.0 会填满 Bar 高度
+capsule_thickness = 0.9
+
+# 三个组件分区；这里显式列出组件，方便按需增删和调整顺序
+start = ["launcher", "wallpaper", "workspaces"]
+center = ["clock"]
+
+# 不放 control-center（Home）：网络、音量等组件已经能打开对应控制面板
+end = ["media", "tray", "notifications", "network", "bluetooth", "volume", "brightness", "battery", "session"]
+
+# 没有活跃的 MPRIS 播放器时隐藏媒体组件，不显示“暂无播放内容”
+[widget.media]
+hide_when_no_media = true
+
+# 网络组件只显示连接类型图标，不显示 Wi-Fi 名称
+# hidden 仅隐藏 VPN 状态标识，避免 VPN 连接时用盾牌替换 Wi-Fi 图标
+[widget.network]
+show_label = false
+vpn_status = "hidden"
+
+# ── 单组件样式覆盖示例 ────────────────────────────────────────
+#
+# 下列字段会覆盖 Bar 的胶囊默认值。取消表名和需要的字段即可启用
+#
+# [widget.volume]
+# capsule = true
+# capsule_fill = "secondary"
+# capsule_foreground = "on_secondary"
+# capsule_border = ""
+# capsule_opacity = 1.0
+# capsule_padding = 10.0
+# capsule_radius = 0.0
+#
+# [widget.spacer]
+# type = "spacer"
+# capsule = false
+
+# ── 单显示器覆盖示例 ──────────────────────────────────────────
+#
+# `dp1` 只是配置块名称；match 匹配接口名或显示器描述的一部分
+#
+# [bar.main.monitor.dp1]
+# match = "DP-1"
+# position = "bottom"
+# enabled = true
+# thickness = 44
+# background_opacity = 0.9
+# border_width = 1.0
+# radius = 0
+# radius_top_left = 12
+# radius_top_right = 12
+# radius_bottom_left = 0
+# radius_bottom_right = 0
+# padding = 20
+# widget_spacing = 6
+# start = []
+# center = ["workspaces"]
+# end = ["volume", "clock"]
+
+# 工作区保持 Noctalia 默认样式参数，仅使用聚焦应用图标模式
+[widget.workspaces]
+style = "focus_hint"
