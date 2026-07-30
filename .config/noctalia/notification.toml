@@ -4,6 +4,29 @@
 [notification]
 enable_daemon = true
 
+# 保留通知来源和 action 按钮，支持 Claude/Zsh 跳转与应用精细操作
+show_app_name = true
+show_actions = true
+
+# 通知固定显示在右上角，不覆盖全屏应用
+position = "top_right"
+layer = "top"
+
+# 略微缩小卡片并降低不透明度，保持正文可读且减少视觉侵入
+scale = 0.94
+background_opacity = 0.92
+border = true
+
+# 与屏幕边缘保持适度留白
+offset_x = 14
+offset_y = 10
+
+# 关闭单条通知后，其余通知平滑补齐空位
+collapse_on_dismiss = true
+
+# 自动删除超过 14 天的历史，兼顾回溯能力与长期资源占用
+history_retention_hours = 336
+
 # 音量、亮度等按键反馈浮层
 [osd]
 enabled = true
