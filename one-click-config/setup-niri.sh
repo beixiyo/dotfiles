@@ -15,6 +15,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIB_DIR="$SCRIPT_DIR/lib"
 for lib_file in common packages; do
+  # shellcheck disable=SC1090 # 文件名来自上方固定列表
   source "$LIB_DIR/${lib_file}.sh"
 done
 
@@ -22,13 +23,18 @@ init_colors
 
 # ── 包列表 ────────────────────────────────────────────────────
 
+# shellcheck disable=SC2034 # 数组名由 install_packages 的 nameref 参数读取
 CORE_PACKAGES=(
+  # 先安装明确的 provider，避免 niri 默认选择 xdg-desktop-portal-cosmic
+  xdg-desktop-portal-gtk
+  # 屏幕共享 Portal 的媒体依赖需要 JACK provider，使用 PipeWire 实现以避免安装 jack2
+  pipewire-jack
   niri
   xdg-desktop-portal-gnome
-  xdg-desktop-portal-gtk
   xwayland-satellite
 )
 
+# shellcheck disable=SC2034 # 数组名由 install_packages 的 nameref 参数读取
 UI_PACKAGES=(
   noctalia-git
   libnotify
@@ -36,20 +42,26 @@ UI_PACKAGES=(
   xdg-user-dirs
 )
 
+# shellcheck disable=SC2034 # 数组名由 install_packages 的 nameref 参数读取
 MEDIA_PACKAGES=(
   brightnessctl
   playerctl
 )
 
+# shellcheck disable=SC2034 # 数组名由 install_packages 的 nameref 参数读取
 KEYRING_PACKAGES=(
   gnome-keyring
 )
 
 # XEmbed 托盘桥由 plasma-workspace 提供，将旧协议图标转换为 StatusNotifierItem
+# shellcheck disable=SC2034 # 数组名由 install_packages 的 nameref 参数读取
 COMPAT_PACKAGES=(
+  # 固定 Plasma 的 Qt 多媒体 backend，避免安装时出现 provider 选择
+  qt6-multimedia-ffmpeg
   plasma-workspace
 )
 
+# shellcheck disable=SC2034 # 数组名由 install_packages 的 nameref 参数读取
 SCREENSHOT_PACKAGES=(
   mark-shot
 )
@@ -59,6 +71,7 @@ SCREENSHOT_PACKAGES=(
 # Noctalia 已统一接管状态栏、启动器、通知、Polkit、壁纸、动态配色、
 # 锁屏、空闲管理、OSD 和剪贴板。下列软件的配置仍保留在 dotfiles 中，
 # 但 setup-niri.sh 不会安装它们
+# shellcheck disable=SC2034 # 仅保留旧方案清单，便于人工回退
 LEGACY_DESKTOP_PACKAGES=(
   waybar
   fuzzel
@@ -152,10 +165,27 @@ setup_locale() {
     log "zh_CN.UTF-8 already generated, skipping"
     return
   fi
+
+  # 新版 Arch 将预生成 locale 拆到 glibc-locales；安装后无需再运行 locale-gen
+  if ! pacman -Qi glibc-locales &>/dev/null; then
+    log "Installing Arch locale data ..."
+    install_package glibc-locales
+  fi
+  if locale -a 2>/dev/null | grep -q "zh_CN.utf8"; then
+    log_ok "zh_CN.UTF-8 locale installed"
+    return
+  fi
+
+  # 兼容仍由 /etc/locale.gen 管理 locale 的旧版 Arch
   sudo cp /etc/locale.gen "/etc/locale.gen.bak.$(date +%s)" || log_warn 'could not back up /etc/locale.gen'
   sudo sed -i 's/^#zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/' /etc/locale.gen
   sudo locale-gen
-  log_ok "zh_CN.UTF-8 locale generated"
+  if locale -a 2>/dev/null | grep -q "zh_CN.utf8"; then
+    log_ok "zh_CN.UTF-8 locale generated"
+  else
+    log_err "zh_CN.UTF-8 is still unavailable after locale setup"
+    return 1
+  fi
 }
 
 show_summary() {

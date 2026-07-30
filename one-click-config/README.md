@@ -194,7 +194,8 @@ Cliphist、Quickshell、Cava 和 Matugen 已归入脚本中的旧方案回退清
 ./tests/run.sh
 ```
 
-测试覆盖普通用户部署、覆盖与备份、sudoers 权限边界、`/root` 链接和多发行版系统行为
+测试覆盖普通用户部署、覆盖与备份、sudoers 权限边界、`/root` 链接、多发行版
+系统行为，以及 Niri 安装时的 Portal/JACK provider 顺序和中文 locale 安装契约
 
 ## 文件结构
 
@@ -218,5 +219,6 @@ one-click-config/
     ├── run.sh
     ├── integration.sh
     ├── system-integration.sh
+    ├── niri-integration.sh
     └── tmux-integration.sh
 ```
