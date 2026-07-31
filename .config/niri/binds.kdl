@@ -5,6 +5,7 @@ binds {
   Mod+T { spawn "kitty"; }
   Mod+D { spawn "noctalia" "msg" "panel-toggle" "launcher"; }
   Mod+E { spawn "dolphin"; }
+  Mod+I { spawn "noctalia" "msg" "settings-toggle"; }
 
   // 剪贴板（Noctalia 历史面板）
   Alt+V { spawn "noctalia" "msg" "panel-toggle" "clipboard"; }
@@ -91,7 +92,6 @@ binds {
   Mod+Page_Down { focus-workspace-down; }
   Mod+Page_Up   { focus-workspace-up; }
   Mod+U         { focus-workspace-down; }
-  Mod+I         { focus-workspace-up; }
   Mod+Ctrl+Page_Down { move-column-to-workspace-down; }
   Mod+Ctrl+Page_Up   { move-column-to-workspace-up; }
   Mod+Ctrl+U         { move-column-to-workspace-down; }
