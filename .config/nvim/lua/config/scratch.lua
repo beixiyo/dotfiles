@@ -1,3 +1,6 @@
+-- 持久化 scratch buffer，并在普通离开或退出时阻止写入失败导致的数据丢失
+-- `:qa!` 属于显式强制退出边界，可能忽略 autocmd 错误，因此不承诺持久化
+
 local fs = require('vv-utils.fs')
 local timer = require('vv-utils.timer')
 
@@ -51,6 +54,9 @@ local function cancel_autosave(buf)
 end
 
 local function write_buffer(buf)
+  local state = autosave_by_buf[buf]
+  if state then state.revision = state.revision + 1 end
+
   if not vim.api.nvim_buf_is_valid(buf) then return end
   if vim.bo[buf].buftype ~= '' then return end
 
@@ -65,6 +71,12 @@ local function write_buffer(buf)
   end
 end
 
+local function write_all_buffers()
+  for buf in pairs(autosave_by_buf) do
+    write_buffer(buf)
+  end
+end
+
 local function attach_autosave(buf)
   if autosave_by_buf[buf] then return end
 
@@ -73,7 +85,10 @@ local function attach_autosave(buf)
 
   vim.b[buf].is_scratch_file = true
 
-  local debounced, cancel = timer.debounce(function(target_buf)
+  local debounced, cancel = timer.debounce(function(target_buf, revision)
+    local state = autosave_by_buf[target_buf]
+    if not state or state.revision ~= revision then return end
+
     local ok, err = pcall(write_buffer, target_buf)
     if not ok then
       vim.notify('Scratch autosave failed: ' .. tostring(err), vim.log.levels.ERROR)
@@ -83,6 +98,7 @@ local function attach_autosave(buf)
   autosave_by_buf[buf] = {
     debounced = debounced,
     cancel = cancel,
+    revision = 0,
   }
 end
 
@@ -90,11 +106,8 @@ local function schedule_autosave(buf)
   local state = autosave_by_buf[buf]
   if not state then return end
 
-  state.debounced(buf)
-
-  if vim.api.nvim_buf_is_valid(buf) then
-    vim.bo[buf].modified = false
-  end
+  state.revision = state.revision + 1
+  state.debounced(buf, state.revision)
 end
 
 function M.new(ext)
@@ -170,24 +183,26 @@ function M.setup()
     end,
   })
 
-  vim.api.nvim_create_autocmd({ 'BufLeave', 'QuitPre' }, {
+  vim.api.nvim_create_autocmd('BufLeave', {
     group = augroup,
     callback = function(event)
-      if event.buf and autosave_by_buf[event.buf] then
-        pcall(write_buffer, event.buf)
-        return
-      end
-
-      for buf in pairs(autosave_by_buf) do
-        pcall(write_buffer, buf)
-      end
+      if event.buf and autosave_by_buf[event.buf] then write_buffer(event.buf) end
     end,
+  })
+
+  vim.api.nvim_create_autocmd('QuitPre', {
+    group = augroup,
+    -- 普通退出会在写失败时中止；:qa! 明确要求 Neovim 强制退出，
+    -- 可能忽略 autocmd 错误，因此不承诺强制退出或进程终止时持久化。
+    callback = write_all_buffers,
   })
 
   vim.api.nvim_create_autocmd({ 'BufWritePost' }, {
     group = augroup,
     callback = function(event)
       if is_scratch_path(vim.api.nvim_buf_get_name(event.buf)) then
+        local state = autosave_by_buf[event.buf]
+        if state then state.revision = state.revision + 1 end
         vim.bo[event.buf].modified = false
       end
     end,
@@ -196,19 +211,13 @@ function M.setup()
   vim.api.nvim_create_autocmd({ 'BufUnload' }, {
     group = augroup,
     callback = function(event)
-      if autosave_by_buf[event.buf] then
-        pcall(write_buffer, event.buf)
-      end
+      if autosave_by_buf[event.buf] then write_buffer(event.buf) end
     end,
   })
 
   vim.api.nvim_create_autocmd({ 'VimLeavePre' }, {
     group = augroup,
-    callback = function()
-      for buf in pairs(autosave_by_buf) do
-        pcall(write_buffer, buf)
-      end
-    end,
+    callback = write_all_buffers,
   })
 
   vim.api.nvim_create_autocmd({ 'BufWipeout' }, {
