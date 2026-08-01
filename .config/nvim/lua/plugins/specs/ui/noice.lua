@@ -46,6 +46,27 @@ return {
   config = function(_, opts)
     require('noice').setup(opts)
 
+    -- Neovim 0.11+ 把 confirm 拆成 msg_show 问题与 cmdline_show 选项两段。Noice 会缓存
+    -- 前一段做重绘去重，但连续相同确认之间不一定收到 msg_clear，导致第二次只剩 Yes/No
+    -- 命令行生命周期结束后清理这份缓存；上游问题：https://github.com/folke/noice.nvim/issues/1130
+    local confirm_group = vim.api.nvim_create_augroup('noice-confirm-state', { clear = true })
+    vim.api.nvim_create_autocmd('CmdlineLeave', {
+      group = confirm_group,
+      callback = function()
+        local ok, state = pcall(require, 'noice.ui.state')
+
+        if not ok or type(state.clear) ~= 'function' then return end
+        if type(state.state) ~= 'table' then return end
+
+        local cached = state.state.msg_show
+        local kind = cached and cached[2]
+
+        if kind == 'confirm' or kind == 'confirm_sub' or kind == 'number_prompt' then
+          pcall(state.clear, 'msg_show')
+        end
+      end,
+    })
+
     local icons = require('vv-icons')
     vim.keymap.set('n', '<leader>mh', function() require('noice').cmd('all') end, { desc = icons.command_history .. ' Message history' })
 
