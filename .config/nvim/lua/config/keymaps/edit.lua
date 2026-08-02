@@ -12,6 +12,9 @@ map("n", "<S-Tab>", "<<", { desc = icons.cursor .. " " .. "Outdent line" })
 map("x", "<Tab>", ">gv", { desc = icons.cursor .. " " .. "Indent selection" })
 map("x", "<S-Tab>", "<gv", { desc = icons.cursor .. " " .. "Outdent selection" })
 
+map("n", "p", "]p", { desc = "Paste after with adjusted indent" })
+map("n", "P", "[p", { desc = "Paste before with adjusted indent" })
+
 map("n", "d", '"_d', { desc = "Delete without yanking" })
 map("n", "D", '"_D', { desc = "Delete to line end" })
 map("n", "c", '"_c', { desc = "Change without yanking" })

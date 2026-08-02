@@ -4,7 +4,6 @@ local map, icons = h.map, h.icons
 map({ "n", "x" }, "j", "v:count == 0 ? 'gj' : 'j'", { expr = true })
 map({ "n", "x" }, "k", "v:count == 0 ? 'gk' : 'k'", { expr = true })
 map({ "n", "x" }, "$", "v:count == 0 ? 'g$' : '$'", { expr = true })
-map({ "n", "x" }, "0", "v:count == 0 ? 'g0' : '0'", { expr = true })
 
 map("n", "I", function()
   if vim.v.count > 0 then

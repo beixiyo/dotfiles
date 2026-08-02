@@ -21,5 +21,3 @@ end
 
 vim.keymap.set("n", "<Esc>", smart_close_floats("<Esc>"), { desc = "Close float or clear search" })
 vim.keymap.set("n", "q", smart_close_floats("q"), { desc = "Close float or record macro" })
-
-map("n", "yy", "^yg_", { desc = "Copy trimmed line" })
