@@ -25,7 +25,13 @@ alias mkdir="mkdir -p"
 
 alias cc="claude"
 alias oc="opencode"
-alias cx="codex"
+cx() {
+  if [[ -n "$TMUX" ]]; then
+    SSH_CONNECTION="${SSH_CONNECTION:-tmux}" command codex "$@"
+  else
+    command codex "$@"
+  fi
+}
 
 # safe-rm
 if command -v safe-rm &>/dev/null; then
