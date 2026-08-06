@@ -51,3 +51,14 @@ _cached_eval starship init zsh
 _cached_eval zoxide   init --cmd cd zsh
 _cached_eval mise     activate zsh
 _cached_eval fzf      --zsh
+
+# mise 的 precmd hook 会重新整理 PATH，保持用户入口优先
+_prepend_local_bin() {
+  [[ $path[1] == "$HOME/.local/bin" ]] && return
+  path=("$HOME/.local/bin" $path)
+  export PATH
+  rehash
+}
+
+add-zsh-hook precmd _prepend_local_bin
+_prepend_local_bin
