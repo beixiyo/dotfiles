@@ -35,6 +35,7 @@ source "$_zsh_functions_dir/neovide.zsh"
 source "$_zsh_functions_dir/proxy.zsh"
 source "$_zsh_functions_dir/ssh.zsh"
 
+source "$_zsh_functions_dir/hosts/init.zsh"
 source "$_zsh_functions_dir/net.zsh"
 source "$_zsh_functions_dir/download.zsh"
 source "$_zsh_functions_dir/mihomo.zsh"

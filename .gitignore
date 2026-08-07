@@ -23,11 +23,15 @@
 !.local/bin/qs-popup
 !.local/bin/check-pkgbuild
 !.local/bin/sunshine-fix
+!.local/bin/ai-sync
 
 # !.config/ — 取消忽略 .config 目录本身
 !.config/
 # .config/* — 再忽略 .config 下的所有内容（避免其他配置泄露）
 .config/*
+
+!.config/ai-sync/
+!.config/ai-sync/ai-sync.config.js
 
 # ── Mise ──
 !.config/mise/
@@ -258,6 +262,8 @@
 .codex/**
 !.codex/hooks.json
 !.codex/config.toml
+!.codex/agents/
+!.codex/agents/**
 
 # -- one click config --
 !one-click-config/

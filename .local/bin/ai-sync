@@ -1,0 +1,5 @@
+#!/bin/sh
+
+exec "$(npm root -g)/@jl-org/ai-sync/dist/cli.js" \
+  --config "$HOME/.config/ai-sync/ai-sync.config.js" \
+  "$@"
