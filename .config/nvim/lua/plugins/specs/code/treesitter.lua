@@ -14,10 +14,14 @@ local auto_install_allowlist = {
   'bash', 'css',
 }
 
+-- 注入语言依赖：装宿主 parser 时一并装上，否则被注入的片段整块落回宿主的 @comment/@string
+-- lua 的 ---@class / ---@param 走 luadoc（等价于 ts 的 jsdoc）
+-- luap 是 string.match 等的 lua pattern，printf 是 string.format 的占位符
 local injection_deps = {
   typescript = { 'jsdoc' },
   javascript = { 'jsdoc' },
   tsx        = { 'jsdoc' },
+  lua        = { 'luadoc', 'luap', 'printf' },
 }
 
 local max_file_size = 100 * 1024 -- 超过此大小跳过高亮/缩进（防卡顿）
