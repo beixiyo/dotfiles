@@ -26,11 +26,33 @@ alias mkdir="mkdir -p"
 alias cc="claude"
 alias oc="opencode"
 cx() {
-  if [[ -n "$TMUX" ]]; then
-    SSH_CONNECTION="${SSH_CONNECTION:-tmux}" command codex "$@"
-  else
-    command codex "$@"
+  local runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$UID}"
+  local wayland_display="${WAYLAND_DISPLAY:-}"
+  local socket
+  local -a codex_env
+
+  if [[ -z "$wayland_display" ]]; then
+    for socket in "$runtime_dir"/wayland-*(N); do
+      [[ -S "$socket" ]] || continue
+      wayland_display="${socket:t}"
+      break
+    done
   fi
+
+  if [[ -n "$TMUX" ]]; then
+    codex_env+=("SSH_CONNECTION=${SSH_CONNECTION:-tmux}")
+  fi
+
+  if [[ -n "$wayland_display" && -S "$runtime_dir/$wayland_display" ]]; then
+    codex_env+=(
+      "XDG_RUNTIME_DIR=$runtime_dir"
+      "WAYLAND_DISPLAY=$wayland_display"
+      "XDG_SESSION_TYPE=wayland"
+      "DISPLAY="
+    )
+  fi
+
+  command env "${codex_env[@]}" codex "$@"
 }
 
 # safe-rm
