@@ -44,21 +44,30 @@ return {
       end
 
       -- 跳转：diff 窗口走原生行为；普通 buffer 同时覆盖 staged / unstaged hunk
-      map('n', ']c', function()
-        if vim.wo.diff then
-          vim.cmd.normal({ ']c', bang = true })
-        else
-          gs.nav_hunk('next', { target = 'all' })
+      --
+      -- wrap 显式为 true，不跟随 'wrapscan'：到最后一个 hunk 再按 ]c 回到第一个
+      -- navigation_message 关掉 gitsigns 的 "Hunk 1 of 2" / "No hunks" 回显
+      --
+      -- opts 每次现建，不能提出去复用：gitsigns 的 process_nav_opts 会往表里写
+      -- 默认值，其中 count 取自 v:count1 且写入后不再刷新，复用会把首次的 count
+      -- 固化下来（按过一次 3]c，之后每次 ]c 都跳 3 个）
+      ---@param direction 'next'|'prev'
+      local function nav_hunk(direction)
+        return function()
+          if vim.wo.diff then
+            vim.cmd.normal({ direction == 'next' and ']c' or '[c', bang = true })
+          else
+            gs.nav_hunk(direction, {
+              target = 'all',
+              wrap = true,
+              navigation_message = false,
+            })
+          end
         end
-      end, 'Next hunk', 'next')
+      end
 
-      map('n', '[c', function()
-        if vim.wo.diff then
-          vim.cmd.normal({ '[c', bang = true })
-        else
-          gs.nav_hunk('prev', { target = 'all' })
-        end
-      end, 'Previous hunk', 'prev')
+      map('n', ']c', nav_hunk('next'), 'Next hunk', 'next')
+      map('n', '[c', nav_hunk('prev'), 'Previous hunk', 'prev')
 
       -- 暂存 / 重置
       map({ 'n', 'v' }, '<leader>ghs', gs.stage_hunk, 'Stage hunk', 'git_added')
