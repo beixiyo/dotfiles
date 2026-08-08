@@ -41,6 +41,7 @@ function M.setup_tmux_cwd_sync()
 
   sync_tmux_cwd()
   set_tmux_pane_option('@nvim_popup_id', tmux_popup_id)
+  set_tmux_pane_option('@nvim_pid', tostring(vim.fn.getpid()))
 
   local group = vim.api.nvim_create_augroup('NvimTmuxCwd', { clear = true })
   vim.api.nvim_create_autocmd('DirChanged', {
@@ -73,6 +74,15 @@ function M.setup_tmux_cwd_sync()
         '-t',
         vim.env.TMUX_PANE,
         '@nvim_popup_id',
+      })
+      vim.fn.system({
+        'tmux',
+        'set-option',
+        '-p',
+        '-u',
+        '-t',
+        vim.env.TMUX_PANE,
+        '@nvim_pid',
       })
     end,
   })
@@ -123,9 +133,8 @@ function M.open_at(dir)
     return
   end
 
-  local alive = term and term.bufnr and vim.api.nvim_buf_is_valid(term.bufnr)
-
-  if not alive then
+  -- 存活判断
+  if not (term and term.bufnr and vim.api.nvim_buf_is_valid(term.bufnr)) then
     -- fnameescape 防 toggleterm 内部 fn.expand 把 $ / glob / 空格 当元字符
     term = mod.Terminal:new({
       dir = vim.fn.fnameescape(dir),
@@ -170,7 +179,13 @@ function M.popup(dir)
     return false
   end
 
-  vim.system({ script, dir or vim.fn.getcwd(), tmux_popup_id or '' })
+  vim.system({
+    script,
+    dir or vim.fn.getcwd(),
+    tmux_popup_id or '',
+    vim.env.TMUX_PANE or '',
+    tostring(vim.fn.getpid()),
+  })
   return true
 end
 
