@@ -38,24 +38,24 @@ _enforce_notification_cap() {
   [[ "$_max" =~ ^[0-9]+$ ]] || return
   (( _max <= 0 )) && return
 
-  # 取本 app（claude-code）所有在屏通知 id，升序（旧→新）
+  # 取本 app 所有在屏通知 id，升序（旧→新）
   local _ids _notifications
   if command -v busctl &>/dev/null \
     && command -v jq &>/dev/null \
     && _notifications=$(busctl --user --json=short call \
       org.freedesktop.Notifications /org/freedesktop/Notifications \
       org.freedesktop.Notifications GetNotifications 2>/dev/null); then
-    _ids=$(printf '%s' "$_notifications" | jq -r '
+    _ids=$(printf '%s' "$_notifications" | jq -r --arg app "$_notify_app_name" '
       .data[0][]?
-      | select(.app_name.data == "claude-code")
+      | select(.app_name.data == $app)
       | .id.data
     ' 2>/dev/null | sort -n)
   elif command -v makoctl &>/dev/null; then
-    _ids=$(makoctl list 2>/dev/null | awk '
+    _ids=$(makoctl list 2>/dev/null | awk -v app_name="$_notify_app_name" '
       /^Notification [0-9]+:/ { id = $2; sub(/:$/, "", id) }
       /^[[:space:]]+App name: / {
         app = $0; sub(/^[[:space:]]+App name: /, "", app)
-        if (app == "claude-code") print id
+        if (app == app_name) print id
       }' | sort -n)
   else
     return
@@ -81,6 +81,8 @@ _notify_linux() {
   local body="$2"
   local saved_pane="$3"
   local tmux_socket="$4"
+  local _notify_app_name="${NOTIFY_APP_NAME:-${desc,,}}"
+  _notify_app_name="${_notify_app_name// /-}"
 
   (
     local _tmp _idf
@@ -91,15 +93,15 @@ _notify_linux() {
     # 配合「watcher 到期不关闭」会导致通知与进程双双堆积泄漏（niri/mako 下尤甚）
     # 有限超时下 notify-send 必然自退 → wait 返回 → watcher 被回收 → 零泄漏
     # tmux 内仍保留「回到原 pane 即提前关闭」的 watcher（见下），只是不再永久挂着
-    # 默认 15min（900000ms）：够长，AFK/睡觉时也不易错过完成；但仍有限 → 不泄漏
-    # 可用 NOTIFY_TIMEOUT 覆盖（毫秒），如临时想短一点 NOTIFY_TIMEOUT=8000
-    local _timeout="${NOTIFY_TIMEOUT:-900000}"
+    # 默认 15min：够长，AFK/睡觉时也不易错过完成；但仍有限 → 不泄漏
+    # 用户配置使用分钟，调用 notify-send 前统一转换为毫秒
+    local _timeout=$(( NOTIFY_TIMEOUT_MINUTES * 60 * 1000 ))
 
     # --id-fd 3：通知 ID 写入 _idf（用于后续 CloseNotification）；
     # stdout(_tmp) 仅承载被点击时的 action 名，二者分离不互相污染
     # 动作键用 default：mako 左键点击通知体即触发跳转（见 on-button-left）
-    # -a claude-code：固定 app-name，既让 mako 按 app 分组更准，也给「通知上限」一个过滤句柄
-    notify-send -a "claude-code" -t "$_timeout" "$desc" "$body" \
+    # app-name 同时用于通知来源与数量上限过滤，由调用方按应用注入
+    notify-send -a "$_notify_app_name" -h boolean:transient:true -t "$_timeout" "$desc" "$body" \
       --action="default=↩ 跳转到终端" \
       --id-fd 3 --wait >"$_tmp" 3>"$_idf" 2>/dev/null &
     local _npid=$!

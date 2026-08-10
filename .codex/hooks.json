@@ -23,12 +23,22 @@
         ]
       }
     ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "NOTIFY_APP_NAME=codex bash ~/.zsh/notify/main.sh 'Codex'"
+          }
+        ]
+      }
+    ],
     "PermissionRequest": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.zsh/notify/main.sh 'Codex needs you'",
+            "command": "NOTIFY_APP_NAME=codex bash ~/.zsh/notify/main.sh 'Codex needs you'",
             "timeout": 5
           }
         ]

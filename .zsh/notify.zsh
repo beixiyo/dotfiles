@@ -1,7 +1,7 @@
-# 长命令完成通知（>= 10s）
+# 长命令完成通知（>= 20）
 # 走 zsh hook 直接发系统通知，绕过 tmux 对 OSC 序列的拦截
 
-_notify_threshold=10
+_notify_threshold=20
 _notify_cmd_time=0
 _notify_cmd_text=""
 

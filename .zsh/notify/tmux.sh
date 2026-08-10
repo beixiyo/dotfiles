@@ -10,11 +10,12 @@ _user_present() {
   [[ -z "$_saved_pane" ]] && return 0
 
   # 遍历所有 client，避免后台进程没有 client 上下文导致无 -c 时返回空
-  local _cl _cur
-  while IFS= read -r _cl; do
+  local _cl _cpid _cur
+  while read -r _cl _cpid; do
+    _niri_up && _pid_under_sshd "$_cpid" && continue
     _cur=$(tmux -S "$_tmux_socket" display-message -c "$_cl" -p '#{pane_id}' 2>/dev/null)
     [[ "$_cur" == "$_saved_pane" ]] && return 0
-  done < <(tmux -S "$_tmux_socket" list-clients -F '#{client_name}' 2>/dev/null)
+  done < <(tmux -S "$_tmux_socket" list-clients -F '#{client_name} #{client_pid}' 2>/dev/null)
   return 1
 }
 
@@ -54,6 +55,7 @@ _is_remote_session() {
   if [[ -n "${SSH_CONNECTION:-}" ]]; then
     local _src _src_port _dst _dst_port
     read -r _src _src_port _dst _dst_port <<< "$SSH_CONNECTION"
+    [[ -n "$_src_port" && -n "$_dst" && -n "$_dst_port" ]] || return 1
     _is_loopback_host "$_src" && _is_loopback_host "$_dst" && return 1
     return 0
   fi

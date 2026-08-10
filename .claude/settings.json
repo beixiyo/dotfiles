@@ -36,7 +36,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.zsh/notify/main.sh 'Claude Code'"
+            "command": "NOTIFY_APP_NAME=claude-code bash ~/.zsh/notify/main.sh 'Claude Code'"
           }
         ]
       }
@@ -57,7 +57,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.zsh/notify/main.sh 'Claude Code needs you'"
+            "command": "NOTIFY_APP_NAME=claude-code bash ~/.zsh/notify/main.sh 'Claude Code needs you'"
           }
         ]
       }

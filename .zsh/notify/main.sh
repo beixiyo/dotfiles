@@ -6,6 +6,11 @@
 
 _dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# --- 用户配置（环境变量可临时覆盖） ---
+NOTIFY_WHEN_REMOTE="${NOTIFY_WHEN_REMOTE:-0}" # 1：SSH 远程操作时也通知本机桌面
+NOTIFY_TIMEOUT_MINUTES="${NOTIFY_TIMEOUT_MINUTES:-15}" # 通知显示时长（分钟）
+NOTIFY_MAX="${NOTIFY_MAX:-10}"                # 同一 app 最多保留数量；0 表示不限
+
 # shellcheck source=niri.sh
 source "$_dir/niri.sh"
 # shellcheck source=tmux.sh
@@ -40,7 +45,7 @@ fi
 # --- 远程检测：人在 SSH 远程驱动时，通知只会发到物理机 mako、远程根本看不到、纯堆积 → 跳过 ---
 # 判据见 _is_remote_session（优先 tmux 在连客户端的 sshd 祖先，兜底 SSH_CONNECTION）
 # 临时想在远程也强制收到通知：NOTIFY_FORCE=1
-if [[ -z "${NOTIFY_FORCE:-}" ]] && _is_remote_session; then
+if [[ "$NOTIFY_WHEN_REMOTE" != 1 && -z "${NOTIFY_FORCE:-}" ]] && _is_remote_session; then
   exit 0
 fi
 
