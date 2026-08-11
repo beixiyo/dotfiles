@@ -25,6 +25,7 @@ clear_pane() {
   window=$(tmux -S "$socket" display-message -p -t "$pane" '#{window_id}' 2>/dev/null)
 
   if ! tmux -S "$socket" list-panes -t "$window" -F '#{@ai_pane_done}' 2>/dev/null | grep -qx 1; then
+    tmux -S "$socket" set-option -w -u -t "$window" @ai_window_done 2>/dev/null
     tmux -S "$socket" set-option -w -u -t "$window" pane-border-status 2>/dev/null
     tmux -S "$socket" set-option -w -u -t "$window" pane-border-style 2>/dev/null
     tmux -S "$socket" set-option -w -u -t "$window" pane-active-border-style 2>/dev/null
@@ -50,17 +51,12 @@ case "$action" in
     tmux -S "$socket" set-option -w -t "$window" pane-border-status top
     tmux -S "$socket" set-option -w -t "$window" pane-border-style 'fg=#1e1e2e'
     tmux -S "$socket" set-option -w -t "$window" pane-active-border-style 'fg=#1e1e2e'
-
-    current_window=$(tmux -S "$socket" display-message -p '#{window_id}' 2>/dev/null)
-    if [[ "$current_window" != "$window" ]]; then
-      tmux -S "$socket" set-option -w -t "$window" @ai_window_done 1
-    fi
+    tmux -S "$socket" set-option -w -t "$window" @ai_window_done 1
     ;;
   focus-pane)
     clear_pane "$target"
     ;;
   focus-window)
-    tmux -S "$socket" set-option -w -u -t "$target" @ai_window_done 2>/dev/null
     active_pane=$(tmux -S "$socket" display-message -p -t "$target" '#{pane_id}' 2>/dev/null)
     [[ -n "$active_pane" ]] && clear_pane "$active_pane"
     ;;

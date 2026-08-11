@@ -102,7 +102,7 @@ _notify_linux() {
     # 动作键用 default：mako 左键点击通知体即触发跳转（见 on-button-left）
     # app-name 同时用于通知来源与数量上限过滤，由调用方按应用注入
     notify-send -a "$_notify_app_name" -h boolean:transient:true -t "$_timeout" "$desc" "$body" \
-      --action="default=↩ 跳转到终端" \
+      --action="default=↩ Return to terminal" \
       --id-fd 3 --wait >"$_tmp" 3>"$_idf" 2>/dev/null &
     local _npid=$!
 
@@ -135,7 +135,7 @@ _notify_linux() {
             _notify_close "$_nid"
             break
           fi
-          sleep 0.5
+          sleep 1.8
         done
       ) &
       _watcher=$!

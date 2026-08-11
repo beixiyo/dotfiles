@@ -4,7 +4,7 @@
 
 # _extract_context <optional_context_override>
 # 若 $1 非空则直接用；否则尝试从 stdin 读取 Claude Stop hook JSON 并解析 transcript
-# echo 最终 _body 字符串（上下文 或 fallback "回复完成，点击跳转"）
+# echo 最终 _body 字符串（上下文或英文 fallback）
 _extract_context() {
   local _context="${1:-}"
 
@@ -31,5 +31,5 @@ _extract_context() {
     fi
   fi
 
-  printf '%s' "${_context:-回复完成，点击跳转}"
+  printf '%s' "${_context:-Response complete. Click to return.}"
 }
