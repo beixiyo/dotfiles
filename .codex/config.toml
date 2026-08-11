@@ -27,6 +27,7 @@ approvals_reviewer = "user"
 
 # TUI 状态栏展示项
 [tui]
+notifications = false
 status_line = [
   "model-with-reasoning",
   "project-name",

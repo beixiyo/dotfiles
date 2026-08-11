@@ -36,7 +36,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "NOTIFY_APP_NAME=claude-code bash ~/.zsh/notify/main.sh 'Claude Code'"
+            "command": "export AI_AGENT_NAME='Claude Code' NOTIFY_APP_NAME=claude-code NOTIFY_SOUND=1 NOTIFY_DESKTOP=1; bash ~/.config/tmux/scripts/ai-status.sh done \"$TMUX_PANE\"; bash ~/.zsh/notify/main.sh"
           }
         ]
       }

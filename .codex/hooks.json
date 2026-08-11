@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "NOTIFY_APP_NAME=codex bash ~/.zsh/notify/main.sh 'Codex'"
+            "command": "export AI_AGENT_NAME='Codex' NOTIFY_APP_NAME=codex NOTIFY_SOUND=0 NOTIFY_DESKTOP=1; bash ~/.config/tmux/scripts/ai-status.sh done \"$TMUX_PANE\"; bash ~/.zsh/notify/main.sh"
           }
         ]
       }

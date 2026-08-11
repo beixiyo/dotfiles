@@ -10,11 +10,15 @@ _dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NOTIFY_WHEN_REMOTE="${NOTIFY_WHEN_REMOTE:-0}" # 1：SSH 远程操作时也通知本机桌面
 NOTIFY_TIMEOUT_MINUTES="${NOTIFY_TIMEOUT_MINUTES:-15}" # 通知显示时长（分钟）
 NOTIFY_MAX="${NOTIFY_MAX:-10}"                # 同一 app 最多保留数量；0 表示不限
+NOTIFY_SOUND="${NOTIFY_SOUND:-0}"             # 1：通过终端 BEL 播放完成提示音
+NOTIFY_DESKTOP="${NOTIFY_DESKTOP:-1}"         # 1：发送桌面系统通知
 
 # shellcheck source=niri.sh
 source "$_dir/niri.sh"
 # shellcheck source=tmux.sh
 source "$_dir/tmux.sh"
+# shellcheck source=terminal.sh
+source "$_dir/terminal.sh"
 # shellcheck source=context.sh
 source "$_dir/context.sh"
 # shellcheck source=linux.sh
@@ -30,6 +34,9 @@ _TERM_APPS=(kitty ghostty wezterm)
 
 _saved_pane="$TMUX_PANE"
 _tmux_socket="${TMUX%%,*}"
+
+_notify_terminal_sound
+[[ "$NOTIFY_DESKTOP" == 1 ]] || exit 0
 
 # NIRI_SOCKET 在 tmux 环境里可能丢失，缺失时从运行目录兜底
 [[ -z "$NIRI_SOCKET" ]] && \
@@ -51,7 +58,7 @@ fi
 
 # --- 提取通知标题与正文 ---
 
-desc="${1:-终端}"
+desc="${1:-${AI_AGENT_NAME:-Terminal}}"
 _body=$(_extract_context "${2:-}")
 
 # --- 分发到平台对应通知模块 ---
