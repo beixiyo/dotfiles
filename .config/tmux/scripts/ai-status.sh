@@ -20,11 +20,11 @@ pid_under_sshd() {
 
 clear_pane() {
   local pane="$1" window
-  tmux -S "$socket" set-option -p -u -t "$pane" @ai_agent_done 2>/dev/null
+  tmux -S "$socket" set-option -p -u -t "$pane" @ai_pane_done 2>/dev/null
   tmux -S "$socket" set-option -p -u -t "$pane" @ai_agent_name 2>/dev/null
   window=$(tmux -S "$socket" display-message -p -t "$pane" '#{window_id}' 2>/dev/null)
 
-  if ! tmux -S "$socket" list-panes -t "$window" -F '#{@ai_agent_done}' 2>/dev/null | grep -qx 1; then
+  if ! tmux -S "$socket" list-panes -t "$window" -F '#{@ai_pane_done}' 2>/dev/null | grep -qx 1; then
     tmux -S "$socket" set-option -w -u -t "$window" pane-border-status 2>/dev/null
     tmux -S "$socket" set-option -w -u -t "$window" pane-border-style 2>/dev/null
     tmux -S "$socket" set-option -w -u -t "$window" pane-active-border-style 2>/dev/null
@@ -40,12 +40,12 @@ case "$action" in
       pid_under_sshd "$pid" && continue
       if [[ "$pane" == "$target" ]]; then
         clear_pane "$target"
-        tmux -S "$socket" set-option -w -u -t "$window" @ai_agent_done 2>/dev/null
+        tmux -S "$socket" set-option -w -u -t "$window" @ai_window_done 2>/dev/null
         exit 0
       fi
     done < <(tmux -S "$socket" list-clients -F '#{client_pid} #{pane_id}' 2>/dev/null)
 
-    tmux -S "$socket" set-option -p -t "$target" @ai_agent_done 1
+    tmux -S "$socket" set-option -p -t "$target" @ai_pane_done 1
     tmux -S "$socket" set-option -p -t "$target" @ai_agent_name "$agent"
     tmux -S "$socket" set-option -w -t "$window" pane-border-status top
     tmux -S "$socket" set-option -w -t "$window" pane-border-style 'fg=#1e1e2e'
@@ -53,14 +53,16 @@ case "$action" in
 
     current_window=$(tmux -S "$socket" display-message -p '#{window_id}' 2>/dev/null)
     if [[ "$current_window" != "$window" ]]; then
-      tmux -S "$socket" set-option -w -t "$window" @ai_agent_done 1
+      tmux -S "$socket" set-option -w -t "$window" @ai_window_done 1
     fi
     ;;
   focus-pane)
     clear_pane "$target"
     ;;
   focus-window)
-    tmux -S "$socket" set-option -w -u -t "$target" @ai_agent_done 2>/dev/null
+    tmux -S "$socket" set-option -w -u -t "$target" @ai_window_done 2>/dev/null
+    active_pane=$(tmux -S "$socket" display-message -p -t "$target" '#{pane_id}' 2>/dev/null)
+    [[ -n "$active_pane" ]] && clear_pane "$active_pane"
     ;;
 esac
 
