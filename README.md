@@ -23,13 +23,35 @@
   <a href="https://wezterm.org/"><img src="https://img.shields.io/badge/WezTerm-4E49EE?style=flat&amp;logo=wezterm&amp;logoColor=white" alt="WezTerm"></a>
 </p>
 
+Build, navigate, manage Git, run tasks, and work with AI entirely in the
+terminal, without depending on a desktop IDE.
+
 ![workflow](https://github.com/beixiyo/dotfiles/releases/download/assets-2026-07-24/workflow.png)
 
 <video muted autoplay loop controls src="https://github.com/user-attachments/assets/b26a9b91-1898-4fcb-99b3-692911eb10ed" title="Terminal workflow demo"></video>
 
+<p align="center">
+  <img
+    src="https://github.com/beixiyo/dotfiles/releases/download/assets-2026-07-24/tmux-ai-tab-complete.webp"
+    width="49%"
+    alt="AI completion highlight on a background tmux tab"
+  >
+  <img
+    src="https://github.com/beixiyo/dotfiles/releases/download/assets-2026-07-24/tmux-ai-pane-complete.webp"
+    width="49%"
+    alt="AI completion message on its tmux pane"
+  >
+</p>
+
+<p align="center">
+  <strong>AI completion follows its tmux window and pane, then clears on focus</strong>
+</p>
+
 <p align="center"><strong>Neovim setup and plugin showcase: <a href=".config/nvim/README.md">Chinese guide →</a></strong></p>
 
-This repository turns a fresh terminal into a complete IDE environment: Zsh provides the shell, tmux keeps sessions alive, Kitty / Ghostty / WezTerm render the terminal, and Neovim handles code, Git, notes, and AI-assisted workflows. The same shortcuts move between terminal panes and editor splits, so the tools feel like one environment instead of several unrelated apps
+Zsh provides the shell, tmux preserves sessions, and Neovim handles code, Git,
+notes, and AI-assisted work. Shared shortcuts connect terminal panes and editor
+splits into one workspace
 
 <!--toc:start-->
 - [dotfiles](#dotfiles)
@@ -38,7 +60,9 @@ This repository turns a fresh terminal into a complete IDE environment: Zsh prov
   - [Why a terminal-first workflow](#why-a-terminal-first-workflow)
     - [Development runtimes](#development-runtimes)
   - [AI workflow](#ai-workflow)
+    - [AI completion notifications](#ai-completion-notifications)
   - [Terminal workflow](#terminal-workflow)
+    - [Why tmux instead of a newer multiplexer?](#why-tmux-instead-of-a-newer-multiplexer)
   - [Stack](#stack)
   - [Neovim](#neovim)
     - [Neovide and `nvd`](#neovide-and-nvd)
@@ -187,7 +211,7 @@ This is not a loose collection of terminal tools. It connects the terminal, mult
 - **Lightweight and remote-friendly**: SSH is all you need. There is no full desktop stream and no dependency on RDP, Sunshine, or NoMachine; a terminal also remains more usable when the network becomes unstable
 - **Recoverable workspace**: [tmux](https://github.com/tmux/tmux) keeps windows, panes, and CLIs alive across SSH disconnects. tmux-resurrect and tmux-continuum periodically save layouts, directories, pane contents, and selected commands so the workspace can be reconstructed after a reboot
 - **Quick collaboration**: multiple SSH clients using the same Unix account can attach to one tmux session and share its input and output. Because focus and input state are shared too, this works best for short, coordinated sessions
-- **A fully programmable editor**: [Neovim](https://neovim.io/) is one of the freest and most active editors available. Its configuration is a Lua program, and plugins can live locally or be published directly on GitHub without a marketplace; the main trade-off is Lua's less pleasant syntax and developer experience
+- **A fully programmable editor**: [Neovim](https://neovim.io/) is one of the freest and most active editors available. Its configuration is a Lua program, and plugins can live locally or be published directly on GitHub without a marketplace
 - **A smooth GUI when wanted**: [Neovide](https://neovide.dev/) adds fluid animation, scrolling, and a graphical frontend without giving up the Neovim workflow
 
 ### Development runtimes
@@ -207,6 +231,24 @@ Run `mise install` only when the complete development toolchain is wanted. mise 
 - `<leader>ts` sends the current code selection or line, plus diagnostics, to the AI pane next door
 - `nvd` hands the current directory and split layout to Neovide, then restores the original tmux pane on exit
 - `vv-mcp` works with LSP and tmux so code context can move between the editor, the shell, and AI tools
+
+### AI completion notifications
+
+Codex and Claude Code Stop hooks report completion to tmux. An unread task
+highlights its background window. Inside that window, a compact message marks
+the source pane until it receives focus.
+
+The same hook can send a desktop notification that returns to the source pane.
+Terminal BEL and desktop notifications are configured independently:
+
+```bash
+NOTIFY_SOUND=0       # Terminal BEL
+NOTIFY_DESKTOP=1     # Desktop notification
+NOTIFY_WHEN_REMOTE=0 # Suppress local desktop alerts for SSH-driven work
+```
+
+The UI is event-driven. Stop hooks set tmux options; focus hooks clear them.
+No process or terminal-output polling is used.
 
 ## Terminal workflow
 
@@ -228,6 +270,17 @@ A **pane** is one split area. A **tab/window** groups one or more panes. These s
 - **`Ctrl + 1`** … **`Ctrl + 8`** — switch to window 1 … 8
 
 Kitty, Ghostty, and WezTerm all have tmux and standalone/native keymap files. The shortcuts stay the same; only the backend changes. Enable exactly one mode in the relevant terminal config by keeping its `include` / `config-file` line active and commenting out the other. The default Kitty setup is tmux-first; in tmux mode, start or attach with `tmux new-session -A`
+
+### Why tmux instead of a newer multiplexer?
+
+Newer multiplexers can provide richer built-in layouts, session browsers, or Agent-oriented interfaces. This setup keeps tmux because the multiplexer is infrastructure rather than the main UI:
+
+- **Low overhead**: the long-lived server and panes remain lightweight, including on remote machines and small development hosts
+- **Stable behavior**: tmux has a mature command model, predictable session semantics, and a large body of operational knowledge
+- **Available everywhere**: it is easy to install on macOS and mainstream Linux distributions and is commonly present on remote servers
+- **Compact UI**: one status line is enough; completion tracks appear only while unread and return their pane row after focus
+- **Composable automation**: hooks, formats, user options, and scripts provide the required Agent state UI without replacing the shell, terminal, or editor
+- **Terminal independence**: the same sessions work through Kitty, Ghostty, WezTerm, a plain SSH client, or multiple attached clients
 
 ## Stack
 
