@@ -1,5 +1,6 @@
 -- 最近文件 picker：默认限制在当前 Git 项目，可在项目与全局范围间切换
 local M = {}
+local Keys = require('vv-utils.keys')
 
 local function collect_recent_files()
   local current_file = vim.api.nvim_buf_get_name(0)
@@ -37,7 +38,7 @@ local function in_root(file, root)
 end
 
 local function title(project_scope)
-  return ('Recent Files  %s ⌥p'):format(project_scope and 'project' or 'global')
+  return ('Recent Files  %s %s'):format(project_scope and 'project' or 'global', Keys.display('<M-p>'))
 end
 
 function M.open()

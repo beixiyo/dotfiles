@@ -3,6 +3,7 @@
 -- 直接在 self.state.bufnr 上 nvim_open_term，让 telescope 自己管 buffer 生命周期
 local M = {}
 local Git = require('plugins.specs.ui.telescope.git.shared')
+local Keys = require('vv-utils.keys')
 
 local log_limits = { 300, 2000, 10000, false }
 
@@ -81,7 +82,14 @@ function M.open(opts)
 
   opts.layout_config = { preview_width = 0.75 }
   local limit_label = log_limit and tostring(log_limit) or 'all'
-  opts.prompt_title = 'Diff ↵  RawDiff ^o  Hash ⌥h  Msg ⌥y  More ^l  [' .. limit_label .. ']'
+  opts.prompt_title = table.concat({
+    Keys.hint('Diff', '<CR>'),
+    Keys.hint('RawDiff', '<C-o>'),
+    Keys.hint('Hash', '<M-h>'),
+    Keys.hint('Msg', '<M-y>'),
+    Keys.hint('More', '<C-l>'),
+    '[' .. limit_label .. ']',
+  }, '  ')
 
   opts.attach_mappings = function(_, map)
     -- 在普通 buffer 中打开该 commit 的 diff（可 visual 选区复制，q/<Esc> 关闭并回到 telescope）。

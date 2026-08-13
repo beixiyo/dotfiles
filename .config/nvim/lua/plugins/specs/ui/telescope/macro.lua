@@ -1,4 +1,5 @@
 local MACRO_REGS = 'abcdefghijklmnopqrstuvwxyz'
+local Keys = require('vv-utils.keys')
 
 local function get_macros()
   local results = {}
@@ -38,7 +39,12 @@ function M.open(opts)
   local action_state = require('telescope.actions.state')
 
   pickers.new(opts, {
-    prompt_title = 'Exec ↵  Exec N ^n  Edit ^e  Delete ^d',
+    prompt_title = table.concat({
+      Keys.hint('Exec', '<CR>'),
+      Keys.hint('Exec N', '<C-n>'),
+      Keys.hint('Edit', '<C-e>'),
+      Keys.hint('Delete', '<C-d>'),
+    }, '  '),
     finder = finders.new_table({
       results = macros,
       entry_maker = function(entry)

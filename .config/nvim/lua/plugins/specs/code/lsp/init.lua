@@ -16,13 +16,14 @@
 -- 是异步/延迟的，BufReadPre 触发时会错过当前 buffer 的 FileType（auto-session 恢复尤其明显）
 ---@type PackSpec
 return {
-  desc = 'LSP 与代码诊断',
+  desc = 'LSP and code diagnostics',
   url = 'https://github.com/neovim/nvim-lspconfig',
   main = 'lspconfig',
   dependencies = {
     'https://github.com/mason-org/mason.nvim',
     'https://github.com/mason-org/mason-lspconfig.nvim',
     'beixiyo/vv-icons.nvim',
+    'beixiyo/vv-utils.nvim',
   },
 
   config = function()

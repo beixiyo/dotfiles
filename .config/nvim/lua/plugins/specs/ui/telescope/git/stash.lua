@@ -2,6 +2,7 @@
 -- stash push：push_all / push_staged / push_untracked / push_message
 local M = {}
 local Git = require('plugins.specs.ui.telescope.git.shared')
+local Keys = require('vv-utils.keys')
 
 ---执行 git stash push 并弹通知
 ---@param args string[]   额外的 CLI 参数
@@ -89,7 +90,11 @@ function M.open(opts)
   })
 
   opts.layout_config = { preview_width = 0.65 }
-  opts.prompt_title = 'Apply ↵  Pop ^x  Drop ^d'
+  opts.prompt_title = table.concat({
+    Keys.hint('Apply', '<CR>'),
+    Keys.hint('Pop', '<C-x>'),
+    Keys.hint('Drop', '<C-d>'),
+  }, '  ')
 
   opts.attach_mappings = function(_, map)
     local function do_apply(prompt_bufnr)

@@ -8,6 +8,7 @@
 -- 本地/远程一律用 entry.is_remote 判断，parse_remote 仅在确定远程后用于拆 remote/branch
 -- （含 / 的本地分支如 feat/login 不能靠 parse_remote 判别，否则会被误当远程）
 local M = {}
+local Keys = require('vv-utils.keys')
 
 -- ── 高亮 ────────────────────────────────────────────────────────────────────
 
@@ -241,7 +242,15 @@ function M.open(opts)
   })
 
   pickers.new(opts, {
-    prompt_title = 'Checkout ↵  New ^a  Delete ^d  Rebase ^r  Merge ^y  Fetch ⌥f  Cp ⌥y',
+    prompt_title = table.concat({
+      Keys.hint('Checkout', '<CR>'),
+      Keys.hint('New', '<C-a>'),
+      Keys.hint('Delete', '<C-d>'),
+      Keys.hint('Rebase', '<C-r>'),
+      Keys.hint('Merge', '<C-y>'),
+      Keys.hint('Fetch', '<M-f>'),
+      Keys.hint('Cp', '<M-y>'),
+    }, '  '),
     previewer    = previewer,
     sorter       = conf.generic_sorter(opts),
     finder = new_finder(),

@@ -1,4 +1,5 @@
 local Shared = require('plugins.specs.ui.telescope.toggles.shared')
+local Keys = require('vv-utils.keys')
 
 local M = {}
 
@@ -9,7 +10,8 @@ function M.open(base_opts)
   local defs = Shared.grep_defs()
   local function title()
     local suffix = state.glob_input ~= '' and state.glob_input or 'glob'
-    return Shared.build_title('Find Word (' .. search:gsub('\n', '\\n') .. ')', state, defs) .. '  ' .. suffix .. ' ⌥p'
+    return Shared.build_title('Find Word (' .. search:gsub('\n', '\\n') .. ')', state, defs)
+      .. '  ' .. suffix .. ' ' .. Keys.display('<M-p>')
   end
   local function create_finder()
     local args = vim.deepcopy(require('telescope.config').values.vimgrep_arguments)

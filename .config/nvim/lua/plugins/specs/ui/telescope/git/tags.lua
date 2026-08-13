@@ -1,6 +1,7 @@
 -- Git tag picker：按创建时间浏览 tag，预览 annotation/commit diff，并接入 vv-git
 local M = {}
 local Git = require('plugins.specs.ui.telescope.git.shared')
+local Keys = require('vv-utils.keys')
 
 local function time_fmt(ts)
   if ts <= 0 then return '---- -- --' end
@@ -185,7 +186,12 @@ function M.open(opts)
   end
 
   pickers.new(opts, {
-    prompt_title = 'Diff ↵  HEAD H  Hash ⌥h  Tag ⌥y',
+    prompt_title = table.concat({
+      Keys.hint('Diff', '<CR>'),
+      Keys.hint('HEAD', 'H'),
+      Keys.hint('Hash', '<M-h>'),
+      Keys.hint('Tag', '<M-y>'),
+    }, '  '),
     finder = finders.new_table({
       results = tags,
       entry_maker = make_entry,

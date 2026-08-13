@@ -1,4 +1,5 @@
 local Glob = require('vv-utils.glob')
+local Keys = require('vv-utils.keys')
 local PathCompletion = require('vv-utils.path_completion')
 
 local M = {}
@@ -17,12 +18,7 @@ function M.build_title(base, state, defs)
   local parts = {}
 
   for _, def in ipairs(defs) do
-    local hint = def.key
-      :gsub('[<>]', '')
-      :gsub('^C%-', '^')
-      :gsub('^M%-', '⌥')
-      :gsub('^S%-', '⇧')
-      :gsub('(%a)$', string.lower)
+    local hint = Keys.display(def.key)
     local label = state[def.field] and def.on or def.off
     parts[#parts + 1] = label .. ' ' .. hint
   end

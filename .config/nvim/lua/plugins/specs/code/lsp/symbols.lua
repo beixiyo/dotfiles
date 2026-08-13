@@ -4,6 +4,7 @@
 -- 后者会复用本模块导出的 open_workspace_symbols
 
 local M = {}
+local Keys = require('vv-utils.keys')
 
 -- gO 全局符号（telescope 动态 workspace symbols）
 -- 默认「显示全部」，Alt-h 切到「隐藏变量/常量」干净模式：
@@ -15,7 +16,10 @@ local M = {}
 local ws_hide_vars = false
 
 local function ws_title()
-  return ws_hide_vars and '全局符号 · 已隐藏变量 (M-h 显示)' or '全局符号 (M-h 隐藏变量/常量)'
+  local toggle_hint = Keys.display('<M-h>')
+  return ws_hide_vars
+    and ('Workspace symbols · Variables hidden (%s to show)'):format(toggle_hint)
+    or ('Workspace symbols (%s to hide variables/constants)'):format(toggle_hint)
 end
 
 function M.open_workspace_symbols()
@@ -35,7 +39,7 @@ function M.open_workspace_symbols()
       picker:refresh(nil, { reset_prompt = false }) -- 原地重跑 finder，按新状态过滤
       -- 实时更新标题（API 随版本异，pcall 兜底）；notify 保证一定有反馈
       pcall(function() picker.layout.prompt.border:change_title(ws_title()) end)
-      vim.notify((ws_hide_vars and ' 隐藏' or ' 显示') .. '变量/常量', vim.log.levels.INFO)
+      vim.notify(ws_hide_vars and 'Variables/constants hidden' or 'Variables/constants shown', vim.log.levels.INFO)
     end)
     return true -- 保留 telescope 默认映射（合并而非覆盖）
   end
@@ -127,7 +131,7 @@ local function open_document_symbols()
             local action_state = require('telescope.actions.state')
             local conf = require('telescope.config').values
             require('telescope.pickers').new({}, {
-              prompt_title = lang .. ' 符号',
+              prompt_title = lang .. ' symbols',
               finder = require('telescope.finders').new_table {
                 results = items,
                 entry_maker = function(item)
@@ -156,7 +160,7 @@ local function open_document_symbols()
         end
       end
     end
-    vim.notify('无可用 LSP 且 treesitter 无可用符号', vim.log.levels.WARN)
+    vim.notify('No LSP client or Tree-sitter symbols available', vim.log.levels.WARN)
   end
 end
 

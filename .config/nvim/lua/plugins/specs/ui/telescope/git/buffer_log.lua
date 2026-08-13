@@ -1,6 +1,7 @@
 -- 当前 buffer 的 git commit 历史 + delta 预览，选中后 diff 对比
 local M = {}
 local Git = require('plugins.specs.ui.telescope.git.shared')
+local Keys = require('vv-utils.keys')
 
 local function make_delta_previewer()
   if vim.fn.executable('delta') == 0 then return nil end
@@ -104,7 +105,12 @@ function M.open(opts)
   end
 
   opts.layout_config = { preview_width = 0.75 }
-  opts.prompt_title = 'Diff ↵  RawDiff ^o  Hash ⌥h  Msg ⌥y'
+  opts.prompt_title = table.concat({
+    Keys.hint('Diff', '<CR>'),
+    Keys.hint('RawDiff', '<C-o>'),
+    Keys.hint('Hash', '<M-h>'),
+    Keys.hint('Msg', '<M-y>'),
+  }, '  ')
   require('telescope.builtin').git_bcommits(opts)
 end
 
