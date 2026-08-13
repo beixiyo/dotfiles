@@ -23,13 +23,33 @@
   <a href="https://wezterm.org/"><img src="https://img.shields.io/badge/WezTerm-4E49EE?style=flat&amp;logo=wezterm&amp;logoColor=white" alt="WezTerm"></a>
 </p>
 
+完全在终端中完成代码编辑、文件浏览、Git、项目任务和 AI 协作，不依赖桌面 IDE
+
 ![workflow](https://github.com/beixiyo/dotfiles/releases/download/assets-2026-07-24/workflow.png)
 
 <video muted autoplay loop controls src="https://github.com/user-attachments/assets/b26a9b91-1898-4fcb-99b3-692911eb10ed" title="终端工作流演示"></video>
 
+<p align="center">
+  <img
+    src="https://github.com/beixiyo/dotfiles/releases/download/assets-2026-07-24/tmux-ai-tab-complete.webp"
+    width="49%"
+    alt="后台 tmux tab 的 AI 完成高亮"
+  >
+  <img
+    src="https://github.com/beixiyo/dotfiles/releases/download/assets-2026-07-24/tmux-ai-pane-complete.webp"
+    width="49%"
+    alt="对应 tmux pane 的 AI 完成提示"
+  >
+</p>
+
+<p align="center">
+  <strong>AI 完成状态跟随来源 window 与 pane，聚焦后自动清除</strong>
+</p>
+
 <p align="center"><strong>Neovim 配置、使用与插件展示：<a href=".config/nvim/README.md">快速开始 →</a></strong></p>
 
-这个仓库的核心目标，是用纯终端打造一个完整的 IDE 环境：Zsh 提供 Shell，tmux 持久保存会话，Kitty / Ghostty / WezTerm 负责终端显示，Neovim 处理代码、Git、笔记和 AI 辅助工作流。终端分屏与编辑器分屏共用同一套快捷键，使用时更像一个完整环境，而不是多个互不相关的工具
+Zsh 提供 Shell，tmux 保存会话，Neovim 处理代码、Git、笔记和 AI 协作
+终端 pane 与编辑器分屏共用一套快捷键，组合成一个连贯的工作区
 
 <!--toc:start-->
 - [dotfiles](#dotfiles)
@@ -38,7 +58,9 @@
   - [为什么选择全终端工作流](#为什么选择全终端工作流)
     - [开发运行时](#开发运行时)
   - [AI 工作流](#ai-工作流)
+    - [AI 完成提醒](#ai-完成提醒)
   - [终端操作](#终端操作)
+    - [为什么继续使用 tmux](#为什么继续使用-tmux)
   - [技术栈](#技术栈)
   - [Neovim](#neovim)
     - [Neovide 与 `nvd`](#neovide-与-nvd)
@@ -187,7 +209,7 @@ tmux new-session -A
 - **轻量且适合远程开发**：只需要 SSH，不必传输完整桌面画面，也不依赖 RDP、Sunshine 或 NoMachine；网络波动时，终端通常比图形桌面更容易保持可用
 - **工作状态可以恢复**：[tmux](https://github.com/tmux/tmux) 会在 SSH 断开后继续保持窗口、分屏和正在运行的 CLI。tmux-resurrect 与 tmux-continuum 还能定期保存布局、目录、pane 内容和部分启动命令，在重启后重建工作区
 - **支持临时协作**：同一 Unix 账户下的多个 SSH 客户端可以连接同一个 tmux 会话，看到相同的输入输出。由于焦点和输入状态也完全共享，这种方式更适合短时间、协商好的协作
-- **编辑器完全可编程**：[Neovim](https://neovim.io/) 是最自由、也最活跃的编辑器之一。配置本身就是 Lua 程序，插件可以直接放在本地或发布到 GitHub，不必经过插件市场；主要代价是 Lua 的语法和开发体验并不算出色
+- **编辑器完全可编程**：[Neovim](https://neovim.io/) 是最自由、也最活跃的编辑器之一。配置本身就是 Lua 程序，插件可以直接放在本地或发布到 GitHub，不必经过插件市场
 - **需要时也有流畅 GUI**：[Neovide](https://neovide.dev/) 可以在保留完整 Neovim 工作流的同时，提供更流畅的动画、滚动和图形界面
 
 ### 开发运行时
@@ -207,6 +229,24 @@ mise use -g bun
 - `<leader>ts` 会把当前代码片段或整行，以及相关诊断信息，直接送到旁边的 AI 面板
 - `nvd` 会把当前目录和分屏布局交给 Neovide，退出后再恢复到原来的 tmux pane
 - `vv-mcp` 与 LSP、tmux 协作，让代码上下文可以在编辑器、Shell 和 AI 工具之间流转
+
+### AI 完成提醒
+
+Codex 与 Claude Code 的 Stop hook 会把完成状态写入 tmux
+后台 window 有未读任务时，tab 会高亮；进入 window 后，提示会保留在
+来源 pane 顶部，直到该 pane 获得焦点
+
+同一个 hook 也能发送桌面通知，点击后返回来源 pane
+终端提示音与桌面通知可独立配置：
+
+```bash
+NOTIFY_SOUND=0       # 终端 BEL
+NOTIFY_DESKTOP=1     # 桌面通知
+NOTIFY_WHEN_REMOTE=0 # 通过 SSH 操作时不向本机桌面发送通知
+```
+
+UI 由事件驱动：Stop hook 写入 tmux option，焦点 hook 负责清理
+整个过程不会轮询 Agent 进程或终端输出
 
 ## 终端操作
 
@@ -228,6 +268,17 @@ mise use -g bun
 - **`Ctrl + 1`** … **`Ctrl + 8`** — 切换到第 1 … 8 个窗口
 
 Kitty、Ghostty 和 WezTerm 都分别提供了 tmux 与裸 / 原生模式的快捷键配置。快捷键保持一致，只有底层管理者不同。需要切换模式时，在对应终端配置中保留一种模式的 `include` / `config-file`，并注释掉另一种；两种模式不能同时启用。当前 Kitty 默认使用 tmux 模式，通常用 `tmux new-session -A` 启动或接入主会话
+
+### 为什么继续使用 tmux
+
+新兴终端复用器通常提供更丰富的内建布局、会话浏览器或 Agent 界面。这套配置继续选择 tmux，是因为复用器在这里属于基础设施，而不是主要 UI：
+
+- **开销低**：长期运行的 server 与 pane 很轻量，适合远程主机和资源有限的开发环境
+- **行为稳定**：命令模型和 session 语义成熟，遇到问题也有大量可复用的运维经验
+- **远程环境普及**：macOS 与主流 Linux 都容易安装，远程服务器也经常已经提供
+- **界面紧凑**：平时只占一行状态栏；完成提示只在未读期间出现，聚焦后会归还 pane 高度
+- **自动化可组合**：hook、format、user option 与脚本足以实现 Agent 状态 UI，不需要替换 Shell、终端或编辑器
+- **不绑定终端**：同一 session 可以通过 Kitty、Ghostty、WezTerm、普通 SSH 客户端或多个 client 使用
 
 ## 技术栈
 
