@@ -24,6 +24,7 @@ return {
   ---@type Flash.Config
   opts = {
     search = { mode = 'fuzzy' },
+    highlight = { backdrop = false },
     jump = { autojump = true },
     label = {
       style = 'overlay',
@@ -35,6 +36,7 @@ return {
         jump_labels = true,
         multi_line = true,
         keys = { 'f', 'F' },
+        highlight = { backdrop = false, matches = true },
       },
       treesitter = {
         labels = 'asdfghjklqwertyuiopzxcvbnm',
