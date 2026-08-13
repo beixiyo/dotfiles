@@ -6,31 +6,33 @@
 
 <table align="center">
   <tr>
-    <td align="center"><a href="https://github.com/beixiyo/vv-dashboard.nvim">vv-dashboard.nvim ↗<br><img src="https://raw.githubusercontent.com/beixiyo/vv-dashboard.nvim/main/docs/assets/vv-dashboard.png" alt="vv-dashboard.nvim demo" width="300"></a></td>
-    <td align="center"><a href="https://github.com/beixiyo/vv-explorer.nvim">vv-explorer.nvim ↗<br><img src="https://raw.githubusercontent.com/beixiyo/vv-explorer.nvim/main/docs/assets/vv-explorer.png" alt="vv-explorer.nvim demo" width="300"></a></td>
-    <td align="center"><a href="https://github.com/beixiyo/vv-bufferline.nvim">vv-bufferline.nvim ↗<br><img src="https://raw.githubusercontent.com/beixiyo/vv-bufferline.nvim/main/docs/assets/vv-bufferline.png" alt="vv-bufferline.nvim demo" width="300"></a></td>
+    <td align="center"><a href="https://github.com/beixiyo/vv-dashboard.nvim">vv-dashboard.nvim ↗<br><img src="https://github.com/beixiyo/vv-dashboard.nvim/releases/download/assets-2026-07-25/vv-dashboard.png" alt="vv-dashboard.nvim demo" width="300"></a></td>
+    <td align="center"><a href="https://github.com/beixiyo/vv-explorer.nvim">vv-explorer.nvim ↗<br><img src="https://github.com/beixiyo/vv-explorer.nvim/releases/download/assets-2026-07-25/vv-explorer-filter.png" alt="vv-explorer.nvim demo" width="300"></a></td>
+    <td align="center"><a href="https://github.com/beixiyo/vv-bufferline.nvim">vv-bufferline.nvim ↗<br><img src="https://github.com/beixiyo/vv-bufferline.nvim/releases/download/assets-2026-07-25/vv-bufferline.png" alt="vv-bufferline.nvim demo" width="300"></a></td>
   </tr>
   <tr>
-    <td align="center"><a href="https://github.com/beixiyo/vv-git.nvim">vv-git.nvim ↗<br><img src="https://raw.githubusercontent.com/beixiyo/vv-git.nvim/main/docs/assets/vv-git.png" alt="vv-git.nvim demo" width="300"></a></td>
-    <td align="center"><a href="https://github.com/beixiyo/vv-flow.nvim">vv-flow.nvim ↗<br><img src="https://raw.githubusercontent.com/beixiyo/vv-flow.nvim/main/docs/assets/vv-flow.png" alt="vv-flow.nvim demo" width="300"></a></td>
-    <td align="center"><a href="https://github.com/beixiyo/vv-i18n.nvim">vv-i18n.nvim ↗<br><img src="https://raw.githubusercontent.com/beixiyo/vv-i18n.nvim/main/docs/assets/vv-i18n.png" alt="vv-i18n.nvim demo" width="300"></a></td>
+    <td align="center"><a href="https://github.com/beixiyo/vv-git.nvim">vv-git.nvim ↗<br><img src="https://github.com/beixiyo/vv-git.nvim/releases/download/assets-2026-07-25/vv-git-conflict.png" alt="vv-git.nvim demo" width="300"></a></td>
+    <td align="center"><a href="https://github.com/beixiyo/vv-flow.nvim">vv-flow.nvim ↗<br><img src="https://github.com/beixiyo/vv-flow.nvim/releases/download/assets-2026-07-25/vv-flow.png" alt="vv-flow.nvim demo" width="300"></a></td>
+    <td align="center"><a href="https://github.com/beixiyo/vv-i18n.nvim">vv-i18n.nvim ↗<br><img src="https://github.com/beixiyo/vv-i18n.nvim/releases/download/assets-2026-07-25/vv-i18n.png" alt="vv-i18n.nvim demo" width="300"></a></td>
   </tr>
   <tr>
-    <td align="center"><a href="https://github.com/beixiyo/vv-replace.nvim">vv-replace.nvim ↗<br><img src="https://raw.githubusercontent.com/beixiyo/vv-replace.nvim/main/docs/assets/vv-replace.png" alt="vv-replace.nvim demo" width="300"></a></td>
-    <td align="center"><a href="https://github.com/beixiyo/vv-hover.nvim">vv-hover.nvim ↗<br><img src="https://raw.githubusercontent.com/beixiyo/vv-hover.nvim/main/docs/assets/vv-hover.png" alt="vv-hover.nvim demo" width="300"></a></td>
-    <td align="center"><a href="https://github.com/beixiyo/vv-indent.nvim">vv-indent.nvim ↗<br><img src="https://raw.githubusercontent.com/beixiyo/vv-indent.nvim/main/docs/assets/vv-indent.png" alt="vv-indent.nvim demo" width="300"></a></td>
+    <td align="center"><a href="https://github.com/beixiyo/vv-replace.nvim">vv-replace.nvim ↗<br><img src="https://github.com/beixiyo/vv-replace.nvim/releases/download/assets-2026-07-25/vv-replace.png" alt="vv-replace.nvim demo" width="300"></a></td>
+    <td align="center"><a href="https://github.com/beixiyo/vv-hover.nvim">vv-hover.nvim ↗<br><img src="https://github.com/beixiyo/vv-hover.nvim/releases/download/assets-2026-07-25/vv-hover.png" alt="vv-hover.nvim demo" width="300"></a></td>
+    <td align="center"><a href="https://github.com/beixiyo/vv-indent.nvim">vv-indent.nvim ↗<br><img src="https://github.com/beixiyo/vv-indent.nvim/releases/download/assets-2026-07-25/vv-indent.png" alt="vv-indent.nvim demo" width="300"></a></td>
   </tr>
   <tr>
-    <td align="center"><a href="https://github.com/beixiyo/vv-scrollbar.nvim">vv-scrollbar.nvim ↗<br><img src="https://raw.githubusercontent.com/beixiyo/vv-scrollbar.nvim/main/docs/assets/vv-scrollbar.png" alt="vv-scrollbar.nvim demo" width="300"></a></td>
-    <td align="center"><a href="https://github.com/beixiyo/vv-statuscol.nvim">vv-statuscol.nvim ↗<br><img src="https://raw.githubusercontent.com/beixiyo/vv-statuscol.nvim/main/docs/assets/vv-statuscol.png" alt="vv-statuscol.nvim demo" width="300"></a></td>
-    <td align="center"><a href="https://github.com/beixiyo/vv-task-panel.nvim">vv-task-panel.nvim ↗<br><img src="https://raw.githubusercontent.com/beixiyo/vv-task-panel.nvim/main/docs/assets/vv-task-panel.png" alt="vv-task-panel.nvim demo" width="300"></a></td>
+    <td align="center"><a href="https://github.com/beixiyo/vv-scrollbar.nvim">vv-scrollbar.nvim ↗<br><img src="https://github.com/beixiyo/vv-scrollbar.nvim/releases/download/assets-2026-07-24/scrollbar.png" alt="vv-scrollbar.nvim demo" width="300"></a></td>
+    <td align="center"><a href="https://github.com/beixiyo/vv-statuscol.nvim">vv-statuscol.nvim ↗<br><img src="https://github.com/beixiyo/vv-statuscol.nvim/releases/download/assets-2026-07-25/vv-statuscol.png" alt="vv-statuscol.nvim demo" width="300"></a></td>
+    <td align="center"><a href="https://github.com/beixiyo/vv-task-panel.nvim">vv-task-panel.nvim ↗<br><img src="https://github.com/beixiyo/vv-task-panel.nvim/releases/download/assets-2026-07-25/vv-task-panel.png" alt="vv-task-panel.nvim demo" width="300"></a></td>
   </tr>
   <tr>
-    <td align="center"><a href="https://github.com/beixiyo/vv-log-hl.nvim">vv-log-hl.nvim ↗<br><img src="https://raw.githubusercontent.com/beixiyo/vv-log-hl.nvim/main/docs/assets/vv-log-hl.png" alt="vv-log-hl.nvim demo" width="300"></a></td>
+    <td align="center"><a href="https://github.com/beixiyo/vv-log-hl.nvim">vv-log-hl.nvim ↗<br><img src="https://github.com/beixiyo/vv-log-hl.nvim/releases/download/assets-2026-07-25/vv-log-hl.png" alt="vv-log-hl.nvim demo" width="300"></a></td>
     <td align="center"><a href="https://github.com/beixiyo/vv-mcp.nvim">vv-mcp.nvim ↗<br><img src="https://raw.githubusercontent.com/beixiyo/vsc-lsp-mcp/main/docAssets/demo.webp" alt="vv-mcp.nvim demo" width="300"></a></td>
     <td></td>
   </tr>
 </table>
+
+<video muted autoplay loop controls width="900" src="https://github.com/beixiyo/vv-explorer.nvim/releases/download/assets-2026-07-25/vv-explorer.mp4" title="vv-explorer.nvim 插件演示"></video>
 
 其他暂未提供截图的插件：[vv-utils.nvim](https://github.com/beixiyo/vv-utils.nvim) · [vv-icons.nvim](https://github.com/beixiyo/vv-icons.nvim) · [vv-expand.nvim](https://github.com/beixiyo/vv-expand.nvim) · [vv-markdown.nvim](https://github.com/beixiyo/vv-markdown.nvim)
 
