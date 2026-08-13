@@ -32,7 +32,7 @@
   </tr>
 </table>
 
-<video muted autoplay loop controls width="900" src="https://github.com/beixiyo/vv-explorer.nvim/releases/download/assets-2026-07-25/vv-explorer.mp4" title="vv-explorer.nvim 插件演示"></video>
+<video muted autoplay loop controls src="https://github.com/user-attachments/assets/d51c28c1-4d21-4d1e-9bba-12dbe13e6669" width="900" title="vv-explorer.nvim 插件演示"></video>
 
 其他暂未提供截图的插件：[vv-utils.nvim](https://github.com/beixiyo/vv-utils.nvim) · [vv-icons.nvim](https://github.com/beixiyo/vv-icons.nvim) · [vv-expand.nvim](https://github.com/beixiyo/vv-expand.nvim) · [vv-markdown.nvim](https://github.com/beixiyo/vv-markdown.nvim)
 
