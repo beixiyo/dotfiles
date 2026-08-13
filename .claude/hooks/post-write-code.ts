@@ -1,32 +1,24 @@
 #!/usr/bin/env bun
 /**
- * PostToolUse hook: 写入代码文件后依次运行 ESLint 与 Neovim LSP 自动修复
+ * PostToolUse hook: 写入代码文件后按优先级运行格式化与 Neovim LSP 修复
  *
  * 统一适配两种 hook 客户端的入参——先归一化为「待格式化文件列表」，下游只有一套处理：
  *   - Claude Code：Write / Edit / MultiEdit → tool_input.file_path（单文件）
  *   - Codex：apply_patch → tool_input.command 承载 patch 文本，解析其
  *     `*** Add/Update/Delete File:` 与 `*** Move to:` 指令取改动文件（可多文件）
  *
- * ESLint 仅处理 JS/TS；vv-mcp 处理当前 Neovim 实例中已连接 LSP 的代码文件
- * 注：await Bun.stdin.text() 读到 EOF，天然 drain stdin——避开 Codex PostToolUse
+ * 处理顺序：Oxlint / ESLint → Oxfmt → dprint / Prettier → vv-mcp
+ * 其中 Oxlint 与 ESLint、dprint 与 Prettier 都是按可执行文件存在情况二选一
+ * 注：同步读到 stdin EOF，天然 drain stdin——避开 Codex PostToolUse
  *     不读 stdin 就 Broken pipe 的坑（openai/codex#32667）
  */
 
-import fs from 'node:fs'
 import path from 'node:path'
 
-const CODE_EXTENSIONS = new Set([
-  '.html', '.js', '.jsx', '.ts', '.tsx', '.vue', '.svelte',
-  '.css', '.scss', '.less',
-  '.c', '.cc', '.cpp', '.cs',
-  '.go', '.java', '.kt', '.kts', '.rs', '.swift',
-  '.py', '.rb',
-])
+import { formatFile } from './formatters'
+import { readStdin } from './lib/process'
 
-const VV_MCP_REQUEST_TIMEOUT_MS = 2_800
-const VV_MCP_PROCESS_TIMEOUT_MS = 3_000
-
-const data = parseInput(await Bun.stdin.text())
+const data = parseInput(readStdin())
 if (!data) process.exit(0)
 
 const { cwd, filePaths } = normalizeTargets(data)
@@ -119,62 +111,6 @@ function parsePatchFiles(patch: string): string[] {
 
   flush()
   return files
-}
-
-// ── 格式化处理 ────────────────────────────────────────────────
-
-/** 对单个文件依次跑 ESLint（仅 JS/TS）与 vv-mcp LSP 修复 */
-function formatFile(filePath: string, cwd: string): void {
-  if (!CODE_EXTENSIONS.has(path.extname(filePath).toLowerCase())) return
-  if (!fs.existsSync(filePath)) return
-
-  if (/\.(?:js|jsx|ts|tsx)$/.test(filePath)) runEslintFix(filePath)
-
-  runVvMcpFix(filePath, cwd)
-}
-
-function runVvMcpFix(filePath: string, cwd: string): void {
-  Bun.spawnSync([
-    'vv-mcp',
-    'fix',
-    '--timeout-ms', String(VV_MCP_REQUEST_TIMEOUT_MS),
-    filePath,
-  ], {
-    cwd,
-    timeout: VV_MCP_PROCESS_TIMEOUT_MS,
-    stdout: 'ignore',
-    stderr: 'inherit',
-  })
-}
-
-/** 就近查找并运行本地 ESLint（沿目录上溯找 node_modules/.bin/eslint） */
-function runEslintFix(filePath: string): void {
-  const eslint = findExecutable(path.dirname(filePath), 'eslint')
-  if (!eslint) return
-
-  Bun.spawnSync([
-    eslint,
-    '--fix',
-    '--fix-type', 'layout,suggestion,directive',
-    '--rule', 'unused-imports/no-unused-imports: off',
-    '--rule', 'unused-imports/no-unused-vars: off',
-    '--rule', 'prefer-const: off',
-    filePath,
-  ], {
-    cwd: path.dirname(filePath),
-    stderr: 'inherit',
-  })
-}
-
-/** 从 startDir 逐级上溯，找 node_modules/.bin/<name> 可执行文件 */
-function findExecutable(startDir: string, name: string): string | null {
-  let dir = startDir
-  while (dir !== path.parse(dir).root) {
-    const executable = path.join(dir, 'node_modules', '.bin', name)
-    if (fs.existsSync(executable)) return executable
-    dir = path.dirname(dir)
-  }
-  return null
 }
 
 // ── 类型 ──────────────────────────────────────────────────────
