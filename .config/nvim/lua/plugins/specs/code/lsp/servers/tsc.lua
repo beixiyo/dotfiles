@@ -9,7 +9,7 @@ local M = {}
 function M.setup()
   local tsgo_defaults = vim.lsp.config.tsgo
   if type(tsgo_defaults) ~= 'table' or type(tsgo_defaults.root_dir) ~= 'function' then
-    vim.notify('[lsp] 未能继承 tsgo 默认配置，tsc 的 root_dir 可能不可用', vim.log.levels.WARN)
+    vim.notify('[lsp] Failed to inherit tsgo defaults; tsc root_dir may be unavailable', vim.log.levels.WARN)
     tsgo_defaults = {}
   end
 

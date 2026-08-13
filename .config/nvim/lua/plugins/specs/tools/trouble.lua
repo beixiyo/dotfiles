@@ -6,7 +6,7 @@ local symbols_state = { show_locals = false }
 
 ---@type PackSpec
 return {
-  desc = 'LSP/诊断列表（按文件分组）',
+  desc = 'LSP/diagnostic list (grouped by file)',
   url = 'https://github.com/folke/trouble.nvim',
   main = 'trouble',
   dependencies = { 'https://github.com/nvim-tree/nvim-web-devicons' },
@@ -274,7 +274,8 @@ return {
             action = function(self)
               symbols_state.show_locals = not symbols_state.show_locals
               local on = symbols_state.show_locals
-              vim.notify((on and ' 显示' or ' 隐藏') .. '细节符号（import / 局部变量 / 对象属性）', vim.log.levels.INFO)
+              vim.notify(on and 'Detail symbols shown (imports / local variables / object properties)'
+                or 'Detail symbols hidden (imports / local variables / object properties)', vim.log.levels.INFO)
               self:refresh()
             end,
             desc = 'Toggle detail symbols',
