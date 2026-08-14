@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+
+set -u
+
+platform=$(uname -s)
+
+if [[ "$platform" == 'Darwin' ]]; then
+  browser_app=''
+  for candidate in \
+    'Google Chrome' \
+    'Microsoft Edge' \
+    'Brave Browser' \
+    'Vivaldi' \
+    'Chromium' \
+    'Safari' \
+    'Firefox'; do
+    if open -Ra "$candidate" >/dev/null 2>&1; then
+      browser_app=$candidate
+      break
+    fi
+  done
+
+  if [[ -z "$browser_app" ]]; then
+    printf 'browser-open: no supported browser found\n' >&2
+    exit 127
+  fi
+
+  open -a "$browser_app" -- "$@"
+  exit $?
+fi
+
+browser_path=''
+for candidate in \
+  google-chrome-stable \
+  google-chrome \
+  microsoft-edge-stable \
+  microsoft-edge \
+  microsoft-edge-beta \
+  microsoft-edge-dev \
+  brave-browser \
+  brave-browser-stable \
+  vivaldi-stable \
+  vivaldi \
+  vivaldi-snapshot \
+  chromium \
+  chromium-browser \
+  ungoogled-chromium \
+  thorium-browser \
+  opera-stable \
+  opera \
+  firefox \
+  firefox-developer-edition \
+  librewolf \
+  floorp; do
+  if browser_path=$(command -v "$candidate" 2>/dev/null); then
+    break
+  fi
+  browser_path=''
+done
+
+if [[ -z "$browser_path" ]]; then
+  printf 'browser-open: no supported browser found\n' >&2
+  exit 127
+fi
+
+# 让 Niri 签发并传递 XDG activation token，由浏览器完成标准窗口激活
+if command -v niri >/dev/null && [[ -n "${NIRI_SOCKET:-}" ]]; then
+  if niri msg action spawn -- "$browser_path" "$@" >/dev/null 2>&1; then
+    exit 0
+  fi
+fi
+
+# 非 Niri 会话或 IPC 不可用时仍保持普通默认浏览器行为
+if command -v setsid >/dev/null; then
+  setsid -f -- "$browser_path" "$@" </dev/null >/dev/null 2>&1 &
+else
+  nohup "$browser_path" "$@" </dev/null >/dev/null 2>&1 &
+fi
+
+exit 0

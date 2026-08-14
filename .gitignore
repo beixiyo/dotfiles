@@ -24,6 +24,7 @@
 !.local/bin/check-pkgbuild
 !.local/bin/sunshine-fix
 !.local/bin/ai-sync
+!.local/bin/browser-open
 
 # !.config/ — 取消忽略 .config 目录本身
 !.config/
