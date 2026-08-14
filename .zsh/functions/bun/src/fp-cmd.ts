@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { readlinkSync, unlinkSync } from 'fs'
+import { readFileSync, readlinkSync, unlinkSync } from 'fs'
 import { assertCmd, detectClipCopy, fzf, spawnFzfCapture } from './fzf-shared'
 
 const PROCESS_BUN = `${import.meta.dir}/process.ts`
@@ -41,7 +41,6 @@ function parseLsofPorts(lsofOutput: string): PortMap {
   return map
 }
 
-
 function extractAppName(pid: string, args: string): string {
   const appMatch = args.match(/\/([^/]+)\.app\//)
   if (appMatch) return appMatch[1]
@@ -55,7 +54,8 @@ function extractAppName(pid: string, args: string): string {
       const real = readlinkSync(`/proc/${pid}/exe`)
       const slash = real.lastIndexOf('/')
       return slash >= 0 ? real.slice(slash + 1) : real
-    } catch {
+    }
+    catch {
       // 进程已退出或无权限，回退到默认逻辑
     }
   }
@@ -67,9 +67,12 @@ function extractAppName(pid: string, args: string): string {
 interface ProcInfo {
   pid: string
   mem: number
+  memMetric: MemoryMetric
   port: string
   args: string
 }
+
+type MemoryMetric = 'PSS' | 'RSS'
 
 interface ProcGroup {
   name: string
@@ -77,6 +80,30 @@ interface ProcGroup {
   totalMem: number
   allPorts: string
   allPids: string[]
+}
+
+/** Linux 优先使用按比例分摊共享页的 PSS，其他平台或读取失败时回退 RSS */
+function readProcessMemory(pid: string, rss: string): Pick<ProcInfo, 'mem' | 'memMetric'> {
+  if (process.platform === 'linux') {
+    try {
+      const rollup = readFileSync(`/proc/${pid}/smaps_rollup`, 'utf8')
+      const pss = rollup.match(/^Pss:\s+(\d+)\s+kB$/m)
+      if (pss) {
+        return { mem: parseInt(pss[1], 10) / 1024, memMetric: 'PSS' }
+      }
+    }
+    catch {
+      // 进程已退出或无权限，回退到 ps 提供的 RSS
+    }
+  }
+
+  return { mem: parseInt(rss || '0', 10) / 1024, memMetric: 'RSS' }
+}
+
+function memoryHeader(groups: ProcGroup[]): string {
+  const metrics = new Set(groups.flatMap((group) => group.procs.map((proc) => proc.memMetric)))
+  if (metrics.size === 1) return `${metrics.values().next().value}(MB)`
+  return 'PSS/RSS(MB)'
 }
 
 function buildGroups(
@@ -92,7 +119,7 @@ function buildGroups(
     const [, pid, rss, args] = match
     procs.push({
       pid,
-      mem: parseInt(rss, 10) / 1024,
+      ...readProcessMemory(pid, rss),
       port: portMap[pid] ?? '-',
       args,
     })
@@ -109,13 +136,13 @@ function buildGroups(
   for (const [name, gProcs] of groupMap) {
     gProcs.sort((a, b) => b.mem - a.mem)
     const totalMem = gProcs.reduce((s, p) => s + p.mem, 0)
-    const ports = [...new Set(gProcs.map(p => p.port).filter(p => p !== '-'))]
+    const ports = [...new Set(gProcs.map((p) => p.port).filter((p) => p !== '-'))]
     groups.push({
       name,
       procs: gProcs,
       totalMem,
       allPorts: ports.join(',') || '-',
-      allPids: gProcs.map(p => p.pid),
+      allPids: gProcs.map((p) => p.pid),
     })
   }
 
@@ -129,9 +156,10 @@ function formatCollapsed(groups: ProcGroup[], cmdMax: number): string {
     if (g.procs.length === 1) {
       const p = g.procs[0]
       lines.push(`${p.pid}\t${p.mem.toFixed(1)}\t${p.port}\t${midTrunc(p.args, cmdMax)}\t${p.args}`)
-    } else {
+    }
+    else {
       lines.push(
-        `▶ [${g.procs.length}]\t${g.totalMem.toFixed(1)}\t${g.allPorts}\t${g.name}\tGRP:${g.allPids.join(',')}`
+        `▶ [${g.procs.length}]\t${g.totalMem.toFixed(1)}\t${g.allPorts}\t${g.name}\tGRP:${g.allPids.join(',')}`,
       )
     }
   }
@@ -148,13 +176,13 @@ function formatExpanded(groups: ProcGroup[], cmdMax: number): string {
     }
 
     lines.push(
-      `▶ [${g.procs.length}]\t${g.totalMem.toFixed(1)}\t${g.allPorts}\t${g.name}\tGRP:${g.allPids.join(',')}`
+      `▶ [${g.procs.length}]\t${g.totalMem.toFixed(1)}\t${g.allPorts}\t${g.name}\tGRP:${g.allPids.join(',')}`,
     )
     for (let i = 0; i < g.procs.length; i++) {
       const p = g.procs[i]
       const branch = i < g.procs.length - 1 ? '├ ' : '└ '
       lines.push(
-        `  ${p.pid}\t${p.mem.toFixed(1)}\t${p.port}\t  ${branch}${midTrunc(p.args, cmdMax - 4)}\t${p.args}`
+        `  ${p.pid}\t${p.mem.toFixed(1)}\t${p.port}\t  ${branch}${midTrunc(p.args, cmdMax - 4)}\t${p.args}`,
       )
     }
   }
@@ -171,7 +199,8 @@ function extractKillPids(selected: string): string[] {
       for (const pid of hidden.slice(4).split(',')) {
         if (/^\d+$/.test(pid)) pids.add(pid)
       }
-    } else {
+    }
+    else {
       const pid = cols[0]?.trim()
       if (pid && /^\d+$/.test(pid)) pids.add(pid)
     }
@@ -230,30 +259,35 @@ async function main(): Promise<void> {
 
       const rss = rssResult.stdout.toString().trim()
       const args = argsResult.stdout.toString().trim().replace(/^[\s\t]+/, '')
-      const mem = (parseInt(rss || '0', 10) / 1024).toFixed(1)
+      const memory = readProcessMemory(pid, rss)
+      const mem = memory.mem.toFixed(1)
       const pc = portMap[pid] ?? port
       const argsShow = midTrunc(args, cmdMax)
 
       rows.push(`${pid}\t${mem}\t${pc}\t${argsShow}\t${args}`)
     }
 
-    const input = `PID\tMEM(MB)\tPORT\tCOMMAND\n${rows.join('\n')}`
+    const metric = process.platform === 'linux' ? 'PSS/RSS(MB)' : 'RSS(MB)'
+    const input = `PID\t${metric}\tPORT\tCOMMAND\n${rows.join('\n')}`
 
     const [, selected] = await spawnFzfCapture([
       '-m',
       ...fzfBaseOpts,
-      '--bind', fzf.tabToggleDown,
+      '--bind',
+      fzf.tabToggleDown,
       ...clipBind,
-      '--header', `Port ${port} │ ${portGuide}`,
-      '--header-lines', '1',
+      '--header',
+      `Port ${port} │ ${portGuide}`,
+      '--header-lines',
+      '1',
       '--reverse',
     ], input)
 
     if (!selected) return
 
     const killPids = selected.split('\n')
-      .map(l => l.split('\t')[0])
-      .filter(p => /^\d+$/.test(p))
+      .map((l) => l.split('\t')[0])
+      .filter((p) => /^\d+$/.test(p))
 
     if (killPids.length > 0) {
       Bun.spawnSync(['bun', 'run', PROCESS_BUN, 'kill', ...killPids], {
@@ -262,7 +296,8 @@ async function main(): Promise<void> {
         stderr: 'inherit',
       })
     }
-  } else if (argv[0] === '--render') {
+  }
+  else if (argv[0] === '--render') {
     const mode = argv[1] ?? 'collapsed'
     const statusLine = mode === 'expanded'
       ? expandedGuide
@@ -272,36 +307,45 @@ async function main(): Promise<void> {
       { stdout: 'pipe', stderr: 'pipe' },
     )
     const groups = buildGroups(psResult.stdout.toString(), portMap)
+    const metric = memoryHeader(groups)
     const list = mode === 'expanded'
       ? formatExpanded(groups, cmdMax)
       : formatCollapsed(groups, cmdMax)
-    process.stdout.write(`${statusLine}\nPID\tMEM(MB)\tPORT\tCOMMAND\n${list}`)
-
-  } else {
+    process.stdout.write(`${statusLine}\nPID\t${metric}\tPORT\tCOMMAND\n${list}`)
+  }
+  else {
     const psResult = Bun.spawnSync(
       ['ps', 'axo', 'pid,rss,args'],
       { stdout: 'pipe', stderr: 'pipe' },
     )
     const groups = buildGroups(psResult.stdout.toString(), portMap)
+    const metric = memoryHeader(groups)
     const list = formatCollapsed(groups, cmdMax)
-    const input = `${collapsedGuide}\nPID\tMEM(MB)\tPORT\tCOMMAND\n${list}`
+    const input = `${collapsedGuide}\nPID\t${metric}\tPORT\tCOMMAND\n${list}`
 
     const self = `bun run ${import.meta.path}`
     const stateFile = `/tmp/.fp-${process.pid}`
     // toggle bind 只输出 reload(...)，无需 change-header — 状态行作为 --header-lines 2 的第一行随内容刷新
-    const toggleBind = `ctrl-e:transform(if [ -f ${stateFile} ]; then rm -f ${stateFile}; echo 'reload(${self} --render collapsed)'; else touch ${stateFile}; echo 'reload(${self} --render expanded)'; fi)`
+    const toggleBind =
+      `ctrl-e:transform(if [ -f ${stateFile} ]; then rm -f ${stateFile}; echo 'reload(${self} --render collapsed)'; else touch ${stateFile}; echo 'reload(${self} --render expanded)'; fi)`
 
     const [, selected] = await spawnFzfCapture([
       '-m',
       ...fzfBaseOpts,
-      '--bind', fzf.tabToggleDown,
-      '--bind', toggleBind,
+      '--bind',
+      fzf.tabToggleDown,
+      '--bind',
+      toggleBind,
       ...clipBind,
-      '--header-lines', '2',
+      '--header-lines',
+      '2',
       '--reverse',
     ], input)
 
-    try { unlinkSync(stateFile) } catch {}
+    try {
+      unlinkSync(stateFile)
+    }
+    catch {}
 
     if (!selected) return
 
