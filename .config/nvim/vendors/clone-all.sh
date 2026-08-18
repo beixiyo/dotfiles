@@ -25,7 +25,7 @@ repos=(
   vv-bufferline.nvim
   vv-i18n.nvim
   vv-mcp.nvim
-  vv-translate
+  vv-translate.nvim
 )
 
 for name in "${repos[@]}"; do
