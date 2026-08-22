@@ -1,6 +1,17 @@
 ---
 name: codex-delegate
-description: 当用户要求把任务派发/委派给 Codex、提到"丢给 codex"/"codex 子agent"/"用 codex 跑一下"/"codex exec"等，或需要用本地 Codex CLI 作为便宜的执行子agent时使用。负责拆解任务、按范围选 profile、拼 prompt、多轮续聊、回收结果并验收，不代劳最终验证
+description: >
+  当用户要求把任务派发/委派给 Codex、提到"丢给 codex"/"codex 子agent"/"用 codex 跑一下"/"codex exec"等，
+  或需要用本地 Codex CLI 作为便宜的执行子agent时使用。负责拆解任务、按范围选 profile、拼 prompt、多轮续聊、
+  回收结果并验收，不代劳最终验证
+  收益随「规模 × 可并行度 × 上下文隔离」上升，最划算的是：要几十次工具调用的调研定位与资料汇总、
+  模块级批量机械改动、彼此独立可同时跑的子任务——它们的原始输出不进主 context，验收只需读结论加抽查关键引用
+  产出代码的任务再看验收能否机器化：typecheck / 测试报红 / lint / 构建失败能兜住就派；
+  只能靠人读才判断得了好坏的（注释质量、命名、API 设计、架构取舍、文案）自己写更快
+  最不划算的是单点小改动又手上无事可并行：验收成本固定，会吃掉大半收益；
+  三种情况直接不要用——用户没明确要求委派时不主动派；任务依赖本会话的对话上下文、
+  或过程中需要跟用户来回确认（codex 是独立进程，读不到对话也问不了人）；
+  敏感、破坏性或对外可见的操作（本机 approval_policy 为 never，无审批与沙箱兜底）
 ---
 
 ## 定位
@@ -11,17 +22,19 @@ Claude 是派发方 + 规划方 + 最终验收方；`codex exec` 是执行方。
 
 ## Profile 选择（对应 ~/.codex/agents/*.toml，实际内容以该目录当前文件为准）
 
-| profile | model | effort | 适用场景 | 成本注记 |
-|---|---|---|---|---|
-| `spark_xhigh` | gpt-5.3-codex-spark | xhigh | 范围极窄、验收明确的纯编码机械修改、快速迭代 | **默认首选**，模型更轻 |
-| `luna_high` | gpt-5.6-luna | high | 范围明确、可独立交付的编码/定点分析/常规 review | 中等开销 |
-| `luna_max` | gpt-5.6-luna | max | 跨模块根因、高风险语义判断、需要深度推理且有明确收敛条件 | **开销最重**，实测回一个字都要约 2.5 万 token，只在真需要深度推理时用 |
+| profile       | model               | effort | 适用场景                                                 | 成本注记     |
+| ------------- | ------------------- | ------ | -------------------------------------------------------- | ------------ |
+| `spark_xhigh` | gpt-5.3-codex-spark | xhigh  | 范围极窄、验收明确的纯编码机械修改、快速迭代             | 最便宜最快的 |
+| `luna_high`   | gpt-5.6-luna        | high   | 范围明确、可独立交付的编码/定点分析/常规 review          | 中等开销     |
+| `luna_max`    | gpt-5.6-luna        | max    | 跨模块根因、高风险语义判断、需要深度推理且有明确收敛条件 | 开销最大     |
 
-不要因为"随手丢给 codex"就默认选贵档；按任务范围选，越窄越机械越该用 `spark_xhigh`
-
-⚠️ 实测遇到过 `ERROR: You've hit your usage limit for GPT-5.3-Codex-Spark`。遇到限额报错直接降级用 `luna_high` 重试，不要对同一模型反复重试
+⚠️ 实测遇到过 `ERROR: You've hit your usage limit for GPT-5.3-Codex-Spark`。遇到限额报错则换模型用，不要对同一模型反复重试
 
 ## 首轮派发
+
+prompt 是**两段式**：上半段是身份约束（谁在干活、守什么纪律），下半段才是这次的具体需求，中间用 `---` 隔开。
+
+上半段要**原样抄** `~/.codex/agents/<profile>.toml` 里的 `developer_instructions`，一个字都不要改写。原因见「定位」：`agent_type` 是 codex 内部委派机制的参数，CLI 根本没有对应 flag，那份纪律不抄进 prompt 就完全不生效——codex 会退回默认行为，既不受"只改点名文件"约束，也不会按四项汇报。
 
 ```bash
 codex exec \
@@ -31,12 +44,38 @@ codex exec \
   -s workspace-write \
   --skip-git-repo-check \
   -o "<output_file>" \
-  "<把对应 profile 的 developer_instructions 原文抄在这里，不要改写>
+  "<原样粘贴 ~/.codex/agents/<profile>.toml 的 developer_instructions>
 
 ---
 
-任务：<目标、范围边界、验收标准，边界要写死，不要让它顺手改到范围外的文件>"
+任务：<见下方骨架>"
 ```
+
+### 任务那半的骨架
+
+```
+## 缺陷 / 目标
+症状是什么、根因在哪、涉及哪个文件哪一段。有 file:line 就给 file:line
+
+## 对照实现（可选，但很管用）
+仓库里已经写对的同类代码在哪。给了它就有参照，不必自己发明
+
+## 要求
+一条条列，每条都可判定。能复用的现成函数直接点名，别让它自己造
+
+## 边界（严格遵守）
+**只准改** 哪几个文件；哪些文件明确不许碰；哪些对外签名/行为不许变；
+禁止 git 写操作；禁止改 .gitignore / package.json
+
+## 代码规范
+本仓强制项照抄进去（缩进、引号、注释语言与标点、JSDoc 位置）
+
+## 验证
+把它该跑的命令和当前基线数字写死，例如「`npx vitest run` 当前基线 402 passed / 0 failed，
+改完不许出现任何新失败」
+```
+
+边界那段写得越死越好——实测它会顺手改没点名的行（见「已知行为特征」）。规范那段写了也常被忽略，但写了至少第二轮能拿它说事
 
 - 纯只读分析/审查用 `-s read-only`（已实测真会拦写入，报 `patch rejected: writing is blocked by read-only sandbox`）；要改文件才用 `-s workspace-write`
 - 这台机器全局 `approval_policy = "never"` 且 `default_permissions = ":danger-full-access"`，即没有审批和沙箱兜底，任务描述里的边界必须写清楚
