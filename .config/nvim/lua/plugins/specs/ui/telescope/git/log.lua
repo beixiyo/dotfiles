@@ -16,12 +16,16 @@ local function open_file_tab(context)
 
   if context.row then
     local row = math.min(context.row, vim.api.nvim_buf_line_count(bufnr))
-    pcall(vim.api.nvim_win_set_cursor, 0, { row, 0 })
+    local target_line = vim.api.nvim_buf_get_lines(bufnr, row - 1, row, false)[1] or ''
+    pcall(vim.api.nvim_win_set_cursor, 0, { row, math.min(context.col or 0, #target_line) })
     pcall(vim.cmd, 'normal! zz')
   end
 
   local function restore_mapping()
-    if restored or not vim.api.nvim_buf_is_valid(bufnr) then return end
+    if restored or not vim.api.nvim_buf_is_valid(bufnr) then
+      return
+    end
+
     restored = true
     pcall(vim.keymap.del, 'n', 'Q', { buffer = bufnr })
     if type(previous) == 'table' and next(previous) then
@@ -30,7 +34,10 @@ local function open_file_tab(context)
   end
 
   local function return_to_vv_git()
-    if vim.api.nvim_get_current_tabpage() ~= tabpage then return end
+    if vim.api.nvim_get_current_tabpage() ~= tabpage then
+      return
+    end
+
     local ok, err = pcall(vim.cmd, 'tabclose')
     if not ok then
       vim.notify(tostring(err), vim.log.levels.WARN)
@@ -70,7 +77,9 @@ function M.open(opts)
   local git_root = require('vv-utils.git').root(opts.cwd)
   local log_limit = opts.git_log_limit
 
-  if log_limit == nil then log_limit = log_limits[1] end
+  if log_limit == nil then
+    log_limit = log_limits[1]
+  end
 
   opts.git_command = {
     'git',
@@ -105,10 +114,19 @@ function M.open(opts)
         local chan = vim.api.nvim_open_term(bufnr, {})
 
         self.state.stat_job = vim.system({
-          'git', '-C', git_root, 'show', '--numstat', '--format=', entry.value,
+          'git',
+          '-C',
+          git_root,
+          'show',
+          '--numstat',
+          '--format=',
+          entry.value,
         }, { text = true }, function(result)
           vim.schedule(function()
-            if not vim.api.nvim_buf_is_valid(bufnr) then return end
+            if not vim.api.nvim_buf_is_valid(bufnr) then
+              return
+            end
+
             local added, deleted, binary_files = 0, 0, 0
             for line in (result.stdout or ''):gmatch('[^\r\n]+') do
               local a, d = line:match('^(%d+)\t(%d+)\t')
@@ -120,23 +138,33 @@ function M.open(opts)
               end
             end
             local binary = binary_files > 0 and string.format('  ·  %d binary', binary_files) or ''
-            vim.api.nvim_chan_send(chan, string.format(
-              '\27[1mCommit changes\27[0m  \27[32m+%d\27[0m  \27[31m-%d\27[0m  ·  %d lines%s\r\n\r\n',
-              added, deleted, added + deleted, binary
-            ))
+            vim.api.nvim_chan_send(
+              chan,
+              string.format('\27[1mCommit changes\27[0m  \27[32m+%d\27[0m  \27[31m-%d\27[0m  ·  %d lines%s\r\n\r\n', added, deleted, added + deleted, binary)
+            )
 
             self.state.job_id = vim.fn.jobstart({
-              'bash', '-c', 'git -C "$1" show --color=always "$2" | delta --side-by-side --width="$3"',
-              '_', git_root, entry.value, tostring(width),
+              'bash',
+              '-c',
+              'git -C "$1" show --color=always "$2" | delta --side-by-side --width="$3"',
+              '_',
+              git_root,
+              entry.value,
+              tostring(width),
             }, {
               stdout_buffered = true,
               on_stdout = function(_, data)
-                if not vim.api.nvim_buf_is_valid(bufnr) then return end
+                if not vim.api.nvim_buf_is_valid(bufnr) then
+                  return
+                end
                 vim.api.nvim_chan_send(chan, table.concat(data, '\r\n'))
               end,
               on_exit = function()
                 vim.schedule(function()
-                  if not vim.api.nvim_buf_is_valid(bufnr) then return end
+                  if not vim.api.nvim_buf_is_valid(bufnr) then
+                    return
+                  end
+
                   pcall(function()
                     vim.bo[bufnr].scrollback = 9999
                     vim.bo[bufnr].scrollback = 9998
@@ -170,9 +198,14 @@ function M.open(opts)
     -- checkout 出去导致 HEAD 游离（detached）。
     local function open_diff(prompt_bufnr)
       local entry = action_state.get_selected_entry(prompt_bufnr)
-      if not entry then return end
+      if not entry then
+        return
+      end
+
       actions.close(prompt_bufnr)
-      Git.open_show_buffer(entry.value, function() require('telescope.builtin').resume() end)
+      Git.open_show_buffer(entry.value, function()
+        require('telescope.builtin').resume()
+      end)
     end
 
     -- <CR>：用 vv-git 的 commit diff 视图（commit^..commit，文件树 + 并排 diff，更好看），
@@ -182,7 +215,10 @@ function M.open(opts)
     -- git_checkout，再按 <CR> 就 checkout 了 commit hash 导致 HEAD 游离。
     actions.select_default:replace(function(prompt_bufnr)
       local entry = action_state.get_selected_entry(prompt_bufnr)
-      if not entry then return end
+      if not entry then
+        return
+      end
+
       local vvgit = Git.load_vv_git()
       if vvgit and type(vvgit.show_commit) == 'function' then
         local picker = action_state.get_current_picker(prompt_bufnr)
@@ -196,7 +232,10 @@ function M.open(opts)
         -- 显式重建当前 git-log 会话，避免 vv-git 内其它 picker 覆盖 Telescope 的全局缓存。
         local resumed = false
         local function resume()
-          if resumed then return end
+          if resumed then
+            return
+          end
+
           resumed = true
           M.open(session)
         end
@@ -241,14 +280,18 @@ function M.open(opts)
     -- 复制 commit hash（留在 telescope）
     map({ 'i', 'n' }, '<M-h>', function(prompt_bufnr)
       local entry = action_state.get_selected_entry(prompt_bufnr)
-      if not entry then return end
+      if not entry then
+        return
+      end
       Git.yank(entry.value, 'hash')
     end)
 
     -- 复制 commit 标题（留在 telescope）
     map({ 'i', 'n' }, '<M-y>', function(prompt_bufnr)
       local entry = action_state.get_selected_entry(prompt_bufnr)
-      if not entry then return end
+      if not entry then
+        return
+      end
       Git.yank(Git.commit_subject(entry.value), 'message')
     end)
 
