@@ -17,6 +17,11 @@
     "newLineKind": "lf",
     "useTabs": false
   },
+  "stylua": {
+    "quoteStyle": "AutoPreferSingle",
+    "collapseSimpleStatement": "Always",
+    "callParentheses": "Always"
+  },
   "json": {
   },
   "markdown": {

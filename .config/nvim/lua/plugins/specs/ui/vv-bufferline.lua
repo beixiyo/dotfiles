@@ -5,6 +5,19 @@ local function open_dashboard_later()
   end)
 end
 
+local function open_dashboard_if_tab_empty_later()
+  vim.schedule(function()
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+      if vim.api.nvim_win_is_valid(win) then
+        local buf = vim.api.nvim_win_get_buf(win)
+        if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buflisted and vim.bo[buf].buftype == '' then return end
+      end
+    end
+
+    pcall(function() require('vv-dashboard').open() end)
+  end)
+end
+
 local function close_explorer()
   pcall(function() require('vv-explorer').close() end)
 end
@@ -61,11 +74,16 @@ return {
 
     local map = vim.keymap.set
 
+    local function close_current(close_opts)
+      bufferline.close_current(close_opts)
+      open_dashboard_if_tab_empty_later()
+    end
+
     -- 按当前 split 的可见标签顺序切换，避免内置 :bnext 遍历全局 listed buffer
     map('n', '[b', function() bufferline.cycle(-vim.v.count1) end, { desc = icon .. 'Previous buffer', silent = true })
     map('n', ']b', function() bufferline.cycle(vim.v.count1) end, { desc = icon .. 'Next buffer', silent = true })
-    map('n', '<leader>bd', bufferline.close_current, { desc = icon .. 'Close buffer', silent = true })
-    map('n', '<leader>bD', function() bufferline.close_current({ force = true }) end, { desc = icon .. 'Force close buffer', silent = true })
+    map('n', '<leader>bd', close_current, { desc = icon .. 'Close buffer', silent = true })
+    map('n', '<leader>bD', function() close_current({ force = true }) end, { desc = icon .. 'Force close buffer', silent = true })
     map('n', '<leader>bh', '<cmd>VVBufferlineCloseLeft<cr>', { desc = icon .. 'Close buffers left', silent = true })
     map('n', '<leader>bl', '<cmd>VVBufferlineCloseRight<cr>', { desc = icon .. 'Close buffers right', silent = true })
     map('n', '<leader>bo', bufferline.close_others, { desc = icon .. 'Close other buffers', silent = true })
