@@ -25,7 +25,13 @@ const CODE_EXTENSIONS = new Set([
  * 4. vv-mcp 最后通过 Neovim LSP 修复最终文件
  */
 export function formatFile(filePath: string, cwd: string): void {
-  if (!CODE_EXTENSIONS.has(path.extname(filePath).toLowerCase())) return
+  const extension = path.extname(filePath).toLowerCase()
+
+  if (extension === '.lua') {
+    runDprint(filePath, cwd)
+    return
+  }
+  if (!CODE_EXTENSIONS.has(extension)) return
   if (!fs.existsSync(filePath)) return
 
   if (isLintableFile(filePath)) {

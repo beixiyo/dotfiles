@@ -4,8 +4,24 @@ import { findExecutable } from '../lib/executables'
 import { runProcess } from '../lib/process'
 
 const DPRINT_EXTENSIONS = new Set([
-  '.css', '.html', '.js', '.jsx', '.json', '.less', '.md', '.mdx',
-  '.scss', '.ts', '.tsx', '.vue', '.yaml', '.yml',
+  '.css',
+  '.less',
+  '.scss',
+  '.html',
+
+  '.js',
+  '.jsx',
+  '.ts',
+  '.tsx',
+  '.vue',
+
+  '.lua',
+  '.md',
+  '.mdx',
+
+  '.json',
+  '.yaml',
+  '.yml',
 ])
 
 /**
