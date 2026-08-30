@@ -2,7 +2,7 @@
 ---@type PackSpec
 return {
   desc = 'VSCode 风格 Git 面板',
-  url  = 'beixiyo/vv-git.nvim',
+  url = 'beixiyo/vv-git.nvim',
   main = 'vv-git',
   dependencies = { 'beixiyo/vv-utils.nvim', 'beixiyo/vv-icons.nvim' },
 
@@ -27,8 +27,8 @@ return {
   keys = function()
     local icons = require('vv-icons')
     return {
-      { '<leader>gd', '<cmd>VVGitToggle<cr>',     desc = icons.git_diff .. ' vv-git' },
-      { '<leader>gH', '<cmd>VVGitCompare<cr>',    desc = icons.git_diff .. ' Compare HEAD with commit' },
+      { '<leader>gd', '<cmd>VVGitToggle<cr>', desc = icons.git_diff .. ' vv-git' },
+      { '<leader>gH', '<cmd>VVGitCompare<cr>', desc = icons.git_diff .. ' Compare HEAD with commit' },
       { '<leader>gc', '<cmd>VVGitCommitShow<cr>', desc = icons.git_diff .. ' Show commit diff' },
     }
   end,
@@ -37,7 +37,9 @@ return {
   opts = {
     before_open = function()
       local explorer = package.loaded['vv-explorer']
-      if not explorer then return end
+      if not explorer then
+        return
+      end
       return explorer.suspend()
     end,
     fold_unchanged = false,
@@ -48,8 +50,15 @@ return {
       -- t：在光标节点目录开/切换浮动终端（目录用自身，文件用父目录），cwd 跟随光标
       ['t'] = function()
         local dir = require('vv-git').get_node_dir()
-        if not dir then return end
+        if not dir then
+          return
+        end
         require('tools.term').open_at(dir)
+      end,
+    },
+    revision_mappings = {
+      K = function(context)
+        require('plugins.specs.code.lsp.hover').toggle_revision(context)
       end,
     },
   },
