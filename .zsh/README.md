@@ -162,9 +162,29 @@ ports 9977 --all  # 使用 sudo 查看指定端口
 | `grepo [path]` | 递归发现 Git 仓库，预览状态并进入所选仓库 |
 | `gdiff [path]` | 查看 staged、unstaged 和 untracked 变更，并执行 stage / unstage |
 | `glog` | 搜索提交、预览 diff 并复制 hash |
+| `gwt-sync [path]` | 选择 worktree 和目标分支，预检冲突后安全更新 |
 | `gitpt [version] [-r remote]` | 发布 SemVer tag；无参数时确认下一个 patch 或手动输入 tag，默认推送到 `origin` |
 
 各个 fzf 面板直接显示紧凑的快捷键提示，例如 `Open ↵`、`Stage ^S`、`nvim ⌥O`；Alt/Option 在所有平台统一显示为 `⌥`
+
+### `gwt-sync`：安全更新 worktree
+
+`gwt-sync` 默认读取当前 Git 仓库，也可以接收仓库中的任意目录。它依次选择
+worktree、remote、目标分支和同步策略，获取最新远程引用后才计算 ahead/behind：
+
+```bash
+gwt-sync
+gwt-sync ~/Documents/code/frontend/flowtica-internal-flow
+```
+
+- 仅落后时使用 `merge --ff-only`；已经分叉时明确选择 rebase 或 merge
+- merge/fast-forward 使用 `merge-tree` 预检；rebase 在临时 detached worktree 中实际重放
+- 预检包含 staged、unstaged 和未跟踪文件，不只比较 `HEAD`
+- 目标新增路径以及 rebase 中间提交会写入的路径，都会检查本地 ignored 同名及父子冲突，避免 Git 静默覆盖
+- dirty submodule 或嵌套仓库会直接阻止更新，必须先在各自仓库处理
+- 预检无冲突时最终确认默认执行；dirty worktree 会自动临时 stash，并用 `--index` 恢复暂存边界
+- 普通 Git 冲突会询问是否仍然尝试更新；ignored 覆盖、dirty submodule/嵌套仓库等安全风险不可绕过
+- 执行前重新校验 index/worktree tree；更新失败时按阶段保留 stash 和备份引用
 
 ## 其它命令
 

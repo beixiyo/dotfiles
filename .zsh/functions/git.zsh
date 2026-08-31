@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 
-# Git tools: grepo / gdiff / glog / gitpt
+# Git tools: grepo / gdiff / glog / gwt-sync / gitpt
 # fzf command building in bun/src/*.ts, zsh is thin glue
 
 () {
@@ -17,5 +17,7 @@ grepo() {
 gdiff() { require bun || return 1; bun run "$_GIT_BUN/gdiff.ts" "$@"; }
 
 glog() { require bun || return 1; bun run "$_GIT_BUN/glog.ts" "$@"; }
+
+gwt-sync() { require bun || return 1; bun run "$_GIT_BUN/gwt-sync.ts" "$@"; }
 
 gitpt() { require bun || return 1; bun run "$_GIT_BUN/gitpt.ts" "$@"; }
