@@ -1,45 +1,51 @@
 #!/usr/bin/env bun
 
 /**
- * `gwt-sync` 交互入口：通过 fzf 选择 worktree、远程、目标分支和更新策略，
- * 在执行任何分支更新前展示状态并完成冲突预检
+ * `gwt-sync` 命令入口：默认通过 fzf 交互选择同步目标，传入 `--json` 时
+ * 改用无需 TTY 的机器模式，并把唯一结果写到 stdout
  */
 
-import { existsSync, statSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { existsSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
+import { parseArgs } from 'node:util'
+import { assertCmd, FUNC_DIR, fzf, shellQuote, spawnFzfCapture } from './fzf-shared'
 import {
   createWorktreeSnapshots,
   executeUpdate,
+  type ExecuteUpdateFailure,
   inspectRelation,
   inspectWorktree,
   listWorktrees,
   planRecovery,
   preflightUpdate,
-  type ExecuteUpdateFailure,
   type UpdateStrategy,
   type WorktreeInspection,
   type WorktreeRecord,
 } from './gwt-sync-core'
-import {
-  FUNC_DIR,
-  assertCmd,
-  fzf,
-  shellQuote,
-  spawnFzfCapture,
-} from './fzf-shared'
-import {
-  C,
-  log,
-  logErr,
-  logOk,
-  logWarn,
-} from './utils'
+import { machineExitCode, type MachineSyncOptions, runMachineSync } from './gwt-sync-machine'
+import { C, log, logErr, logOk, logWarn } from './utils'
 
-async function main(): Promise<void> {
+async function main(argv: string[]): Promise<void> {
+  const parsed = parseCliArgs(argv)
+  if (parsed.values.help) {
+    process.stdout.write(`${usage()}\n`)
+    return
+  }
+
+  if (parsed.values.json) {
+    if (!Bun.which('git')) throw new Error('git is required but not installed')
+    const result = runMachineSync(resolveMachineOptions(parsed))
+    writeJson(result)
+    process.exitCode = machineExitCode(result)
+    return
+  }
+
+  rejectMachineOptions(parsed)
   assertCmd('git')
   assertCmd('fzf')
 
-  const repository = resolveRepository(process.argv.slice(2))
+  const repository = resolveRepository(parsed.positionals)
   const candidates = collectWorktreeChoices(repository)
   const selected = await selectWorktree(candidates)
   if (!selected) return
@@ -141,14 +147,19 @@ async function main(): Promise<void> {
     logOk('Preflight passed')
   }
 
-  if (!await confirmExecution({
-    worktree: record.path,
-    branch: inspection.branch!,
-    target: target.ref,
-    strategy,
-    dirty: inspection.status.dirty,
-    hasPreflightConflict,
-  })) {
+  if (
+    !await confirmExecution({
+      branch: inspection.branch!,
+      target: target.ref,
+      strategy,
+      dirty: inspection.status.dirty,
+      hasPreflightConflict,
+      conflictFiles: preflight.ok ? [] : preflight.conflictFiles ?? [],
+      conflictPreview: preflight.ok
+        ? undefined
+        : preflight.conflictDiff ?? preflight.details,
+    })
+  ) {
     log('Cancelled; branch was not updated')
     return
   }
@@ -179,8 +190,89 @@ async function main(): Promise<void> {
   gitInherited(record.path, ['status', '--short', '--branch'])
 }
 
+function parseCliArgs(argv: string[]) {
+  return parseArgs({
+    args: argv,
+    allowPositionals: true,
+    options: {
+      worktree: { type: 'string' },
+      target: { type: 'string' },
+      strategy: { type: 'string' },
+      apply: { type: 'boolean' },
+      'allow-conflicts': { type: 'boolean' },
+      json: { type: 'boolean' },
+      help: { type: 'boolean', short: 'h' },
+    },
+  })
+}
+
+function resolveMachineOptions(parsed: ParsedCliArgs): MachineSyncOptions {
+  if (parsed.positionals.length > 1) throw new Error(usage())
+  if (parsed.values.worktree && parsed.positionals.length > 0) {
+    throw new Error('Pass the worktree either as --worktree or as one positional path, not both')
+  }
+
+  const target = parsed.values.target
+  if (!target) throw new Error('--target must name a remote branch such as origin/master')
+
+  const strategyValue = parsed.values.strategy
+  let strategy: UpdateStrategy | undefined
+  if (strategyValue) {
+    if (!isUpdateStrategy(strategyValue)) {
+      throw new Error(`Unknown strategy: ${strategyValue}; expected ff-only, merge, or rebase`)
+    }
+    strategy = strategyValue
+  }
+
+  const apply = parsed.values.apply === true
+  const allowConflicts = parsed.values['allow-conflicts'] === true
+  if (allowConflicts && !apply) {
+    throw new Error('--allow-conflicts requires --apply')
+  }
+
+  return {
+    worktree: parsed.values.worktree ?? parsed.positionals[0] ?? '.',
+    target,
+    strategy,
+    apply,
+    allowConflicts,
+  }
+}
+
+function rejectMachineOptions(parsed: ParsedCliArgs): void {
+  if (
+    parsed.values.worktree
+    || parsed.values.target
+    || parsed.values.strategy
+    || parsed.values.apply
+    || parsed.values['allow-conflicts']
+  ) {
+    throw new Error('Machine options require --json; --json itself disables all interactive UI')
+  }
+  if (parsed.positionals.length > 1) throw new Error(usage())
+}
+
+function isUpdateStrategy(value: string): value is UpdateStrategy {
+  return value === 'ff-only' || value === 'merge' || value === 'rebase'
+}
+
+function usage(): string {
+  return [
+    'Usage:',
+    '  gwt-sync [repository-path]',
+    '  gwt-sync --json [--worktree path] --target remote/branch [--strategy merge|rebase] [--apply] [--allow-conflicts]',
+    '',
+    'Machine mode fetches the target remote and inspects by default; --apply updates the branch.',
+    'Known conflicts still require --apply --allow-conflicts before a real update is attempted.',
+  ].join('\n')
+}
+
+function writeJson(value: unknown): void {
+  process.stdout.write(`${JSON.stringify(value, null, 2)}\n`)
+}
+
 function resolveRepository(argv: string[]): string {
-  const positional = argv.filter(argument => !argument.startsWith('-'))
+  const positional = argv.filter((argument) => !argument.startsWith('-'))
   const candidate = resolve(positional[0] ?? '.')
   if (!existsSync(candidate) || !statSync(candidate).isDirectory()) {
     throw new Error(`Directory does not exist: ${candidate}`)
@@ -217,12 +309,12 @@ async function selectWorktree(choices: WorktreeChoice[]): Promise<WorktreeChoice
     const state = record.prunable
       ? 'prunable'
       : record.locked
-        ? 'locked'
-        : error
-          ? 'error'
-          : inspection?.status.dirty
-            ? `dirty ${formatStatus(inspection)}`
-            : 'clean'
+      ? 'locked'
+      : error
+      ? 'error'
+      : inspection?.status.dirty
+      ? `dirty ${formatStatus(inspection)}`
+      : 'clean'
 
     return [
       record.path,
@@ -234,23 +326,29 @@ async function selectWorktree(choices: WorktreeChoice[]): Promise<WorktreeChoice
 
   const [, output] = await spawnFzfCapture([
     '--ansi',
-    '--delimiter', '\t',
+    '--delimiter',
+    '\t',
     '--with-nth=2..',
     '--no-multi',
-    '--header', [
+    '--header',
+    [
       'Select a worktree to update',
       `Navigate ${fzf.cmdHint}n/${fzf.cmdHint}p │ Scroll ^e/^y │ Cancel Esc`,
     ].join('\n'),
     '--header-first',
-    '--prompt', 'Worktree > ',
-    '--preview', `${FUNC_DIR}/_preview/git-worktree-sync.sh {1}`,
-    '--preview-window', fzf.gitPreviewWindow,
-    '--bind', fzf.scrollBinds,
+    '--prompt',
+    'Worktree > ',
+    '--preview',
+    `${FUNC_DIR}/_preview/git-worktree-sync.sh {1}`,
+    '--preview-window',
+    fzf.gitPreviewWindow,
+    '--bind',
+    fzf.scrollBinds,
   ], rows.join('\n'))
 
   if (!output) return undefined
   const path = output.split('\t')[0]
-  return choices.find(choice => choice.record.path === path)
+  return choices.find((choice) => choice.record.path === path)
 }
 
 function validateSelectedWorktree(
@@ -273,7 +371,7 @@ function validateSelectedWorktree(
 async function selectRemote(worktree: string): Promise<string | undefined> {
   const names = gitText(worktree, ['remote'])
     .split(/\r?\n/)
-    .map(name => name.trim())
+    .map((name) => name.trim())
     .filter(Boolean)
   if (names.length === 0) throw new Error('Repository has no configured remotes')
   if (names.length === 1) return names[0]
@@ -311,7 +409,7 @@ async function selectTarget(worktree: string, remote: string): Promise<TargetCho
       const [ref, oid, shortOid, ...subjectParts] = line.split('\t')
       return { ref, oid, shortOid, subject: subjectParts.join('\t') }
     })
-    .filter(target => target.ref !== remote && target.ref !== `${remote}/HEAD`)
+    .filter((target) => target.ref !== remote && target.ref !== `${remote}/HEAD`)
 
   if (targets.length === 0) throw new Error(`${remote} has no available remote branches`)
 
@@ -321,12 +419,14 @@ async function selectTarget(worktree: string, remote: string): Promise<TargetCho
     return a.ref.localeCompare(b.ref, 'en')
   })
 
-  const rows = targets.map(target => [
-    target.ref,
-    target.oid,
-    target.shortOid,
-    target.subject,
-  ].join('\t'))
+  const rows = targets.map((target) =>
+    [
+      target.ref,
+      target.oid,
+      target.shortOid,
+      target.subject,
+    ].join('\t')
+  )
   const selected = await selectRow(rows, {
     header: symbolicHead
       ? `Select a target branch (remote default: ${symbolicHead})`
@@ -350,13 +450,13 @@ async function selectStrategy(worktree: string): Promise<UpdateStrategy | undefi
   ]).exitCode === 0
   const rows = hasUpstream
     ? [
-        'merge\tMerge: preserve history; suitable for a shared branch',
-        'rebase\tRebase: linearize history and rewrite branch-only commits',
-      ]
+      'merge\tMerge: preserve history; suitable for a shared branch',
+      'rebase\tRebase: linearize history and rewrite branch-only commits',
+    ]
     : [
-        'rebase\tRebase: linearize history; suitable for an unshared feature branch',
-        'merge\tMerge: preserve history and create a merge commit',
-      ]
+      'rebase\tRebase: linearize history; suitable for an unshared feature branch',
+      'merge\tMerge: preserve history and create a merge commit',
+    ]
   const selected = await selectRow(rows, {
     header: 'The current branch has diverged from the target; select an update strategy',
     prompt: 'Strategy > ',
@@ -369,40 +469,82 @@ async function confirmExecution(summary: ConfirmationSummary): Promise<boolean> 
   const dirtyText = summary.dirty
     ? 'Local changes will be stashed and restored'
     : 'Worktree is clean'
+  const conflictText = formatConflictFiles(summary.conflictFiles)
   const rows = summary.hasPreflightConflict
     ? [
-        'cancel\tCancel and keep the current state (recommended)',
-        'execute\tAttempt the update; manual conflict resolution may be required',
-      ]
+      'cancel\tCancel and keep the current state (recommended)',
+      'execute\tAttempt the update; manual conflict resolution may be required',
+    ]
     : [
-        'execute\tRun the update (default)',
-        'cancel\tCancel without updating the branch',
-      ]
-  const selected = await selectRow(rows, {
-    header: [
-      `${summary.branch} ← ${summary.target}`,
-      `${summary.strategy} │ ${dirtyText}`,
-      summary.hasPreflightConflict
-        ? 'Conflict detected; continue only if you are ready to resolve it manually'
-        : 'No conflicts detected; press Enter to run',
-    ].join('\n'),
-    prompt: 'Confirm > ',
-    withNth: '2',
-  })
-  return selected?.startsWith('execute\t') ?? false
+      'execute\tRun the update (default)',
+      'cancel\tCancel without updating the branch',
+    ]
+  let previewRoot: string | undefined
+
+  try {
+    let preview: string | undefined
+    if (summary.hasPreflightConflict && summary.conflictPreview) {
+      previewRoot = mkdtempSync(join(tmpdir(), 'gwt-sync-conflict-'))
+      const report = join(previewRoot, 'conflict.diff')
+      writeFileSync(report, summary.conflictPreview)
+      preview = `${FUNC_DIR}/_preview/git-worktree-sync-conflict.sh ${shellQuote(report)}`
+    }
+
+    const selected = await selectRow(rows, {
+      header: [
+        `${summary.branch} ← ${summary.target}`,
+        `${summary.strategy} │ ${dirtyText}`,
+        summary.hasPreflightConflict
+          ? conflictText
+          : 'No conflicts detected; press Enter to run',
+        summary.hasPreflightConflict
+          ? `Review preview ^e/^y │ Continue only if manual resolution is acceptable`
+          : '',
+      ].filter(Boolean).join('\n'),
+      prompt: 'Confirm > ',
+      withNth: '2',
+      preview,
+    })
+    return selected?.startsWith('execute\t') ?? false
+  }
+  finally {
+    if (previewRoot) rmSync(previewRoot, { recursive: true, force: true })
+  }
+}
+
+function formatConflictFiles(files: string[]): string {
+  if (files.length === 0) return 'Conflict detected; no individual path was reported'
+
+  const visible = files.slice(0, 3).map((file) => (
+    file
+      .replaceAll('\\', '\\\\')
+      .replaceAll('\r', '\\r')
+      .replaceAll('\n', '\\n')
+      .replaceAll('\t', '\\t')
+  ))
+  const remaining = files.length - visible.length
+  return [
+    `Conflicts (${files.length}): ${visible.join(', ')}`,
+    remaining > 0 ? `+${remaining} more in preview` : '',
+  ].filter(Boolean).join(' ')
 }
 
 async function selectRow(rows: string[], options: SelectRowOptions): Promise<string | undefined> {
   const args = [
     '--ansi',
-    '--delimiter', '\t',
-    '--with-nth', options.withNth,
+    '--delimiter',
+    '\t',
+    '--with-nth',
+    options.withNth,
     '--no-multi',
     '--no-sort',
-    '--header', options.header,
+    '--header',
+    options.header,
     '--header-first',
-    '--prompt', options.prompt,
-    '--bind', fzf.scrollBinds,
+    '--prompt',
+    options.prompt,
+    '--bind',
+    fzf.scrollBinds,
   ]
   if (options.preview) {
     args.push('--preview', options.preview, '--preview-window', fzf.gitPreviewWindow)
@@ -480,11 +622,13 @@ function printRecovery(
 function gitText(cwd: string, args: string[]): string {
   const result = gitRaw(cwd, args)
   if (result.exitCode !== 0) {
-    throw new Error([
-      `git ${args.join(' ')} failed (exit ${result.exitCode})`,
-      result.stderr,
-      result.stdout,
-    ].filter(Boolean).join('\n'))
+    throw new Error(
+      [
+        `git ${args.join(' ')} failed (exit ${result.exitCode})`,
+        result.stderr,
+        result.stdout,
+      ].filter(Boolean).join('\n'),
+    )
   }
   return result.stdout
 }
@@ -509,10 +653,25 @@ function gitInherited(cwd: string, args: string[]): number {
   }).exitCode
 }
 
-main().catch((error) => {
-  logErr(error instanceof Error ? error.message : String(error))
+const argv = process.argv.slice(2)
+main(argv).catch((error) => {
+  const message = error instanceof Error ? error.message : String(error)
+  if (argv.includes('--json')) {
+    writeJson({
+      schemaVersion: 1,
+      ok: false,
+      mode: argv.includes('--apply') ? 'apply' : 'inspect',
+      outcome: 'error',
+      error: { message },
+    })
+  }
+  else {
+    logErr(message)
+  }
   process.exitCode = 1
 })
+
+type ParsedCliArgs = ReturnType<typeof parseCliArgs>
 
 interface WorktreeChoice {
   record: WorktreeRecord
@@ -546,12 +705,13 @@ interface UpdateSummary {
 }
 
 interface ConfirmationSummary {
-  worktree: string
   branch: string
   target: string
   strategy: UpdateStrategy
   dirty: boolean
   hasPreflightConflict: boolean
+  conflictFiles: string[]
+  conflictPreview?: string
 }
 
 interface GitResult {

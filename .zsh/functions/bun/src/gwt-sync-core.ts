@@ -5,21 +5,10 @@
  * 并在显式授权后保护及恢复 dirty worktree
  */
 
-import {
-  existsSync,
-  lstatSync,
-  mkdtempSync,
-  rmSync,
-} from 'node:fs'
 import { randomUUID } from 'node:crypto'
-import {
-  dirname,
-  isAbsolute,
-  join,
-  relative,
-  resolve,
-} from 'node:path'
+import { existsSync, lstatSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 
 /** 解析 `git worktree list --porcelain -z` 的机器格式。 */
 export function parseWorktreePorcelain(raw: string): WorktreeRecord[] {
@@ -55,13 +44,27 @@ export function parseWorktreePorcelain(raw: string): WorktreeRecord[] {
     const value = spaceIndex === -1 ? '' : field.slice(spaceIndex + 1)
 
     switch (key) {
-      case 'worktree': current.path = value; break
-      case 'HEAD': current.head = value; break
-      case 'branch': current.branch = value.replace(/^refs\/heads\//, ''); break
-      case 'bare': current.bare = true; break
-      case 'detached': current.detached = true; break
-      case 'locked': current.locked = value || 'locked'; break
-      case 'prunable': current.prunable = value || 'prunable'; break
+      case 'worktree':
+        current.path = value
+        break
+      case 'HEAD':
+        current.head = value
+        break
+      case 'branch':
+        current.branch = value.replace(/^refs\/heads\//, '')
+        break
+      case 'bare':
+        current.bare = true
+        break
+      case 'detached':
+        current.detached = true
+        break
+      case 'locked':
+        current.locked = value || 'locked'
+        break
+      case 'prunable':
+        current.prunable = value || 'prunable'
+        break
     }
   }
 
@@ -321,9 +324,11 @@ export function findDirtyNestedRepositories(worktree: string): DirtyNestedReposi
   for (const statusPath of parseStatusPaths(statusRaw)) {
     const nestedRoot = findNestedRepositoryRoot(worktree, statusPath)
     if (!nestedRoot) continue
-    if ([...registeredSubmodules].some(path => (
-      nestedRoot === path || nestedRoot.startsWith(`${path}/`)
-    ))) continue
+    if (
+      [...registeredSubmodules].some((path) => (
+        nestedRoot === path || nestedRoot.startsWith(`${path}/`)
+      ))
+    ) continue
 
     conflicts.set(nestedRoot, {
       path: nestedRoot,
@@ -421,6 +426,7 @@ export function executeUpdate(options: ExecuteUpdateOptions): ExecuteUpdateResul
     protectDirty,
     expectedIndexTree,
     expectedWorktreeTree,
+    stdio = 'inherit',
   } = options
 
   if (status.dirty && !protectDirty) {
@@ -477,7 +483,7 @@ export function executeUpdate(options: ExecuteUpdateOptions): ExecuteUpdateResul
       '--include-untracked',
       '--message',
       stashMessage,
-    ])
+    ], stdio)
     const currentStashOid = resolveOptionalRef(worktree, 'refs/stash')
     stashOid = findStashByMessage(worktree, stashMessage)
     if (
@@ -497,7 +503,7 @@ export function executeUpdate(options: ExecuteUpdateOptions): ExecuteUpdateResul
     }
   }
 
-  const updateCode = runUpdateCommand(worktree, target, targetLabel, branch, strategy)
+  const updateCode = runUpdateCommand(worktree, target, targetLabel, branch, strategy, stdio)
   if (updateCode !== 0) {
     return {
       ok: false,
@@ -509,7 +515,7 @@ export function executeUpdate(options: ExecuteUpdateOptions): ExecuteUpdateResul
   }
 
   if (stashOid) {
-    const applyCode = gitInherited(worktree, ['stash', 'apply', '--index', stashOid])
+    const applyCode = gitInherited(worktree, ['stash', 'apply', '--index', stashOid], stdio)
     if (applyCode !== 0) {
       return {
         ok: false,
@@ -552,7 +558,7 @@ export function executeUpdate(options: ExecuteUpdateOptions): ExecuteUpdateResul
 
   if (stashOid) {
     const selector = findStashSelector(worktree, stashOid)
-    if (!selector || gitInherited(worktree, ['stash', 'drop', selector]) !== 0) {
+    if (!selector || gitInherited(worktree, ['stash', 'drop', selector], stdio) !== 0) {
       return {
         ok: false,
         stage: 'stash-drop',
@@ -636,20 +642,30 @@ function mergeTrees(worktree: string, snapshot: string, target: string): Snapsho
     '--write-tree',
     '--messages',
     '--name-only',
+    '-z',
     snapshot,
     target,
   ])
-  const details = [result.stdout, result.stderr].filter(Boolean).join('\n').trim()
+  const parsed = parseMergeTreeOutput(result.stdout)
+  const details = [
+    ...parsed.messages,
+    result.stderr,
+  ].filter(Boolean).join('\n').trim()
 
   if (result.exitCode !== 0) {
+    const allowAttempt = result.exitCode === 1
     return {
       ok: false,
-      allowAttempt: result.exitCode === 1,
+      allowAttempt,
+      conflictFiles: allowAttempt ? parsed.conflictFiles : undefined,
+      conflictDiff: allowAttempt && parsed.resultTree
+        ? createConflictDiff(worktree, snapshot, parsed.resultTree, parsed.conflictFiles)
+        : undefined,
       details: details || 'git merge-tree detected a conflict',
     }
   }
 
-  const resultTree = firstObjectId(result.stdout)
+  const resultTree = parsed.resultTree
   if (!resultTree) {
     return {
       ok: false,
@@ -695,12 +711,17 @@ function preflightRebaseSnapshot(
         'diff',
         '--name-only',
         '--diff-filter=U',
-      ]).stdout.trim()
+        '-z',
+      ]).stdout.split('\0').filter(Boolean)
       return {
         ok: false,
-        allowAttempt: Boolean(conflicts),
+        allowAttempt: conflicts.length > 0,
+        conflictFiles: conflicts.length > 0 ? conflicts : undefined,
+        conflictDiff: conflicts.length > 0
+          ? createConflictDiff(checkout, undefined, undefined, conflicts)
+          : undefined,
         details: [
-          conflicts ? `Conflicting files:\n${conflicts}` : '',
+          conflicts.length > 0 ? `Conflicting files:\n${conflicts.join('\n')}` : '',
           rebase.stdout,
           rebase.stderr,
         ].filter(Boolean).join('\n').trim(),
@@ -714,6 +735,58 @@ function preflightRebaseSnapshot(
     if (added) gitRaw(worktree, ['worktree', 'remove', '--force', checkout])
     rmSync(tempRoot, { recursive: true, force: true })
   }
+}
+
+function parseMergeTreeOutput(raw: string): MergeTreeOutput {
+  const tokens = raw.split('\0')
+  const resultTree = /^[0-9a-f]{40,64}$/.test(tokens[0] ?? '')
+    ? tokens[0]
+    : undefined
+  const conflictFiles: string[] = []
+  const messages: string[] = []
+  let index = 1
+
+  while (index < tokens.length && tokens[index]) {
+    conflictFiles.push(tokens[index])
+    index++
+  }
+  index++
+
+  while (index < tokens.length && tokens[index]) {
+    const pathCount = Number(tokens[index++])
+    if (!Number.isInteger(pathCount) || pathCount < 0) break
+
+    index += pathCount
+    const type = tokens[index++] ?? ''
+    const message = tokens[index++] ?? ''
+    if (message) messages.push(message)
+    else if (type) messages.push(type)
+  }
+
+  return { resultTree, conflictFiles, messages }
+}
+
+function createConflictDiff(
+  worktree: string,
+  before: string | undefined,
+  after: string | undefined,
+  conflictFiles: string[],
+): string | undefined {
+  if (conflictFiles.length === 0) return undefined
+
+  const args = [
+    'diff',
+    '--no-color',
+    '--no-ext-diff',
+  ]
+  if (before && after) args.push(before, after)
+  else args.push('--diff-filter=U')
+  args.push('--', ...conflictFiles)
+
+  const result = gitRaw(worktree, args)
+  return result.exitCode === 0 && result.stdout
+    ? result.stdout
+    : undefined
 }
 
 function createCommit(
@@ -756,10 +829,11 @@ function runUpdateCommand(
   targetLabel: string,
   branch: string,
   strategy: UpdateStrategy,
+  stdio: GitStdio,
 ): number {
   switch (strategy) {
     case 'ff-only':
-      return gitInherited(worktree, ['merge', '--ff-only', targetOid])
+      return gitInherited(worktree, ['merge', '--ff-only', targetOid], stdio)
     case 'merge':
       return gitInherited(worktree, [
         'merge',
@@ -767,9 +841,9 @@ function runUpdateCommand(
         '--message',
         `Merge ${targetLabel} into ${branch}`,
         targetOid,
-      ])
+      ], stdio)
     case 'rebase':
-      return gitInherited(worktree, ['rebase', targetOid])
+      return gitInherited(worktree, ['rebase', targetOid], stdio)
   }
 }
 
@@ -806,15 +880,17 @@ function collectMaterializedPaths(
   target: string,
   strategy: UpdateStrategy,
 ): string[] {
-  const paths = new Set(gitText(worktree, [
-    'diff',
-    '--name-only',
-    '-z',
-    '--diff-filter=AT',
-    '--no-renames',
-    'HEAD',
-    target,
-  ]).split('\0').filter(Boolean))
+  const paths = new Set(
+    gitText(worktree, [
+      'diff',
+      '--name-only',
+      '-z',
+      '--diff-filter=AT',
+      '--no-renames',
+      'HEAD',
+      target,
+    ]).split('\0').filter(Boolean),
+  )
 
   if (strategy !== 'rebase') return [...paths]
 
@@ -924,7 +1000,7 @@ function findNestedRepositoryRoot(worktree: string, statusPath: string): string 
 function formatIgnoredPathConflicts(conflicts: IgnoredPathConflict[]): string {
   return [
     'The update would overwrite local ignored paths; operation blocked:',
-    ...conflicts.map(conflict => (
+    ...conflicts.map((conflict) => (
       `- ${conflict.targetPath} ← ${conflict.localPath} (${conflict.relation})`
     )),
   ].join('\n')
@@ -933,17 +1009,10 @@ function formatIgnoredPathConflicts(conflicts: IgnoredPathConflict[]): string {
 function formatDirtyNestedRepositories(conflicts: DirtyNestedRepository[]): string {
   return [
     'Unsafe nested repository state detected; superproject stash cannot preserve it:',
-    ...conflicts.map(conflict => (
+    ...conflicts.map((conflict) => (
       `- ${conflict.path} [${conflict.kind}]: ${conflict.reason}`
     )),
   ].join('\n')
-}
-
-function firstObjectId(output: string): string | undefined {
-  return output
-    .split(/\r?\n/)
-    .map(line => line.trim())
-    .find(line => /^[0-9a-f]{40,64}$/.test(line))
 }
 
 function gitText(
@@ -984,7 +1053,19 @@ function gitRaw(
   }
 }
 
-function gitInherited(cwd: string, args: string[]): number {
+function gitInherited(cwd: string, args: string[], stdio: GitStdio = 'inherit'): number {
+  if (stdio === 'capture') {
+    return Bun.spawnSync(['git', '-C', cwd, ...args], {
+      stdin: 'ignore',
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: {
+        ...process.env,
+        GIT_TERMINAL_PROMPT: '0',
+      },
+    }).exitCode
+  }
+
   return Bun.spawnSync(['git', '-C', cwd, ...args], {
     stdin: 'inherit',
     stdout: 'inherit',
@@ -994,6 +1075,9 @@ function gitInherited(cwd: string, args: string[]): number {
 
 /** 将目标提交整合进所选 worktree 分支的方式。 */
 export type UpdateStrategy = 'ff-only' | 'merge' | 'rebase'
+
+/** Git 子进程输出是继承终端，还是由调用方静默捕获。 */
+export type GitStdio = 'inherit' | 'capture'
 
 /** 当前分支相对目标提交的拓扑关系。 */
 export type BranchRelation = 'equal' | 'ahead' | 'behind' | 'diverged'
@@ -1099,6 +1183,10 @@ export interface PreflightSuccess {
 export interface PreflightFailure {
   ok: false
   allowAttempt: boolean
+  /** 预检确认存在冲突时涉及的路径；安全类失败可能没有具体文件。 */
+  conflictFiles?: string[]
+  /** 可交给 delta 等 diff renderer 的原始、无 ANSI Git diff。 */
+  conflictDiff?: string
   expectedIndexTree?: undefined
   expectedWorktreeTree?: undefined
   details: string
@@ -1121,6 +1209,12 @@ export interface ExecuteUpdateOptions {
   protectDirty: boolean
   expectedIndexTree?: string
   expectedWorktreeTree?: string
+  /**
+   * Git 更新、stash 和恢复命令的输出方式；机器可读 CLI 应使用 `capture`
+   *
+   * @default 'inherit'
+   */
+  stdio?: GitStdio
 }
 
 /** 同步成功，临时 stash 和备份 ref 均已安全清理。 */
@@ -1189,10 +1283,18 @@ interface SnapshotPreflightSuccess {
 interface SnapshotPreflightFailure {
   ok: false
   allowAttempt: boolean
+  conflictFiles?: string[]
+  conflictDiff?: string
   details: string
 }
 
 type SnapshotPreflight = SnapshotPreflightSuccess | SnapshotPreflightFailure
+
+interface MergeTreeOutput {
+  resultTree?: string
+  conflictFiles: string[]
+  messages: string[]
+}
 
 interface GitResult {
   exitCode: number

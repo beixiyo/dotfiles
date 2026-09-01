@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# gwt-sync：安全同步 Git worktree，行为统一由 Bun 文件负责
+#
+# 查看帮助：
+#   gwt-sync --help
+#
+# AI / 脚本调用（--json 自动禁用 fzf，stdout 只输出一个 JSON）：
+#   gwt-sync \
+#     --worktree /abs/path/to/worktree \
+#     --target origin/master \
+#     --strategy rebase \
+#     --json
+#
+# 默认行为：fetch 目标 remote 并预检，不移动分支、不改写 index/worktree
+# 真正更新：在上述参数后添加 --apply
+# 已知冲突：即使有 --apply 也不会尝试；还需显式添加 --allow-conflicts
+#
+# --target 已同时包含 remote 和分支，例如 origin/master；不需要 --remote
+# 分支仅落后时实际策略固定为 ff-only；分叉时需选择 merge 或 rebase
+# JSON 包含 worktree/target/relation/strategy/preflight/update/recovery
+#
+# 退出码：0=安全或成功，1=参数/运行错误，2=冲突，3=安全阻止，4=更新失败
+exec bun run "$HOME/.zsh/functions/bun/src/gwt-sync.ts" "$@"

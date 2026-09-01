@@ -162,7 +162,7 @@ ports 9977 --all  # 使用 sudo 查看指定端口
 | `grepo [path]` | 递归发现 Git 仓库，预览状态并进入所选仓库 |
 | `gdiff [path]` | 查看 staged、unstaged 和 untracked 变更，并执行 stage / unstage |
 | `glog` | 搜索提交、预览 diff 并复制 hash |
-| `gwt-sync [path]` | 选择 worktree 和目标分支，预检冲突后安全更新 |
+| `gwt-sync [path]` | 交互选择同步目标；也可用 `--json` 直接传参供脚本或 AI 调用 |
 | `gitpt [version] [-r remote]` | 发布 SemVer tag；无参数时确认下一个 patch 或手动输入 tag，默认推送到 `origin` |
 
 各个 fzf 面板直接显示紧凑的快捷键提示，例如 `Open ↵`、`Stage ^S`、`nvim ⌥O`；Alt/Option 在所有平台统一显示为 `⌥`
@@ -185,6 +185,35 @@ gwt-sync ~/Documents/code/frontend/flowtica-internal-flow
 - 预检无冲突时最终确认默认执行；dirty worktree 会自动临时 stash，并用 `--index` 恢复暂存边界
 - 普通 Git 冲突会询问是否仍然尝试更新；ignored 覆盖、dirty submodule/嵌套仓库等安全风险不可绕过
 - 执行前重新校验 index/worktree tree；更新失败时按阶段保留 stash 和备份引用
+
+无需 TTY 的机器模式直接使用 PATH 中的 `gwt-sync`，`--target` 同时包含 remote
+和远程分支，例如 `origin/master`。`--json` 隐含非交互，默认 fetch 后只预检；
+它会更新远程跟踪引用，但不会移动真实分支或改写 index/worktree：
+
+```bash
+gwt-sync \
+  --worktree /abs/path/to/worktree \
+  --target origin/master \
+  --strategy rebase \
+  --json
+```
+
+只有显式传入 `--apply` 才会执行更新。已知存在普通 Git 冲突时，即使传了
+`--apply` 也只返回冲突；必须再加 `--allow-conflicts` 才会进入需要人工恢复的
+真实冲突状态。仅落后目标时始终采用 `ff-only`，此时 JSON 中会同时保留
+`strategy.requested` 并将 `strategy.effective` 标为 `ff-only`
+
+stdout 始终只包含一个 JSON 对象，其中包括 worktree 路径和当前分支、目标
+remote/分支/OID、ahead/behind、dirty 文件、冲突文件和原始冲突 diff、执行结果
+以及失败后的恢复命令。稳定退出码如下：
+
+| 退出码 | 含义 |
+|---|---|
+| `0` | 已可安全更新、无需更新或更新成功 |
+| `1` | 参数、路径、fetch 或其他运行错误 |
+| `2` | 发现普通 Git 冲突，未执行更新 |
+| `3` | 安全边界阻止更新，或分叉分支缺少有效策略 |
+| `4` | 已尝试更新但失败，JSON 中包含恢复信息 |
 
 ## 其它命令
 

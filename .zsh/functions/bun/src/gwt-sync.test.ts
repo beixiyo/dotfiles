@@ -4,16 +4,9 @@
  */
 
 import { afterEach, describe, expect, it } from 'bun:test'
-import {
-  chmodSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs'
-import { join } from 'node:path'
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import {
   createWorktreeSnapshots,
   executeUpdate,
@@ -136,19 +129,27 @@ describe('gwt-sync', () => {
     })
 
     expect(preflight.ok).toBe(false)
+    if (preflight.ok) throw new Error('Expected an add/add conflict')
     expect(preflight.details).toContain('same.txt')
+    expect(preflight.conflictFiles).toEqual(['same.txt'])
+    expect(preflight.conflictDiff).toContain('diff --git a/same.txt b/same.txt')
+    expect(preflight.conflictDiff).toContain('<<<<<<<')
     expect(git(repository, ['rev-parse', '--abbrev-ref', 'HEAD']).trim()).toBe('feature')
     expect(read(repository, 'same.txt')).toBe('local untracked content\n')
   })
 
   it('目标路径与 ignored 文件或父子路径碰撞时阻止更新', () => {
     const repository = createRepository()
-    write(repository, '.gitignore', [
-      'ignored.txt',
-      'ignored-parent',
-      'container/private.txt',
-      '',
-    ].join('\n'))
+    write(
+      repository,
+      '.gitignore',
+      [
+        'ignored.txt',
+        'ignored-parent',
+        'container/private.txt',
+        '',
+      ].join('\n'),
+    )
     git(repository, ['add', '.gitignore'])
     git(repository, ['commit', '-m', 'base ignore rules'])
     git(repository, ['branch', 'feature'])
@@ -196,20 +197,22 @@ describe('gwt-sync', () => {
     ]))
     expect(preflight.ok).toBe(false)
     expect(preflight.details).toContain('ignored paths')
-    expect(() => executeUpdate({
-      worktree: repository,
-      sourceHead: snapshots.head,
-      sourceIndexTree: snapshots.indexTree,
-      sourceWorktreeTree: snapshots.fullTree,
-      target,
-      targetLabel: 'main',
-      strategy: 'ff-only',
-      branch: 'feature',
-      status: inspection.status,
-      protectDirty: false,
-      expectedIndexTree: snapshots.indexTree,
-      expectedWorktreeTree: snapshots.fullTree,
-    })).toThrow('ignored paths')
+    expect(() =>
+      executeUpdate({
+        worktree: repository,
+        sourceHead: snapshots.head,
+        sourceIndexTree: snapshots.indexTree,
+        sourceWorktreeTree: snapshots.fullTree,
+        target,
+        targetLabel: 'main',
+        strategy: 'ff-only',
+        branch: 'feature',
+        status: inspection.status,
+        protectDirty: false,
+        expectedIndexTree: snapshots.indexTree,
+        expectedWorktreeTree: snapshots.fullTree,
+      })
+    ).toThrow('ignored paths')
     expect(read(repository, 'ignored.txt')).toBe('LOCAL SECRET\n')
     expect(read(repository, 'ignored-parent')).toBe('LOCAL PARENT FILE\n')
     expect(read(repository, 'container/private.txt')).toBe('LOCAL PRIVATE\n')
@@ -258,20 +261,22 @@ describe('gwt-sync', () => {
     })
     expect(preflight.ok).toBe(false)
     expect(preflight.details).toContain('transient.txt')
-    expect(() => executeUpdate({
-      worktree: repository,
-      sourceHead: snapshots.head,
-      sourceIndexTree: snapshots.indexTree,
-      sourceWorktreeTree: snapshots.fullTree,
-      target,
-      targetLabel: 'main',
-      strategy: 'rebase',
-      branch: 'feature',
-      status: inspection.status,
-      protectDirty: false,
-      expectedIndexTree: snapshots.indexTree,
-      expectedWorktreeTree: snapshots.fullTree,
-    })).toThrow('transient.txt')
+    expect(() =>
+      executeUpdate({
+        worktree: repository,
+        sourceHead: snapshots.head,
+        sourceIndexTree: snapshots.indexTree,
+        sourceWorktreeTree: snapshots.fullTree,
+        target,
+        targetLabel: 'main',
+        strategy: 'rebase',
+        branch: 'feature',
+        status: inspection.status,
+        protectDirty: false,
+        expectedIndexTree: snapshots.indexTree,
+        expectedWorktreeTree: snapshots.fullTree,
+      })
+    ).toThrow('transient.txt')
     expect(read(repository, 'transient.txt')).toBe('LOCAL SECRET\n')
     expect(git(repository, ['rev-parse', '--abbrev-ref', 'HEAD']).trim()).toBe('feature')
     expect(git(repository, [
@@ -440,20 +445,22 @@ describe('gwt-sync', () => {
     ]))
     expect(preflight.ok).toBe(false)
     expect(preflight.details).toContain('submodule')
-    expect(() => executeUpdate({
-      worktree: repository,
-      sourceHead: snapshots.head,
-      sourceIndexTree: snapshots.indexTree,
-      sourceWorktreeTree: snapshots.fullTree,
-      target,
-      targetLabel: 'main',
-      strategy: 'ff-only',
-      branch: 'feature',
-      status: inspection.status,
-      protectDirty: true,
-      expectedIndexTree: snapshots.indexTree,
-      expectedWorktreeTree: snapshots.fullTree,
-    })).toThrow('submodule')
+    expect(() =>
+      executeUpdate({
+        worktree: repository,
+        sourceHead: snapshots.head,
+        sourceIndexTree: snapshots.indexTree,
+        sourceWorktreeTree: snapshots.fullTree,
+        target,
+        targetLabel: 'main',
+        strategy: 'ff-only',
+        branch: 'feature',
+        status: inspection.status,
+        protectDirty: true,
+        expectedIndexTree: snapshots.indexTree,
+        expectedWorktreeTree: snapshots.fullTree,
+      })
+    ).toThrow('submodule')
     expect(git(repository, ['rev-parse', 'refs/stash']).trim()).toBe(existingStash)
     expect(git(repository, ['stash', 'list'])).toContain('USER STASH')
     expect(git(repository, ['rev-parse', '--abbrev-ref', 'HEAD']).trim()).toBe('feature')
@@ -594,20 +601,22 @@ describe('gwt-sync', () => {
     write(repository, 'late-change.txt', 'changed after preflight\n')
     expect(inspectWorktree(repository).status.raw).toBe(inspection.status.raw)
 
-    expect(() => executeUpdate({
-      worktree: repository,
-      sourceHead: snapshots.head,
-      sourceIndexTree: snapshots.indexTree,
-      sourceWorktreeTree: snapshots.fullTree,
-      target,
-      targetLabel: 'main',
-      strategy: 'ff-only',
-      branch: 'feature',
-      status: inspection.status,
-      protectDirty: true,
-      expectedIndexTree: preflight.expectedIndexTree!,
-      expectedWorktreeTree: preflight.expectedWorktreeTree!,
-    })).toThrow('Worktree content changed after preflight')
+    expect(() =>
+      executeUpdate({
+        worktree: repository,
+        sourceHead: snapshots.head,
+        sourceIndexTree: snapshots.indexTree,
+        sourceWorktreeTree: snapshots.fullTree,
+        target,
+        targetLabel: 'main',
+        strategy: 'ff-only',
+        branch: 'feature',
+        status: inspection.status,
+        protectDirty: true,
+        expectedIndexTree: preflight.expectedIndexTree!,
+        expectedWorktreeTree: preflight.expectedWorktreeTree!,
+      })
+    ).toThrow('Worktree content changed after preflight')
     expect(git(repository, ['stash', 'list'])).toBe('')
     expect(git(repository, [
       'for-each-ref',
@@ -675,7 +684,13 @@ describe('gwt-sync', () => {
   it('普通冲突进入最终确认并默认取消，不创建 stash 或移动分支', () => {
     const { repository, featureHead } = createBehindConflictFixture()
 
-    const { fakeBin, promptLog } = createFirstChoiceFzf()
+    const {
+      fakeBin,
+      promptLog,
+      headerLog,
+      previewLog,
+      deltaLog,
+    } = createFirstChoiceFzf()
     const result = Bun.spawnSync([
       'bun',
       'run',
@@ -689,14 +704,25 @@ describe('gwt-sync', () => {
         PATH: `${fakeBin}:${process.env.PATH ?? ''}`,
         GWT_SYNC_TEST_PROMPT_LOG: promptLog,
         GWT_SYNC_TEST_REPOSITORY: repository,
+        GWT_SYNC_TEST_HEADER_LOG: headerLog,
+        GWT_SYNC_TEST_PREVIEW_LOG: previewLog,
+        GWT_SYNC_TEST_DELTA_LOG: deltaLog,
       },
     })
     const stderr = result.stderr.toString()
     const prompts = readFileSync(promptLog, 'utf8')
+    const header = readFileSync(headerLog, 'utf8')
+    const preview = readFileSync(previewLog, 'utf8')
+    const deltaArgs = readFileSync(deltaLog, 'utf8')
 
     expect(result.exitCode).toBe(0)
     expect(prompts).toContain('Confirm > ')
     expect(prompts).not.toContain('Dirty action > ')
+    expect(header).toContain('Conflicts (1): shared.txt')
+    expect(header).toContain('Review preview ^e/^y')
+    expect(preview).toContain('diff --git a/shared.txt b/shared.txt')
+    expect(preview).toContain('<<<<<<<')
+    expect(deltaArgs).toContain('--paging=never --side-by-side')
     expect(stderr).toContain('Preflight detected a Git conflict')
     expect(stderr).toContain('Cancelled; branch was not updated')
     expect(git(repository, ['rev-parse', 'HEAD']).trim()).toBe(featureHead)
@@ -743,6 +769,182 @@ describe('gwt-sync', () => {
       '--format=%(refname)',
       'refs/gwt-sync-backup',
     ])).toContain('refs/gwt-sync-backup/')
+  })
+
+  it('JSON 默认只预检并输出明确的 worktree、目标和有效策略', () => {
+    const { repository, featureHead } = createBehindFixture()
+    const worktree = git(repository, ['rev-parse', '--show-toplevel']).trim()
+    const result = runJsonCli([
+      '--worktree',
+      repository,
+      '--target',
+      'origin/main',
+      '--strategy',
+      'rebase',
+      '--json',
+    ])
+    const output = parseJsonResult(result)
+
+    expect(result.exitCode).toBe(0)
+    expect(result.stderr?.toString() ?? '').toBe('')
+    expect(output).toMatchObject({
+      schemaVersion: 1,
+      ok: true,
+      mode: 'inspect',
+      outcome: 'ready',
+      worktree: {
+        path: worktree,
+        branch: 'feature',
+        head: featureHead,
+        dirty: false,
+      },
+      target: {
+        ref: 'origin/main',
+        remote: 'origin',
+        branch: 'main',
+      },
+      relation: {
+        ahead: 0,
+        behind: 1,
+        relation: 'behind',
+      },
+      strategy: {
+        requested: 'rebase',
+        effective: 'ff-only',
+      },
+      preflight: {
+        ok: true,
+        conflicts: { files: [], diff: null },
+      },
+      update: { attempted: false, applied: false },
+    })
+    expect(git(repository, ['rev-parse', 'HEAD']).trim()).toBe(featureHead)
+  })
+
+  it('JSON 冲突结果包含文件、冲突内容和 dirty 状态且不修改分支', () => {
+    const { repository, featureHead } = createBehindConflictFixture()
+    const worktree = git(repository, ['rev-parse', '--show-toplevel']).trim()
+    const result = runJsonCli([
+      '--worktree',
+      repository,
+      '--target',
+      'origin/main',
+      '--json',
+    ])
+    const output = parseJsonResult(result)
+
+    expect(result.exitCode).toBe(2)
+    expect(result.stderr?.toString() ?? '').toBe('')
+    expect(output).toMatchObject({
+      ok: false,
+      mode: 'inspect',
+      outcome: 'conflict',
+      worktree: {
+        path: worktree,
+        branch: 'feature',
+        head: featureHead,
+        dirty: true,
+        status: {
+          staged: 0,
+          unstaged: 1,
+          untracked: 0,
+          changes: [{ path: 'shared.txt', index: ' ', worktree: 'M' }],
+        },
+      },
+      target: {
+        ref: 'origin/main',
+        remote: 'origin',
+        branch: 'main',
+      },
+      preflight: {
+        ok: false,
+        allowAttempt: true,
+        conflicts: { files: ['shared.txt'] },
+      },
+      update: { attempted: false, applied: false },
+    })
+    expect(output.preflight?.conflicts.diff).toContain('diff --git a/shared.txt b/shared.txt')
+    expect(output.preflight?.conflicts.diff).toContain('<<<<<<<')
+    expect(git(repository, ['rev-parse', 'HEAD']).trim()).toBe(featureHead)
+    expect(read(repository, 'shared.txt')).toBe('local change\n')
+  })
+
+  it('JSON 仅在双重授权后尝试冲突更新并返回恢复命令', () => {
+    const { repository, target } = createBehindConflictFixture()
+    const result = runJsonCli([
+      '--worktree',
+      repository,
+      '--target',
+      'origin/main',
+      '--apply',
+      '--allow-conflicts',
+      '--json',
+    ])
+    const output = parseJsonResult(result)
+
+    expect(result.exitCode).toBe(4)
+    expect(result.stderr?.toString() ?? '').toBe('')
+    expect(output).toMatchObject({
+      ok: false,
+      mode: 'apply',
+      outcome: 'failed',
+      preflight: {
+        ok: false,
+        allowAttempt: true,
+        conflicts: { files: ['shared.txt'] },
+      },
+      update: {
+        attempted: true,
+        applied: false,
+        stage: 'stash-apply',
+      },
+    })
+    expect(output.recovery?.commands).toEqual(expect.arrayContaining([
+      {
+        action: 'inspect-status',
+        argv: ['git', '-C', expect.any(String), 'status'],
+      },
+      {
+        action: 'inspect-diff',
+        argv: ['git', '-C', expect.any(String), 'diff', '--cached'],
+      },
+      {
+        action: 'inspect-stash',
+        argv: ['git', '-C', expect.any(String), 'stash', 'list'],
+      },
+    ]))
+    expect(git(repository, ['rev-parse', 'HEAD']).trim()).toBe(target)
+    expect(git(repository, ['status', '--porcelain'])).toContain('UU shared.txt')
+    expect(git(repository, ['stash', 'list'])).toContain('gwt-sync: feature -> origin/main')
+  })
+
+  it('PATH 可执行入口用 --apply 更新分支且 stdout 仅包含 JSON', () => {
+    const { repository, target } = createBehindFixture()
+    const executable = join(import.meta.dir, '../../../../.local/bin/gwt-sync')
+    const result = runJsonCli([
+      '--worktree',
+      repository,
+      '--target',
+      'origin/main',
+      '--apply',
+      '--json',
+    ], executable)
+    const output = parseJsonResult(result)
+
+    expect(result.exitCode).toBe(0)
+    expect(result.stderr?.toString() ?? '').toBe('')
+    expect(output).toMatchObject({
+      ok: true,
+      mode: 'apply',
+      outcome: 'updated',
+      strategy: { requested: null, effective: 'ff-only' },
+      update: {
+        attempted: true,
+        applied: true,
+        head: target,
+      },
+    })
+    expect(git(repository, ['rev-parse', 'HEAD']).trim()).toBe(target)
   })
 
   it('恢复计划只在 update 阶段建议匹配的 abort，恢复后阶段不重复 apply', () => {
@@ -864,41 +1066,145 @@ function createBehindConflictFixture(): {
   return { repository, featureHead, target }
 }
 
+function createBehindFixture(): {
+  repository: string
+  featureHead: string
+  target: string
+} {
+  const repository = createRepository()
+  write(repository, 'base.txt', 'base\n')
+  git(repository, ['add', 'base.txt'])
+  git(repository, ['commit', '-m', 'base'])
+
+  const remote = createBareRepository()
+  git(repository, ['remote', 'add', 'origin', remote])
+  git(repository, ['push', '--set-upstream', 'origin', 'main'])
+  git(repository, ['branch', 'feature'])
+
+  write(repository, 'main.txt', 'main update\n')
+  git(repository, ['add', 'main.txt'])
+  git(repository, ['commit', '-m', 'main update'])
+  git(repository, ['push', 'origin', 'main'])
+  const target = git(repository, ['rev-parse', 'HEAD']).trim()
+  git(repository, ['checkout', 'feature'])
+  const featureHead = git(repository, ['rev-parse', 'HEAD']).trim()
+  return { repository, featureHead, target }
+}
+
+function runJsonCli(args: string[], executable?: string): Bun.SyncSubprocess {
+  return Bun.spawnSync(
+    executable
+      ? [executable, ...args]
+      : ['bun', 'run', join(import.meta.dir, 'gwt-sync.ts'), ...args],
+    {
+      stdout: 'pipe',
+      stderr: 'pipe',
+    },
+  )
+}
+
+function parseJsonResult(result: Bun.SyncSubprocess): JsonCliResult {
+  if (!result.stdout) throw new Error('Expected gwt-sync to return JSON on stdout')
+  return JSON.parse(result.stdout.toString()) as JsonCliResult
+}
+
 function createTemporaryDirectory(prefix: string): string {
   const directory = mkdtempSync(join(tmpdir(), prefix))
   temporaryRepositories.push(directory)
   return directory
 }
 
-function createFirstChoiceFzf(): { fakeBin: string; promptLog: string } {
+function createFirstChoiceFzf(): FakeFzfFixture {
   const fakeBin = createTemporaryDirectory('gwt-sync-fake-bin-')
   const promptLog = join(fakeBin, 'prompts.log')
+  const headerLog = join(fakeBin, 'headers.log')
+  const previewLog = join(fakeBin, 'preview.log')
+  const deltaLog = join(fakeBin, 'delta.log')
   const fakeFzf = join(fakeBin, 'fzf')
-  writeFileSync(fakeFzf, [
-    '#!/bin/sh',
-    "prompt=''",
-    "previous=''",
-    'for argument in "$@"; do',
-    '  if [ "$previous" = "--prompt" ]; then',
-    '    prompt=$argument',
-    '    break',
-    '  fi',
-    '  previous=$argument',
-    'done',
-    'input=$(cat)',
-    'printf \'%s\\n\' "$prompt" >> "$GWT_SYNC_TEST_PROMPT_LOG"',
-    'if [ "$prompt" = "Worktree > " ] && [ "${GWT_SYNC_TEST_DIRTY_ON_WORKTREE:-}" = "1" ]; then',
-    '  printf \'late local change\\n\' > "$GWT_SYNC_TEST_REPOSITORY/late.txt"',
-    'fi',
-    'if [ "$prompt" = "Confirm > " ] && [ "${GWT_SYNC_TEST_CONFIRM_SECOND:-}" = "1" ]; then',
-    '  printf \'%s\\n\' "$input" | sed -n \'2p\'',
-    'else',
-    '  printf \'%s\\n\' "$input" | sed -n \'1p\'',
-    'fi',
-    '',
-  ].join('\n'))
+  const fakeDelta = join(fakeBin, 'delta')
+  writeFileSync(
+    fakeFzf,
+    [
+      '#!/bin/sh',
+      'prompt=\'\'',
+      'header=\'\'',
+      'preview=\'\'',
+      'previous=\'\'',
+      'for argument in "$@"; do',
+      '  if [ "$previous" = "--prompt" ]; then',
+      '    prompt=$argument',
+      '  elif [ "$previous" = "--header" ]; then',
+      '    header=$argument',
+      '  elif [ "$previous" = "--preview" ]; then',
+      '    preview=$argument',
+      '  fi',
+      '  previous=$argument',
+      'done',
+      'input=$(cat)',
+      'printf \'%s\\n\' "$prompt" >> "$GWT_SYNC_TEST_PROMPT_LOG"',
+      'if [ "$prompt" = "Confirm > " ] && [ -n "${GWT_SYNC_TEST_HEADER_LOG:-}" ]; then',
+      '  printf \'%s\\n\' "$header" > "$GWT_SYNC_TEST_HEADER_LOG"',
+      'fi',
+      'if [ "$prompt" = "Confirm > " ] && [ -n "${GWT_SYNC_TEST_PREVIEW_LOG:-}" ] && [ -n "$preview" ]; then',
+      '  /bin/sh -c "$preview" > "$GWT_SYNC_TEST_PREVIEW_LOG"',
+      'fi',
+      'if [ "$prompt" = "Worktree > " ] && [ "${GWT_SYNC_TEST_DIRTY_ON_WORKTREE:-}" = "1" ]; then',
+      '  printf \'late local change\\n\' > "$GWT_SYNC_TEST_REPOSITORY/late.txt"',
+      'fi',
+      'if [ "$prompt" = "Confirm > " ] && [ "${GWT_SYNC_TEST_CONFIRM_SECOND:-}" = "1" ]; then',
+      '  printf \'%s\\n\' "$input" | sed -n \'2p\'',
+      'else',
+      '  printf \'%s\\n\' "$input" | sed -n \'1p\'',
+      'fi',
+      '',
+    ].join('\n'),
+  )
+  writeFileSync(
+    fakeDelta,
+    [
+      '#!/bin/sh',
+      'if [ -n "${GWT_SYNC_TEST_DELTA_LOG:-}" ]; then',
+      '  printf \'%s\\n\' "$*" > "$GWT_SYNC_TEST_DELTA_LOG"',
+      'fi',
+      'cat',
+      '',
+    ].join('\n'),
+  )
   chmodSync(fakeFzf, 0o755)
-  return { fakeBin, promptLog }
+  chmodSync(fakeDelta, 0o755)
+  return { fakeBin, promptLog, headerLog, previewLog, deltaLog }
+}
+
+interface FakeFzfFixture {
+  fakeBin: string
+  promptLog: string
+  headerLog: string
+  previewLog: string
+  deltaLog: string
+}
+
+interface JsonCliResult {
+  schemaVersion: number
+  ok: boolean
+  mode: string
+  outcome: string
+  worktree?: {
+    path: string
+    branch: string
+    head: string
+    dirty: boolean
+  }
+  preflight?: {
+    conflicts: {
+      diff: string | null
+    }
+  } | null
+  recovery?: {
+    commands: Array<{
+      action: string
+      argv: string[]
+    }>
+  }
 }
 
 function git(repository: string, args: string[]): string {
@@ -907,11 +1213,13 @@ function git(repository: string, args: string[]): string {
     stderr: 'pipe',
   })
   if (result.exitCode !== 0) {
-    throw new Error([
-      `git ${args.join(' ')} failed`,
-      result.stderr.toString(),
-      result.stdout.toString(),
-    ].filter(Boolean).join('\n'))
+    throw new Error(
+      [
+        `git ${args.join(' ')} failed`,
+        result.stderr.toString(),
+        result.stdout.toString(),
+      ].filter(Boolean).join('\n'),
+    )
   }
   return result.stdout.toString()
 }
