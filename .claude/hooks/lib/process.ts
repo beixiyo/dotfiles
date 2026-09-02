@@ -6,6 +6,8 @@ type ProcessOutput = 'ignore' | 'inherit'
 type RunProcessOptions = {
   cwd?: string
   timeout?: number
+  /** 追加到当前进程环境之上的变量 */
+  env?: Record<string, string>
   stdout?: ProcessOutput
   stderr?: ProcessOutput
 }
@@ -22,6 +24,7 @@ export function runProcess(
   spawnSync(command, args, {
     cwd: options.cwd,
     timeout: options.timeout,
+    env: options.env ? { ...process.env, ...options.env } : undefined,
     windowsHide: true,
     shell: process.platform === 'win32' && /\.(?:bat|cmd)$/i.test(command),
     stdio: [

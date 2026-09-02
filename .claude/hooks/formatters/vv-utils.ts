@@ -26,6 +26,11 @@ export function runNvimCleanTrailing(filePath: string, cwd: string): boolean {
     'update',
     '-c',
     'qa!',
-  ], { cwd })
+  ], {
+    cwd,
+    // 只改行尾不需要 LSP；headless 起一堆 server 又在 2 秒内 qa!，
+    // 会把还没初始化完的 server（oxlint）遗弃成孤儿进程
+    env: { VV_NVIM_NO_LSP: '1' },
+  })
   return true
 }

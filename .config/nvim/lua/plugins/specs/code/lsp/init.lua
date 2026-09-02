@@ -1,6 +1,7 @@
 -- LSP 与代码诊断
 --
 --   watchfiles.lua  —— 修复工作区根落到 $HOME 时 inotify 配额被打爆
+--   lifecycle.lua   —— 退出时兜底停掉未初始化的 client，避免留下孤儿 server 进程
 --   servers/        —— Mason 安装 / server 定义 / vim.lsp.enable
 --   diagnostics.lua —— 诊断外观（sign icon、virtual_text、悬浮窗）
 --   symbols.lua     —— gO 全局符号、go 文档符号（无 LSP 时降级 treesitter）
@@ -18,6 +19,9 @@
 return {
   desc = 'LSP and code diagnostics',
   url = 'https://github.com/neovim/nvim-lspconfig',
+  -- 一次性 headless 任务（如 hook 清理行尾）用 VV_NVIM_NO_LSP=1 跳过整套 LSP：
+  -- 起一堆 server 只为改几行既慢，又容易在 server 初始化完成前退出留下孤儿进程
+  cond = function() return vim.env.VV_NVIM_NO_LSP ~= '1' end,
   main = 'lspconfig',
   dependencies = {
     'https://github.com/mason-org/mason.nvim',
@@ -30,6 +34,7 @@ return {
     -- 顺序有意义：watchfiles 的猴补丁要赶在任何 client 启动前打上；
     -- keymaps 依赖 symbols 导出的 open_workspace_symbols
     require('plugins.specs.code.lsp.watchfiles').setup()
+    require('plugins.specs.code.lsp.lifecycle').setup()
     require('plugins.specs.code.lsp.servers').setup()
     require('plugins.specs.code.lsp.diagnostics').setup()
     require('plugins.specs.code.lsp.symbols').setup()
