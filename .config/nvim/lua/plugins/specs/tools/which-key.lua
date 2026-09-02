@@ -81,10 +81,9 @@ return {
 
     -- Stash push 操作（<leader>gS 前缀）
     local stash = function() return require('plugins.specs.ui.telescope.git.stash') end
-    vim.keymap.set('n', '<leader>gSp', function() stash().push_all() end,       { desc = 'Stash: push all' })
-    vim.keymap.set('n', '<leader>gSs', function() stash().push_staged() end,    { desc = 'Stash: push staged only' })
-    vim.keymap.set('n', '<leader>gSu', function() stash().push_untracked() end, { desc = 'Stash: push + untracked' })
-    vim.keymap.set('n', '<leader>gSm', function() stash().push_message() end,   { desc = 'Stash: push with message' })
+    vim.keymap.set('n', '<leader>gSp', function() stash().push_all() end,     { desc = 'Stash: push all changes' })
+    vim.keymap.set('n', '<leader>gSs', function() stash().push_staged() end,  { desc = 'Stash: push staged only' })
+    vim.keymap.set('n', '<leader>gSm', function() stash().push_message() end, { desc = 'Stash: push all with message' })
 
     wk.add({
       { '<leader>gl', icon = { icon = icons.git_branches, color = 'red' } },
@@ -95,7 +94,6 @@ return {
       { '<leader>gS',  group = 'stash push',                icon = { icon = icons.git_stash, color = 'purple' } },
       { '<leader>gSp', icon = { icon = icons.git_added,   color = 'green'  } },
       { '<leader>gSs', icon = { icon = icons.git_added,   color = 'yellow' } },
-      { '<leader>gSu', icon = { icon = icons.git_added,   color = 'cyan'   } },
       { '<leader>gSm', icon = { icon = icons.git_stash,   color = 'purple' } },
     })
 

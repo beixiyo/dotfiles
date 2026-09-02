@@ -1,5 +1,5 @@
 -- stash 管理：apply / pop / drop + delta diff 预览
--- stash push：push_all / push_staged / push_untracked / push_message
+-- stash push：push_all / push_staged / push_message
 local M = {}
 local Git = require('plugins.specs.ui.telescope.git.shared')
 local Keys = require('vv-utils.keys')
@@ -17,9 +17,9 @@ local function do_push(args, label)
   end
 end
 
---- 暂存所有已跟踪变更（working tree + index）
+--- 暂存所有非忽略变更（index + working tree + untracked）
 function M.push_all()
-  do_push({}, 'Stash created')
+  do_push({ '--include-untracked' }, 'Stash created with all changes')
 end
 
 --- 只暂存 index（staged）区域，working tree 不动
@@ -27,16 +27,12 @@ function M.push_staged()
   do_push({ '--staged' }, 'Stash created from staged changes')
 end
 
---- 暂存所有变更，包含 untracked 文件
-function M.push_untracked()
-  do_push({ '--include-untracked' }, 'Stash created with untracked files')
-end
-
---- 弹出输入框，以自定义消息暂存所有变更
+--- 弹出输入框，以自定义消息暂存所有非忽略变更
 function M.push_message()
   vim.ui.input({ prompt = 'Stash message: ' }, function(msg)
     if msg == nil then return end -- 按 Esc 取消
-    local args = msg ~= '' and { '-m', msg } or {}
+    local args = { '--include-untracked' }
+    if msg ~= '' then vim.list_extend(args, { '-m', msg }) end
     do_push(args, 'Stash created: ' .. (msg ~= '' and ('"' .. msg .. '"') or '(no message)'))
   end)
 end
