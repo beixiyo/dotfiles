@@ -85,7 +85,7 @@
 
 **特殊键透传**：`Ctrl+`` 与 `Ctrl+Shift+L` 由终端显式发送 CSI-u 序列，绕过 legacy 编码和 tmux 重编码，分别供 Neovim 终端切换与多光标使用
 
-**Kitty 双模式**：支持 native（Kitty 原生 tab + pane + smart-splits）和 tmux（tab/pane 全交给 tmux）两种窗口管理模式，当前默认 tmux 模式
+**Kitty 双模式**：支持 native（Kitty 原生 tab + pane，Nvim 内由 vv-splits 透传）和 tmux（tab/pane 全交给 tmux）两种窗口管理模式，当前默认 tmux 模式
 
 **WezTerm 特有**：启用 Kitty keyboard protocol；native 模式按前台进程判断是否把 `Ctrl+Alt+H/J/K/L` 与方向键透传给 Neovim，tmux 模式则显式发送 CSI-u 序列
 

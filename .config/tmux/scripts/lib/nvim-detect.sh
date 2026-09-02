@@ -2,11 +2,10 @@
 #
 # POSIX sh，供 pane-nav.sh 和 send-to-pane.sh 共用。只提供判定，不做任何动作
 #
-# ── 为什么不读 @pane-is-vim ──
-# 那是 smart-splits 写的「状态」而不是事实。nvim 被 kill、崩溃，或插件 on_exit
-# 里把 0 写错了 pane（它的 display-message 没带 -t，取到的是当前活动 pane 而不是
-# nvim 自己那个），都会留下 @pane-is-vim=1 的残留。带着残留的 pane 会被永久误判
-# 成 vim —— 导航切不出去，send-to-pane 也找不到投递目标
+# ── 为什么只看实时前台状态 ──
+# vv-splits 不写「pane 里曾经启动过 nvim」一类持久 marker。nvim 被 kill、崩溃、
+# 挂起或转入后台后，历史状态都不能代表当前谁正在占用终端；导航和内容投递必须
+# 从 pane 的真实前台进程与进程组重新判断
 #
 # ── 为什么不用 `ps -t <tty> | grep vim` ──
 # 那是 vim-tmux-navigator 的经典做法，能顺带覆盖 sudo / 包装脚本，但它扫的是整个

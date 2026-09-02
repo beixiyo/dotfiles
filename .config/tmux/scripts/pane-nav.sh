@@ -1,12 +1,12 @@
 #!/bin/sh
 # Ctrl+Alt+hjkl / Ctrl+Alt+方向键 的统一入口：决定这次按键是
-#   透传给 pane 里的程序（nvim 的 smart-splits、或远端会话自己处理）
+#   透传给 pane 里的程序（nvim 的 vv-splits、或远端会话自己处理）
 #   还是由 tmux 自己切 pane / 调大小
 #
 # 用法：pane-nav.sh <move|resize> <h|j|k|l> <pane_id>
 #
 # 「这个 pane 前台到底是不是 nvim」的判定在 lib/nvim-detect.sh，
-# 那边有完整的取舍说明（为什么不读 @pane-is-vim、为什么不扫整个 tty）
+# 那边有完整的取舍说明（为什么读前台进程组、为什么不扫整个 tty）
 
 set -eu
 

@@ -22,14 +22,17 @@ return {
       group = vim.api.nvim_create_augroup('TroubleQfReplace', {}),
       callback = function()
         if vim.bo.buftype == 'quickfix' then
-          vim.schedule(function() vim.cmd('cclose') vim.cmd('Trouble qflist open') end)
+          vim.schedule(function()
+            vim.cmd('cclose')
+            vim.cmd('Trouble qflist open')
+          end)
         end
       end,
     })
 
     -- pretty_dark(本地 fork) 的 CursorLine(#23262c=bg_highlight) 是低饱和冷灰，叠在面板底色
-    -- (NormalFloat #141311) 上色相/亮度都太接近，跟随高亮像「同一片黑」看不清。
-    -- 换成蓝调的 Visual(#213246) 一拉开色相就跳出来。按 hl 组名引用、不动全局、换主题自动适配。
+    -- (NormalFloat #141311) 上色相/亮度都太接近，跟随高亮像「同一片黑」看不清
+    -- 换成蓝调的 Visual(#213246) 一拉开色相就跳出来。按 hl 组名引用、不动全局、换主题自动适配
     -- 想换风格改这里：Visual(蓝,当前) / PmenuSel(#3f4653 浅冷灰) / TabLineSel(#4aa5f0 亮蓝)
     local CURSORLINE_HL = 'Visual'
     vim.api.nvim_create_autocmd('FileType', {
@@ -38,7 +41,9 @@ return {
       callback = function(ev)
         vim.schedule(function()
           local win = vim.fn.bufwinid(ev.buf)
-          if win == -1 or not vim.api.nvim_win_is_valid(win) then return end
+          if win == -1 or not vim.api.nvim_win_is_valid(win) then
+            return
+          end
           local wh = vim.wo[win].winhighlight
           if not wh:find('CursorLine:') then
             vim.wo[win].winhighlight = (wh == '' and '' or wh .. ',') .. 'CursorLine:' .. CURSORLINE_HL
@@ -49,7 +54,7 @@ return {
 
     -- 预览高亮「穿透」render-markdown：符号树聚焦某符号时，trouble 在源文件上打两个 extmark——
     -- 整行 CursorLine(priority 150) + 符号范围 TroublePreview(priority 160)。但 render-markdown
-    -- 的标题底色是 priority 4096 的整行 bg，把这两个底色都盖住了，markdown 下根本看不出选中的是谁。
+    -- 的标题底色是 priority 4096 的整行 bg，把这两个底色都盖住了，markdown 下根本看不出选中的是谁
     --
     -- nvim 对重叠 extmark 是「按属性合并、冲突取高 priority」：底色之争 render-markdown 必赢，
     -- 但 bold / underline 这类它没设的属性会照常透出来。故把 TroublePreview 改成
@@ -142,15 +147,15 @@ return {
         filter = function(items)
           -- 各语言 import 语句的「行首关键字」，覆盖主流语言
           local IMPORT_KW = {
-            import = true,           -- JS/TS、Python、Java、Kotlin、Dart、Swift、Scala
-            from = true,             -- Python: from x import y
-            use = true,              -- Rust、PHP
-            using = true,            -- C#、C++
-            require = true,          -- CommonJS、Ruby、PHP、Lua 裸调用
+            import = true, -- JS/TS、Python、Java、Kotlin、Dart、Swift、Scala
+            from = true, -- Python: from x import y
+            use = true, -- Rust、PHP
+            using = true, -- C#、C++
+            require = true, -- CommonJS、Ruby、PHP、Lua 裸调用
             require_relative = true, -- Ruby
-            include = true,          -- PHP、Ruby
-            alias = true,            -- Elixir
-            extern = true,           -- Rust: extern crate
+            include = true, -- PHP、Ruby
+            alias = true, -- Elixir
+            extern = true, -- Rust: extern crate
           }
           -- CSS/SCSS at-rule 导入：@import / @use / @forward
           local CSS_AT = { import = true, use = true, forward = true }
@@ -164,7 +169,9 @@ return {
             line = vim.trim(line)
 
             local at = line:match('^@([%a_]+)')
-            if at then return CSS_AT[at] == true end
+            if at then
+              return CSS_AT[at] == true
+            end
 
             -- 贪婪取行首第一个词，天然带边界，不会误伤 imports / useState 等
             local first = line:match('^([%w_]+)')
@@ -174,14 +181,18 @@ return {
           -- buffer 整行缓存（import 段扫描 + 函数值判断都要用整行，item.item.text 不可靠）
           local lines_cache = {}
           local function buf_lines(buf)
-            if not lines_cache[buf] then lines_cache[buf] = vim.api.nvim_buf_get_lines(buf, 0, -1, false) end
+            if not lines_cache[buf] then
+              lines_cache[buf] = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+            end
             return lines_cache[buf]
           end
 
           -- 计算 buffer 内所有 import 语句覆盖的 0-based 行号集合（对齐 LSP range.start.line）
           local imp_cache = {}
           local function import_lines(buf)
-            if imp_cache[buf] then return imp_cache[buf] end
+            if imp_cache[buf] then
+              return imp_cache[buf]
+            end
 
             local set, in_block = {}, false
             for i, raw in ipairs(buf_lines(buf)) do
@@ -190,11 +201,15 @@ return {
               if in_block then
                 set[lnum] = true
                 -- 多行 import 段收尾：闭合括号或 from 子句
-                if line:find('[}%)]') or line:match('^from%f[%W]') then in_block = false end
+                if line:find('[}%)]') or line:match('^from%f[%W]') then
+                  in_block = false
+                end
               elseif is_import_line(line) then
                 set[lnum] = true
                 -- 起始行打开括号且本行未闭合 → 进入多行 import 段
-                if line:find('[{%(]') and not line:find('[}%)]') then in_block = true end
+                if line:find('[{%(]') and not line:find('[}%)]') then
+                  in_block = true
+                end
               end
             end
 
@@ -209,7 +224,9 @@ return {
             local to = math.min(item.end_pos and item.end_pos[1] or from, from + 2)
             for r = from, to do
               local l = lines[r]
-              if l and (l:find('=>') or l:find('%f[%w]function%f[%W]')) then return true end
+              if l and (l:find('=>') or l:find('%f[%w]function%f[%W]')) then
+                return true
+              end
             end
             return false
           end
@@ -218,7 +235,9 @@ return {
           local function inside_function(item)
             local p = item.parent
             while p do
-              if FN_KIND[p.kind] then return true end
+              if FN_KIND[p.kind] then
+                return true
+              end
               p = p.parent
             end
             return false
@@ -229,7 +248,10 @@ return {
           for _, it in ipairs(items) do
             if FN_KIND[it.kind] then
               local p = it.parent
-              while p do has_fn_descendant[p] = true; p = p.parent end
+              while p do
+                has_fn_descendant[p] = true
+                p = p.parent
+              end
             end
           end
 
@@ -237,7 +259,9 @@ return {
             local buf = item.buf
             local ft = buf and vim.bo[buf].filetype
 
-            if ft == 'lua' and item.kind == 'Package' then return false end
+            if ft == 'lua' and item.kind == 'Package' then
+              return false
+            end
             -- import 也归入 show_locals 开关：按 H 切到「显示」时一并还原
             if not symbols_state.show_locals and buf and item.pos and import_lines(buf)[item.pos[1] - 1] then
               return false
@@ -247,7 +271,8 @@ return {
             --   ① 函数体内（局部变量）或 ② 对象字面量内（直接 parent 是 Variable/Constant）时隐藏
             -- （H 可切换；class/interface/enum 成员的 parent 不是 VAR_KIND，不受影响）
             local in_object = item.parent and VAR_KIND[item.parent.kind]
-            if not symbols_state.show_locals
+            if
+              not symbols_state.show_locals
               and buf
               and VAR_KIND[item.kind]
               and not has_fn_descendant[item]
@@ -261,10 +286,6 @@ return {
           end, items)
         end,
         keys = {
-          -- 面板内直接 vertical resize：绕开 smart-splits 对 nofile 面板的方向/焦点 bug
-          -- （buffer-local 映射，仅在符号面板内覆盖全局 <C-A-Arrow>）
-          ['<C-A-Right>'] = { action = function() vim.cmd('vertical resize +3') end, desc = 'Widen panel' },
-          ['<C-A-Left>']  = { action = function() vim.cmd('vertical resize -3') end, desc = 'Narrow panel' },
           -- 符号树没有诊断 severity，禁用 trouble 默认的 s(severity 过滤，会显示 Filter: ERROR)
           -- 设 false 即不注册 buffer-local s，让全局 flash 的 s 在面板内生效
           s = false,
@@ -274,8 +295,11 @@ return {
             action = function(self)
               symbols_state.show_locals = not symbols_state.show_locals
               local on = symbols_state.show_locals
-              vim.notify(on and 'Detail symbols shown (imports / local variables / object properties)'
-                or 'Detail symbols hidden (imports / local variables / object properties)', vim.log.levels.INFO)
+              vim.notify(
+                on and 'Detail symbols shown (imports / local variables / object properties)'
+                  or 'Detail symbols hidden (imports / local variables / object properties)',
+                vim.log.levels.INFO
+              )
               self:refresh()
             end,
             desc = 'Toggle detail symbols',

@@ -117,7 +117,7 @@ tmux server（后台守护进程）
 | 调整 pane 大小 | `Ctrl+Alt+←↓↑→` |
 | 右键 | 直接粘贴剪贴板 |
 
-> **Neovim 透传**：pane 内运行 nvim 时，`Ctrl+Alt+H/J/K/L` 会透传给 nvim（smart-splits），实现 nvim split 和 tmux pane 无缝导航
+> **Neovim 透传**：pane 内运行 nvim 时，`Ctrl+Alt+H/J/K/L` 会透传给 nvim（vv-splits），实现 nvim split 和 tmux pane 无缝导航
 
 ---
 

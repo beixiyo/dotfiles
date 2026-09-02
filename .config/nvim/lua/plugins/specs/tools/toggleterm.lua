@@ -6,22 +6,25 @@ return {
   url = 'https://github.com/akinsho/toggleterm.nvim',
   main = 'toggleterm',
 
-  cmd = { 'ToggleTerm', 'ToggleTermToggleAll', 'TermExec',
-    'ToggleTermSendCurrentLine', 'ToggleTermSendVisualLines', 'ToggleTermSendVisualSelection' },
+  cmd = { 'ToggleTerm', 'ToggleTermToggleAll', 'TermExec', 'ToggleTermSendCurrentLine', 'ToggleTermSendVisualLines', 'ToggleTermSendVisualSelection' },
 
   keys = {
     -- <leader>tt 移到 config/keymaps/tmux.lua：tmux 下走 popup，不加载本插件
-    { '<C-@>',      '<cmd>ToggleTerm<cr>',                        mode = { 'n', 't' }, desc = 'Toggle term' },
-    { '<leader>tf', '<cmd>ToggleTerm direction=float<cr>',        desc = 'Float term' },
-    { '<leader>th', '<cmd>ToggleTerm direction=horizontal<cr>',   desc = 'Horizontal term' },
-    { '<leader>tv', '<cmd>ToggleTerm direction=vertical<cr>',     desc = 'Vertical term' },
+    { '<C-@>', '<cmd>ToggleTerm<cr>', mode = { 'n', 't' }, desc = 'Toggle term' },
+    { '<leader>tf', '<cmd>ToggleTerm direction=float<cr>', desc = 'Float term' },
+    { '<leader>th', '<cmd>ToggleTerm direction=horizontal<cr>', desc = 'Horizontal term' },
+    { '<leader>tv', '<cmd>ToggleTerm direction=vertical<cr>', desc = 'Vertical term' },
   },
 
   ---@type ToggleTermConfig
   opts = {
     size = function(term)
-      if term.direction == 'horizontal' then return 15 end
-      if term.direction == 'vertical' then return math.floor(vim.o.columns * 0.4) end
+      if term.direction == 'horizontal' then
+        return 15
+      end
+      if term.direction == 'vertical' then
+        return math.floor(vim.o.columns * 0.4)
+      end
       return 20
     end,
     open_mapping = [[<C-@>]],
@@ -46,7 +49,7 @@ return {
     require('toggleterm').setup(opts)
 
     -- 终端模式内：jk / <esc> 回到 normal；normal 模式下 q 关闭终端
-    -- 窗口焦点切换由 smart-splits <C-A-h/j/k/l> 统一处理
+    -- 窗口焦点切换由 vv-splits <C-A-h/j/k/l> 统一处理
     vim.api.nvim_create_autocmd('TermOpen', {
       pattern = 'term://*toggleterm#*',
       callback = function(args)

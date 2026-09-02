@@ -25,7 +25,7 @@ config-file = ?modules/matugen-colors.config
 # ╭─────────────────────────────────────────────────────╮
 # │       Window 管理模式（二选一，注释切换）             │
 # ╰─────────────────────────────────────────────────────╯
-# native：Ghostty 原生 tab + split（无 smart-splits 透传，详见 keys-native.config 注释）
+# native：Ghostty 原生 tab + split（无 vv-splits 透传，详见 keys-native.config 注释）
 # tmux  ：tab / pane 全交给 tmux，由 tmux 条件 bind 无缝切换
 #
 # 默认 tmux 模式；切回 Ghostty 原生，注释下面一行、取消注释上面一行

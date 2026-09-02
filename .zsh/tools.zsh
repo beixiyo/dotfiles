@@ -9,6 +9,15 @@ autoload -Uz add-zsh-hook
 add-zsh-hook precmd _set_term_title
 add-zsh-hook preexec _set_term_title
 
+# Kitty native 模式用 user-var 把 pane 键透传给 Nvim；shell 重新拿回前台时清理，
+# 覆盖 Nvim 被 kill / 崩溃、来不及执行 VimLeavePre 的情况。嵌入 Nvim 的终端保留
+# 外层标记，tmux 模式则由 tmux 路由
+_clear_kitty_nvim_var() {
+  [[ -n "${KITTY_WINDOW_ID:-}" && -z "${TMUX:-}" && -z "${NVIM:-}" ]] || return
+  print -n $'\e]1337;SetUserVar=IS_NVIM\a'
+}
+add-zsh-hook precmd _clear_kitty_nvim_var
+
 
 # ── init 缓存：shell 集成脚本只在工具升级时重建，平时直接 source ──
 # 失效条件：缓存文件不存在，或工具 binary 比缓存新

@@ -2,9 +2,8 @@
 # 把 stdin 投递到当前 tmux window 里第一个不是 nvim 的 pane
 # 从 nvd 拉起的 Neovide 调用时，优先投递回启动它的那个 tmux window
 #
-# 「哪个 pane 是 nvim」的判定在 lib/nvim-detect.sh。不读 smart-splits 写的
-# @pane-is-vim —— 那个状态会在 nvim 被 kill / 崩溃后残留，让整个 window 的
-# pane 全被误判成 vim，于是永远找不到投递目标
+# 「哪个 pane 是 nvim」的判定在 lib/nvim-detect.sh。只读真实前台进程，避免
+# nvim 被 kill、崩溃或挂起后留下历史状态，让整个 window 找不到投递目标
 
 set -eu
 

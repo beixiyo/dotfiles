@@ -166,10 +166,6 @@
       "rev": "54d4b5431e9634ee3d8d30784e017239b5b89d41",
       "src": "https://github.com/MeanderingProgrammer/render-markdown.nvim"
     },
-    "smart-splits.nvim": {
-      "rev": "78b9d3bd21fe479690ae5e08a1bf3602698466d8",
-      "src": "https://github.com/mrjones2014/smart-splits.nvim"
-    },
     "supermaven-nvim": {
       "rev": "07d20fce48a5629686aefb0a7cd4b25e33947d50",
       "src": "https://github.com/supermaven-inc/supermaven-nvim"
