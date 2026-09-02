@@ -4,7 +4,9 @@
 -- 检查 fzf-native 是否启用: lua print(require('telescope').extensions.fzf and '✓' or '✗')
 local function get_visual_selection()
   local mode = vim.fn.mode()
-  if not vim.tbl_contains({ 'v', 'V', '\22' }, mode) then return nil end
+  if not vim.tbl_contains({ 'v', 'V', '\22' }, mode) then
+    return nil
+  end
 
   local lines = vim.fn.getregion(vim.fn.getpos('v'), vim.fn.getpos('.'), { type = mode })
   return table.concat(lines, '\n')
@@ -21,7 +23,9 @@ end
 
 local function visual_grep_string()
   local selection = get_visual_selection()
-  if not selection or selection == '' then return end
+  if not selection or selection == '' then
+    return
+  end
 
   require('plugins.specs.ui.telescope.toggles').grep_string({
     search = selection,
@@ -31,7 +35,9 @@ end
 
 local function visual_live_grep()
   local selection = get_visual_selection()
-  if not selection or selection == '' then return end
+  if not selection or selection == '' then
+    return
+  end
 
   local default_text, additional_args, initial_fixed_strings = live_grep_selection_opts(selection)
   require('plugins.specs.ui.telescope.toggles').live_grep({
@@ -60,22 +66,113 @@ return {
   keys = function()
     local icons = require('vv-icons')
     return {
-      { '<leader>fr', function() require('plugins.specs.ui.telescope.recent').open() end, desc = icons.recent_files .. ' Recent files' },
-      { '<leader>fc', function() require('plugins.specs.ui.telescope.toggles').find_files({ cwd = vim.fn.stdpath('config') }) end, desc = icons.config_files .. ' Config files' },
-      { '<leader>fb', function() require('telescope.builtin').buffers() end, desc = icons.buffers .. ' Buffers' },
-      { '<leader>fh', function() require('telescope.builtin').command_history() end, desc = icons.command_history .. ' Command history' },
-      { '<leader>fm', function() require('telescope.builtin').marks() end, desc = icons.marks .. ' Marks' },
-      { '<leader>fj', function() require('telescope.builtin').jumplist() end, desc = icons.jumps .. ' Jumps' },
-      { '<leader>fk', function() require('telescope.builtin').keymaps() end, desc = icons.keymaps .. ' Keymaps' },
-      { '<leader>fM', function() require('plugins.specs.ui.telescope.macro').open(require('telescope.themes').get_dropdown()) end, desc = icons.registers .. ' Macros' },
-      { '<leader>f?', function() require('telescope.builtin').builtin() end, desc = icons.tools .. ' Telescope tools' },
+      {
+        '<leader>fr',
+        function()
+          require('plugins.specs.ui.telescope.recent').open()
+        end,
+        desc = icons.recent_files .. ' Recent files',
+      },
+      {
+        '<leader>br',
+        function()
+          require('plugins.specs.ui.telescope.scratch').open()
+        end,
+        desc = icons.recent_files .. ' Scratch recovery',
+      },
+      {
+        '<leader>fc',
+        function()
+          require('plugins.specs.ui.telescope.toggles').find_files({ cwd = vim.fn.stdpath('config') })
+        end,
+        desc = icons.config_files .. ' Config files',
+      },
+      {
+        '<leader>fb',
+        function()
+          require('telescope.builtin').buffers()
+        end,
+        desc = icons.buffers .. ' Buffers',
+      },
+      {
+        '<leader>fh',
+        function()
+          require('telescope.builtin').command_history()
+        end,
+        desc = icons.command_history .. ' Command history',
+      },
+      {
+        '<leader>fm',
+        function()
+          require('telescope.builtin').marks()
+        end,
+        desc = icons.marks .. ' Marks',
+      },
+      {
+        '<leader>fj',
+        function()
+          require('telescope.builtin').jumplist()
+        end,
+        desc = icons.jumps .. ' Jumps',
+      },
+      {
+        '<leader>fk',
+        function()
+          require('telescope.builtin').keymaps()
+        end,
+        desc = icons.keymaps .. ' Keymaps',
+      },
+      {
+        '<leader>fM',
+        function()
+          require('plugins.specs.ui.telescope.macro').open(require('telescope.themes').get_dropdown())
+        end,
+        desc = icons.registers .. ' Macros',
+      },
+      {
+        '<leader>f?',
+        function()
+          require('telescope.builtin').builtin()
+        end,
+        desc = icons.tools .. ' Telescope tools',
+      },
 
-      { '<leader>ff', function() require('plugins.specs.ui.telescope.toggles').find_files() end, desc = icons.find_file .. ' Find files' },
-      { '<leader>sb', function() require('telescope.builtin').current_buffer_fuzzy_find() end, desc = icons.find_text .. ' Find in buffer' },
-      { '<leader>sg', function() require('plugins.specs.ui.telescope.toggles').live_grep() end, desc = icons.find_text .. ' Find text' },
+      {
+        '<leader>ff',
+        function()
+          require('plugins.specs.ui.telescope.toggles').find_files()
+        end,
+        desc = icons.find_file .. ' Find files',
+      },
+      {
+        '<leader>sb',
+        function()
+          require('telescope.builtin').current_buffer_fuzzy_find()
+        end,
+        desc = icons.find_text .. ' Find in buffer',
+      },
+      {
+        '<leader>sg',
+        function()
+          require('plugins.specs.ui.telescope.toggles').live_grep()
+        end,
+        desc = icons.find_text .. ' Find text',
+      },
       { '<leader>sg', visual_live_grep, mode = 'x', desc = icons.find_text .. ' Search selection' },
-      { '<leader>sh', function() require('telescope.builtin').help_tags() end, desc = icons.commands .. ' Help tags' },
-      { '<leader>sw', function() require('plugins.specs.ui.telescope.toggles').grep_string() end, desc = icons.words .. ' Find word' },
+      {
+        '<leader>sh',
+        function()
+          require('telescope.builtin').help_tags()
+        end,
+        desc = icons.commands .. ' Help tags',
+      },
+      {
+        '<leader>sw',
+        function()
+          require('plugins.specs.ui.telescope.toggles').grep_string()
+        end,
+        desc = icons.words .. ' Find word',
+      },
       { '<leader>sw', visual_grep_string, mode = 'x', desc = icons.words .. ' Find selection' },
     }
   end,
@@ -89,7 +186,11 @@ return {
       defaults = {
         get_selection_window = function()
           local win = vim.api.nvim_get_current_win()
-          if not vim.wo[win].winfixbuf then return 0 end
+
+          if not vim.wo[win].winfixbuf then
+            return 0
+          end
+
           for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
             local cfg = vim.api.nvim_win_get_config(w)
             if w ~= win and cfg.relative == '' and not vim.wo[w].winfixbuf then
@@ -124,7 +225,7 @@ return {
             ['<esc>'] = actions.close,
             ['<C-n>'] = actions.move_selection_next,
             ['<C-p>'] = actions.move_selection_previous,
-            ['<Up>']  = actions.cycle_history_prev,
+            ['<Up>'] = actions.cycle_history_prev,
             ['<Down>'] = actions.cycle_history_next,
             ['<C-d>'] = actions.preview_scrolling_down,
             ['<C-u>'] = actions.preview_scrolling_up,
@@ -136,7 +237,7 @@ return {
             end,
           },
           n = {
-            ['q']     = actions.close,
+            ['q'] = actions.close,
             ['<esc>'] = actions.close,
             ['<C-n>'] = actions.move_selection_next,
             ['<C-p>'] = actions.move_selection_previous,
@@ -165,6 +266,11 @@ return {
         },
       },
     })
+
+    -- 草稿选择器命令挂在 telescope 这一层，config.scratch 不反向依赖插件
+    vim.api.nvim_create_user_command('VVScratchPick', function()
+      require('plugins.specs.ui.telescope.scratch').open()
+    end, { desc = '浏览并打开临时草稿' })
 
     -- 加载 C sorter；build 未完成时会失败，pcall 兜底，不影响基础功能
     pcall(telescope.load_extension, 'fzf')
