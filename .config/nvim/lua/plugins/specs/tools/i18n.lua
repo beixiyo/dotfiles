@@ -1,7 +1,7 @@
 -- vv-i18n.nvim — 通用 TS/TSX i18n 预览 / 跳转 / 同步改（对标 lokalise · i18n-ally）
 -- 源码在 vendors/vv-i18n.nvim（走 pack.dev 本地重定向），可独立发布；包内默认中性
 --
--- 本 spec 的 opts = 本机项目接入：多源 mono-repo。
+-- 本 spec 的 opts = 本机项目接入：多源 mono-repo
 -- - packages/comps：top-key 布局 + comps 前缀 + useT
 -- - app / desktop renderer：react-i18next filename 布局
 -- - tiptap-editor：flat 布局 + tiptap 固定前缀
