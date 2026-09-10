@@ -179,9 +179,9 @@ export type CompProps = { } & React.PropsWithChildren<React.HTMLAttributes<HTMLE
   const handleClick = () => { ... }
   ```
 
-- **命名规范**：自定义 Hooks 必须以 `use` 开头（如 `useFetch`、`useForm`），这是 React 识别 Hook 的唯一方式
-- **调用顺序**：组件每次渲染时，Hooks 必须以相同的顺序调用，这是 React 正确工作的前提
-- **依赖数组**：useEffect、useMemo 的依赖数组必须包含所有外部引用的变量；**回调一律用 useLatestCallback，无需把函数放进依赖项**
+- **命名规范**：自定义 Hooks 必须以 `use` 开头（如 `useFetch`、`useForm`）
+- **调用顺序**：组件每次渲染时，Hooks 必须以相同的顺序调用
+- **依赖数组**：useEffect、useMemo 的依赖数组必须包含所有外部引用的变量；**回调用 useLatestCallback，无需把函数放进依赖项**
 - **不要在普通函数中调用 Hooks**：Hooks 只能在 React 组件或自定义 Hook 中调用
 
 ### useEffect 使用规范
@@ -294,16 +294,15 @@ const fn2 = () => {
 
 ### useStable (引用稳定化)
 - **准则**：仅针对可能导致死循环的**复杂对象/数组**使用（如用户经常直接传入的 `options={{...}}`）
-- **禁止基础类型**：严禁对 string, number, boolean 等基础类型使用
-  - *原因*：React 依赖项对比（Object.is）对基础类型天然高效，封装 `useStable` 会引入多余的 Ref 存储和 `deepCompare` 计算开销
+- **禁止基础类型**：严禁对 string, number, boolean 等基础类型使用。因为 React 依赖项对比（Object.is）基础类型
 
 ---
 
 ## 状态管理 Signal
 Signal 可以有效解决 React 闭包陷阱等问题。以下规则仅适用于已采用 `@preact/signals-react` 的项目
 
-1. **通用组件库**（`src/components`、`packages/comps`）：不使用 signal（`@preact/signals-react`），以保证组件库的可移植性与兼容性。可以使用 React 内置 API 以及项目自有的 `hooks`、`utils` 等 workspace 包
-2. **其他所有地方**（业务页面、业务组件、状态共享等）：优先使用 `@preact/signals-react`（signal、computed、useSignal 等），避免无必要的 useState/useReducer
+1. **通用组件库** `packages/comps` 不使用 signal（`@preact/signals-react`），以保证组件库的可移植性与兼容性
+2. **其他地方**（业务页面、业务组件、状态共享等）：优先使用 `@preact/signals-react`（signal、computed、useSignal 等），避免无必要的 useState/useReducer
 
 | 类型 | 说明 | 参考 |
 |------|------|------|

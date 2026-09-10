@@ -4,6 +4,9 @@ description: 编写或修改 Vue/SFC/组合式 API/script setup/v-model 组件�
 ---
 
 ## 项目结构
+
+以下内部包和样式约定用于用户自己的项目；先确认依赖、别名和现有配置。外部项目遵循其规范，不强加内部包或深色模式方案。模板只展示结构，按实际需求声明有严格类型的 props / emits / model
+
 ```ts
 import { } from 'hooks' // (packages/hooks)
 import { Button, ... } from 'comps' // (packages/comps)
