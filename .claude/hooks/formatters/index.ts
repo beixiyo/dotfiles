@@ -53,10 +53,10 @@ export function formatFile(filePath: string, cwd: string): void {
   const extension = path.extname(filePath).toLowerCase()
   runNvimCleanTrailing(filePath, cwd)
 
-  if (extension === '.lua') {
-    runDprint(filePath, cwd)
-    return
-  }
+  // if (extension === '.lua') {
+  //   runDprint(filePath, cwd)
+  //   return
+  // }
 
   if (!CODE_EXTENSIONS.has(extension)) return
   if (!fs.existsSync(filePath)) return
