@@ -1,4 +1,5 @@
 -- 诊断 / LSP 引用列表（按文件分组，类似 VSCode）
+-- 已在 user-picks.lua 禁用：连续 resize 会卡住，筛选与源码引用计数改用 vv-symbols
 
 -- 文档符号树的「显示局部变量」开关（默认隐藏函数内局部变量噪音）
 -- 被 doc_symbols 的 filter 与 H 键共享：H 翻转它再 refresh，filter 据此决定是否隐藏

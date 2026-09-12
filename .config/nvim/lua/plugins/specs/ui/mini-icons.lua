@@ -21,7 +21,7 @@ return {
 
   config = function(_, opts)
     require('mini.icons').setup(opts)
-    -- 让 lualine / bufferline / trouble 等依赖 nvim-web-devicons 的插件统一走 mini.icons
+    -- 让 lualine / bufferline 等依赖 nvim-web-devicons 的插件统一走 mini.icons
     MiniIcons.mock_nvim_web_devicons()
   end,
 }

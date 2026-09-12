@@ -46,18 +46,16 @@ function M.open_workspace_symbols()
   require('telescope.builtin').lsp_dynamic_workspace_symbols(opts)
 end
 
--- go 文档符号：LSP 优先（Trouble 面板），无 LSP 时降级到 telescope treesitter 符号
+-- go 文档符号：LSP 优先（vv-symbols 面板），无 LSP 时降级到 telescope treesitter 符号
 -- 适合 markdown/man/conf 等没有 LSP 的 filetype
 local function open_document_symbols()
+  local active = package.loaded['vv-symbols']
+  if active and active.is_open() then return active.close() end
   local buf = vim.api.nvim_get_current_buf()
   local clients = vim.lsp.get_clients({ bufnr = buf, method = 'textDocument/documentSymbol' })
 
   if #clients > 0 then
-    local trouble = require('trouble')
-    if trouble.is_open('doc_symbols') then
-      return trouble.close('doc_symbols')
-    end
-
+    local symbols = require('vv-symbols')
     -- 符号树和 vv-explorer 都在左侧，避免同时占用：开符号树前先关文件树
     -- 只在 vv-explorer 已加载时检查（不强行 require 一个没用过的插件）
     pcall(function()
@@ -65,21 +63,7 @@ local function open_document_symbols()
       if explorer and explorer.is_open() then explorer.close() end
     end)
 
-    local view = trouble.open({ mode = 'doc_symbols', focus = true })
-    if not view then return end
-
-    -- 数据就绪后设 foldlevel，触发 trouble 的 OptionSet 钩子 → fold_level（会重渲染）
-    -- 代码：filter 已剔除 import / 函数内局部变量噪音（见 trouble.lua），剩下的是「干净结构大纲」，
-    --       故 foldlevel=99 全展开，一眼看到所有函数；噪音用 H 键按需显示
-    -- markdown：标题按层级嵌套，foldlevel=4 展示一~四级标题，仅折叠四级以下（H5+）
-    local fold_level = vim.bo[buf].filetype == 'markdown' and 4 or 99
-
-    view:wait(function()
-      local win = view.win and view.win.win
-      if win and vim.api.nvim_win_is_valid(win) then
-        vim.api.nvim_win_call(win, function() vim.cmd('setlocal foldlevel=' .. fold_level) end)
-      end
-    end)
+    symbols.open({ buf = buf })
   else
     -- 无 LSP：尝试 telescope treesitter（依赖 locals.scm，仅代码类语言有）
     local lang = vim.treesitter.language.get_lang(vim.bo[buf].filetype)

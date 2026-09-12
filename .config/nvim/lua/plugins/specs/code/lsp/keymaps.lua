@@ -8,7 +8,7 @@
 -- 0.12 新增：
 --   grt → type_definition    grx → codelens.run
 --
--- 策略：gr* 前缀沿用官方，UI 用 Trouble 替代 qflist
+-- 策略：gr* 前缀沿用官方，位置和列表 UI 统一交给 vv-symbols
 
 local M = {}
 local Hover = require('plugins.specs.code.lsp.hover')
@@ -31,9 +31,7 @@ local function apply_all_quickfix()
 
   local skipped = result.skipped_count or 0
   local message = ('Applied %d fixes'):format(result.edits_count)
-  if skipped > 0 then
-    message = ('%s, skipped %d conflicting'):format(message, skipped)
-  end
+  if skipped > 0 then message = ('%s, skipped %d conflicting'):format(message, skipped) end
   vim.notify(message, skipped > 0 and vim.log.levels.WARN or vim.log.levels.INFO)
 end
 
@@ -46,37 +44,27 @@ function M.setup()
     callback = function(event)
       local map = vim.keymap.set
       local client = vim.lsp.get_client_by_id(event.data.client_id)
-      local bufopts = function(desc)
-        return { desc = desc, buffer = event.buf }
-      end
+      local bufopts = function(desc) return { desc = desc, buffer = event.buf } end
 
-      -- 跳转类（open 而非 toggle：面板已打开时刷新内容，不关闭）
-      local function open_trouble(mode)
-        -- Trouble 和 vv-explorer 都在左侧，避免同时占用
+      -- 跳转类：查询光标所在标识符，位置列表统一由 vv-symbols 展示
+      local function open_locations(method)
+        -- vv-symbols 和 vv-explorer 都在左侧，避免同时占用
         pcall(function()
           local explorer = package.loaded['vv-explorer']
-          if explorer and explorer.is_open() then
-            explorer.close()
-          end
+          if explorer and explorer.is_open() then explorer.close() end
         end)
-        require('trouble').open({ mode = mode, focus = true })
+        if method == 'references' then
+          require('vv-symbols').references({ buf = event.buf })
+        else
+          require('vv-symbols').locations({ buf = event.buf, method = method })
+        end
       end
 
-      map('n', 'gd', function()
-        open_trouble('lsp_definitions')
-      end, bufopts(icons.jumps .. ' Definitions'))
-      map('n', 'gD', function()
-        open_trouble('lsp_declarations')
-      end, bufopts(icons.jumps .. ' Declarations'))
-      map('n', 'grr', function()
-        open_trouble('lsp_references')
-      end, bufopts(icons.jumps .. ' References'))
-      map('n', 'gri', function()
-        open_trouble('lsp_implementations')
-      end, bufopts(icons.jumps .. ' Implementations'))
-      map('n', 'grt', function()
-        open_trouble('lsp_type_definitions')
-      end, bufopts(icons.jumps .. ' Type definitions'))
+      map('n', 'gd', function() open_locations('definition') end, bufopts(icons.jumps .. ' Definitions'))
+      map('n', 'gD', function() open_locations('declaration') end, bufopts(icons.jumps .. ' Declarations'))
+      map('n', 'grr', function() open_locations('references') end, bufopts(icons.jumps .. ' References'))
+      map('n', 'gri', function() open_locations('implementation') end, bufopts(icons.jumps .. ' Implementations'))
+      map('n', 'grt', function() open_locations('type_definition') end, bufopts(icons.jumps .. ' Type definitions'))
 
       -- go 由全局降级映射管理（LSP→treesitter 降级，见 symbols.lua），这里删掉 Neovim 默认
       pcall(vim.keymap.del, 'n', 'go', { buffer = event.buf })
@@ -91,6 +79,13 @@ function M.setup()
       end
       if client and client:supports_method('textDocument/codeAction', { bufnr = event.buf }) then
         map({ 'n', 'x' }, 'gra', vim.lsp.buf.code_action, bufopts(icons.fix .. ' Code actions'))
+        -- 整理导入独立于修复错误；仅一个候选时直接应用，多个候选仍由用户选择
+        map('n', '<leader>co', function()
+          vim.lsp.buf.code_action({
+            context = { only = { 'source.organizeImports' }, diagnostics = {} },
+            apply = true,
+          })
+        end, bufopts(icons.fix .. ' Organize imports'))
         -- 一次修复整个文件：收集并应用全部 quickfix（tailwind 任意值批量改名、未用变量等）
         map('n', '<leader>cF', apply_all_quickfix, bufopts(icons.fix .. ' Fix all'))
       end
@@ -103,32 +98,39 @@ function M.setup()
       map('n', 'gK', vim.lsp.buf.signature_help, bufopts(icons.vscode .. ' Signature help'))
 
       -- 诊断导航（覆盖 Neovim 内置 `]d`/`[d` 的过长的英文描述）
-      map('n', ']d', function()
-        vim.diagnostic.jump({ count = 1 })
-      end, bufopts('Next diagnostic'))
-      map('n', '[d', function()
-        vim.diagnostic.jump({ count = -1 })
-      end, bufopts('Previous diagnostic'))
+      map('n', ']d', function() vim.diagnostic.jump({ count = 1 }) end, bufopts('Next diagnostic'))
+      map('n', '[d', function() vim.diagnostic.jump({ count = -1 }) end, bufopts('Previous diagnostic'))
       map('n', ']D', function()
         local diag = vim.diagnostic.jump({ count = 1 })
-        if diag then
-          vim.api.nvim_win_set_cursor(0, { diag.end_lnum + 1, diag.end_col })
-        end
+        if diag then vim.api.nvim_win_set_cursor(0, { diag.end_lnum + 1, diag.end_col }) end
       end, bufopts('Next diagnostic end'))
       map('n', '[D', function()
         local diag = vim.diagnostic.jump({ count = -1 })
-        if diag then
-          vim.api.nvim_win_set_cursor(0, { diag.end_lnum + 1, diag.end_col })
-        end
+        if diag then vim.api.nvim_win_set_cursor(0, { diag.end_lnum + 1, diag.end_col }) end
       end, bufopts('Previous diagnostic end'))
 
       -- 诊断列表
-      map('n', '<leader>xx', '<cmd>Trouble diagnostics toggle focus=true filter.buf=0 win.position=bottom<cr>', bufopts(icons.list .. ' Buffer diagnostics'))
-      map('n', '<leader>xX', '<cmd>Trouble diagnostics toggle focus=true win.position=bottom<cr>', bufopts(icons.list .. ' Workspace diagnostics'))
-      map('n', '<leader>xq', '<cmd>Trouble qflist toggle<cr>', bufopts(icons.list .. ' Quickfix'))
+      map(
+        'n',
+        '<leader>xx',
+        function() require('vv-symbols').diagnostics({ buf = 0, toggle = true }) end,
+        bufopts(icons.list .. ' Buffer diagnostics')
+      )
+      map(
+        'n',
+        '<leader>xX',
+        function() require('vv-symbols').diagnostics({ toggle = true }) end,
+        bufopts(icons.list .. ' Workspace diagnostics')
+      )
+      map(
+        'n',
+        '<leader>xq',
+        function() require('vv-symbols').quickfix({ toggle = true }) end,
+        bufopts(icons.list .. ' Quickfix')
+      )
       map('n', '<leader>xQ', function()
-        vim.fn.setqflist({})
-        vim.cmd('Trouble qflist close')
+        vim.fn.setqflist({}, 'r', {})
+        require('vv-symbols').close()
       end, bufopts(icons.list .. ' Clear quickfix'))
 
       -- 重启 LSP

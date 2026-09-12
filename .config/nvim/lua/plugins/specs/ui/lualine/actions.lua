@@ -9,15 +9,17 @@ local M = {}
 local function tele_or(builtin_name, fallback)
   return function()
     local ok, tb = pcall(require, 'telescope.builtin')
-    if ok and tb[builtin_name] then tb[builtin_name]() else fallback() end
+    if ok and tb[builtin_name] then
+      tb[builtin_name]()
+    else
+      fallback()
+    end
   end
 end
 
 M.visual_range = editor.visual_range
 
-function M.copy_datetime()
-  copy(os.date('%Y-%m-%d %H:%M:%S'))
-end
+function M.copy_datetime() copy(os.date('%Y-%m-%d %H:%M:%S')) end
 
 --- VSCode 风格：弹出输入框 → commit（已暂存的文件）→ push
 function M.quick_commit_push()
@@ -51,7 +53,7 @@ function M.quick_commit_push()
 end
 
 M.open_branch_view = tele_or('git_branches', function() vim.notify('Telescope is not loaded', vim.log.levels.WARN) end)
-M.open_git_status  = tele_or('git_status',   function() vim.notify('Telescope is not loaded', vim.log.levels.WARN) end)
+M.open_git_status = tele_or('git_status', function() vim.notify('Telescope is not loaded', vim.log.levels.WARN) end)
 
 function M.open_git_log()
   local ok, git_log = pcall(require, 'plugins.specs.ui.telescope.git.log')
@@ -62,17 +64,11 @@ function M.open_git_log()
   end
 end
 
-function M.copy_abs_path()
-  editor.copy_path({ title = 'Lualine' })
-end
+function M.copy_abs_path() editor.copy_path({ title = 'Lualine' }) end
 
-function M.copy_abs_path_line()
-  editor.copy_path({ line = true, title = 'Lualine' })
-end
+function M.copy_abs_path_line() editor.copy_path({ line = true, title = 'Lualine' }) end
 
-function M.next_diagnostic()
-  vim.diagnostic.jump({ count = 1, float = true })
-end
+function M.next_diagnostic() vim.diagnostic.jump({ count = 1, float = true }) end
 
 function M.blame_line()
   if package.loaded['gitsigns'] then
@@ -86,9 +82,7 @@ function M.open_mason()
   if vim.fn.exists(':Mason') == 2 then vim.cmd('Mason') end
 end
 
-function M.go_top()
-  vim.cmd('normal! gg')
-end
+function M.go_top() vim.cmd('normal! gg') end
 
 function M.open_root_picker()
   local ok, tb = pcall(require, 'telescope.builtin')
@@ -99,14 +93,8 @@ function M.open_root_picker()
   end
 end
 
--- 优先 Trouble，否则用内置 quickfix
-function M.open_diagnostics()
-  if pcall(require, 'trouble') then
-    vim.cmd('Trouble diagnostics toggle')
-  else
-    vim.diagnostic.setqflist()
-  end
-end
+-- 打开当前 buffer 的诊断列表
+function M.open_diagnostics() require('vv-symbols').diagnostics({ toggle = true }) end
 
 -- 老版无 :LspInfo 时用 checkhealth 兜底
 function M.open_lsp_info()
@@ -122,8 +110,6 @@ function M.toggle_dap_repl()
   if ok then dap.repl.toggle() end
 end
 
-function M.center_line()
-  vim.cmd('normal! zz')
-end
+function M.center_line() vim.cmd('normal! zz') end
 
 return M

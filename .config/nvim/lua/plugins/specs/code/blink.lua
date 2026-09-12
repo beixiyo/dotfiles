@@ -50,6 +50,7 @@ return {
 
       enabled = function()
         return vim.bo.buftype ~= 'prompt' and vim.b.completion ~= false
+          and vim.bo.filetype ~= 'vv-symbols-filter'
       end,
 
       completion = {

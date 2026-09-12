@@ -11,4 +11,5 @@ return {
   ["comment"] = false,
   ["fff"] = false,
   ["im-select"] = false,
+  ["trouble"] = false,
 }
