@@ -1,0 +1,22 @@
+[core]
+	pager = "if command -v delta >/dev/null 2>&1; then delta; elif command -v less >/dev/null 2>&1; then less; else cat; fi"
+	ignorecase = false
+	editor = "\"$HOME/.local/bin/editor\""
+[init]
+	defaultbranch = main
+
+[interactive]
+  diffFilter = "if command -v delta >/dev/null 2>&1; then delta --color-only; else cat; fi"
+
+[delta]
+  navigate = true   # n/N 在 diff 块间跳转
+  dark = true       # 深色主题（或 light = true）
+
+[merge]
+  conflictStyle = zdiff3
+
+[pull]
+	rebase = false
+
+[include]
+	path = ~/.gitconfig.private

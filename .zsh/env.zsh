@@ -33,15 +33,15 @@ fi
 
 
 # ── 编辑器 ───────────────────────────────────────────────
-# 优先级 nvim > vim > code；code 必须带 -w（wait）否则 git commit / crontab -e 等会以为瞬间编辑完
-# MANPAGER 仅 nvim 有等价支持，vim/code 不设
-if command -v nvim &>/dev/null; then
-  export EDITOR="nvim"
-  export MANPAGER="nvim +Man!"
-elif command -v vim &>/dev/null; then
-  export EDITOR="vim"
-elif command -v code &>/dev/null; then
-  export EDITOR="code -w"
+# 统一走 shell 脚本 fallback：nvim > vim > code > cursor
+if [ -x "$HOME/.local/bin/editor" ]; then
+  export EDITOR="$HOME/.local/bin/editor"
+  export VISUAL="$EDITOR"
+  export GIT_EDITOR="$EDITOR"
+  # MANPAGER 仅 nvim 有等价支持，vim/code 不设
+  if command -v nvim &>/dev/null; then
+    export MANPAGER="nvim +Man!"
+  fi
 fi
 
 

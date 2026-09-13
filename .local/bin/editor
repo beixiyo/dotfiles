@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+
+set -eu
+
+if command -v nvim >/dev/null 2>&1; then
+  exec nvim -f -- "$@"
+elif command -v vim >/dev/null 2>&1; then
+  exec vim -f -- "$@"
+elif command -v code >/dev/null 2>&1; then
+  exec code --wait -- "$@"
+elif command -v cursor >/dev/null 2>&1; then
+  exec cursor --wait -- "$@"
+else
+  echo "No editor found. Please install one of: nvim, vim, code, cursor." >&2
+  exit 1
+fi

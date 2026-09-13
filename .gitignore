@@ -4,6 +4,9 @@
 !.npmrc
 !README.md
 !README.zh-CN.md
+!/.gitconfig
+/.gitconfig.private
+!/.gitconfig.private.example
 
 # ── GitHub Actions ──
 !.github/
@@ -26,6 +29,7 @@
 !.local/bin/ai-sync
 !.local/bin/browser-open
 !.local/bin/gwt-sync
+!.local/bin/editor
 
 # !.config/ — 取消忽略 .config 目录本身
 !.config/

@@ -75,7 +75,7 @@ if [[ "$isWSL" -eq 1 ]]; then
   alias playwright-cli='cd "$(wslpath "$(cmd.exe /c "echo %USERPROFILE%" 2>/dev/null | tr -d "\r")")" && bunx playwright-cli'
 fi
 
-command -v nvim &>/dev/null && alias v='nvim'
+alias v='"$HOME/.local/bin/editor"'
 command -v btop &>/dev/null && alias top='btop'
 command -v fzf &>/dev/null && alias fzf='fzf --ansi'
 command -v jq &>/dev/null && alias jq='jq -C'   # 终端下彩色输出
