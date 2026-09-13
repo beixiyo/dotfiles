@@ -27,6 +27,7 @@ repos=(
   vv-mcp.nvim
   vv-translate.nvim
   vv-splits.nvim
+  vv-symbols.nvim
 )
 
 for name in "${repos[@]}"; do
