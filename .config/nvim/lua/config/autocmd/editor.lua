@@ -5,24 +5,30 @@ local function augroup(name)
 end
 
 -- 文件外部修改检测
--- BufEnter：切回文件窗口那一刻必触发
--- FocusGained：从别的窗口/另一个 nvim 切回来（OS 级焦点变化）
--- TermClose/TermLeave：退出内嵌终端
-vim.api.nvim_create_autocmd({ "BufEnter", "FocusGained", "TermClose", "TermLeave" }, {
-  group = augroup("checktime"),
-  callback = function()
-    if vim.o.buftype ~= "nofile" then
-      vim.cmd("checktime")
-    end
-  end,
-})
+-- Nvim 0.13+ 的 'autoread' 自带文件系统 watcher，可在外部进程写入后即时检查
+-- 旧版没有 watcher，仍在切回 buffer/窗口或离开内嵌终端时用 :checktime 兜底
+if vim.fn.has('nvim-0.13') == 0 then
+  vim.api.nvim_create_autocmd({ 'BufEnter', 'FocusGained', 'TermClose', 'TermLeave' }, {
+    group = augroup('checktime'),
+    callback = function()
+      if vim.o.buftype ~= 'nofile' then
+        vim.cmd('checktime')
+      end
+    end,
+  })
+end
 
 -- 复制高亮
-vim.api.nvim_create_autocmd("TextYankPost", {
-  group = augroup("highlight_yank"),
+vim.api.nvim_create_autocmd('TextYankPost', {
+  group = augroup('highlight_yank'),
   callback = function()
-    local hl = vim.hl or vim.highlight
-    ;(hl.hl_op or hl.on_yank)()
+    if vim.hl.hl_op then
+      vim.hl.hl_op()
+    else
+      -- 0.13 起弃用了
+      ---@diagnostic disable-next-line: deprecated
+      vim.hl.on_yank()
+    end
   end,
 })
 

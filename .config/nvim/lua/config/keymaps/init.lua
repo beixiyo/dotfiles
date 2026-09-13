@@ -1,4 +1,5 @@
 require("config.keymaps.mouse")
+require("config.keymaps.multicursor")
 require("config.keymaps.mode")
 require("config.keymaps.window")
 require("config.keymaps.edit")

@@ -14,8 +14,8 @@ function M.apply(config)
   -- 启用 kitty keyboard protocol（精确修饰键上报，修正 Ctrl+hjkl 等）
   config.enable_kitty_keyboard = true
 
-  -- Shift+点击透传给 nvim（默认 WezTerm 用 Shift 做 bypass 做自己选中）
-  config.bypass_mouse_reporting_modifiers = 'ALT'
+  -- Shift / Alt+点击都透传给 nvim；Command+点击保留给终端绕过鼠标上报并做文本选择
+  config.bypass_mouse_reporting_modifiers = 'SUPER'
 
   -- Shell 默认目录
   local home = os.getenv('HOME') or os.getenv('USERPROFILE')
@@ -51,7 +51,7 @@ function M.apply(config)
     -- ── 终端原生编不出来的键，CSI u 直注入（绕过 tmux 重编码）──
     -- 注入后归谁消费不一定：Ctrl+` 被 tmux 截住，Ctrl+Shift+l 才真的到 nvim
     { key = '`', mods = 'CTRL',       action = act.SendString('\x1b[96;5u') },  -- Ctrl+` → tmux popup 浮层终端
-    { key = 'L', mods = 'CTRL|SHIFT', action = act.SendString('\x1b[108;6u') }, -- Ctrl+Shift+l → nvim vim-visual-multi Select All
+    { key = 'L', mods = 'CTRL|SHIFT', action = act.SendString('\x1b[108;6u') }, -- Ctrl+Shift+l → nvim 原生多光标全部匹配
 
     -- ── Shift+Enter 换行（Claude Code 等 TUI）──
     -- 默认走 legacy 编码与普通 Enter(\r) 无法区分 → 被当成提交；
