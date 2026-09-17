@@ -1,0 +1,11 @@
+{
+  "defaultProvider": "zai",
+  "defaultModel": "glm-5.3",
+  "lastChangelogVersion": "0.85.1",
+  "theme": "dark",
+  "packages": [
+    "npm:pi-mcp-adapter",
+    "npm:pi-subagents",
+    "npm:pi-vim"
+  ]
+}

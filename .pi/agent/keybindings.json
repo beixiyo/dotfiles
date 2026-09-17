@@ -1,0 +1,10 @@
+{
+  "tui.select.up": ["up", "ctrl+p"],
+  "tui.select.down": ["down", "ctrl+n"],
+  "tui.editor.historyPrevious": ["ctrl+p"],
+  "tui.editor.historyNext": ["ctrl+n"],
+  "app.model.cycleForward": ["alt+n"],
+  "app.model.cycleBackward": ["alt+p"],
+  "app.session.togglePath": ["alt+shift+p"],
+  "app.session.toggleNamedFilter": ["alt+shift+n"]
+}

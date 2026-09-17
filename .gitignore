@@ -271,6 +271,19 @@
 !.codex/agents/
 !.codex/agents/**
 
+# ── Pi（仅本机专属配置；AGENTS.md/skills/prompts 由 ai-sync 派生，不进名单）──
+# settings.json 含 packages 声明，新机器 clone 后 pi 启动自动补装扩展包
+!.pi/
+.pi/**
+!.pi/agent/
+!.pi/agent/settings.json
+# models.json 的 apiKey 用 "$ENV_VAR" / "!command" 引用，明文不要提交
+!.pi/agent/models.json
+!.pi/agent/keybindings.json
+!.pi/agent/extensions/
+!.pi/agent/extensions/**
+.pi/agent/extensions/**/node_modules/
+
 # -- one click config --
 !one-click-config/
 !one-click-config/**
