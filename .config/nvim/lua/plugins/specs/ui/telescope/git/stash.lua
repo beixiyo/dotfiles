@@ -40,50 +40,18 @@ end
 function M.open(opts)
   local actions = require('telescope.actions')
   local action_state = require('telescope.actions.state')
-  local previewers = require('telescope.previewers')
   opts = opts or {}
 
   local has_delta = vim.fn.executable('delta') == 1
 
-  opts.previewer = previewers.new_buffer_previewer({
-    title = 'Stash Diff',
-
-    define_preview = function(self, entry)
-      if self.state.job_id then
-        pcall(vim.fn.jobstop, self.state.job_id)
-      end
-
-      local bufnr = self.state.bufnr
-      local winid = self.state.winid
-      local chan = vim.api.nvim_open_term(bufnr, {})
-      local width = vim.api.nvim_win_get_width(winid)
-
-      local cmd = 'git stash show -p --color=always ' .. vim.fn.shellescape(entry.value)
-      if has_delta then
-        cmd = cmd .. ' | delta --side-by-side --width=' .. width
-      end
-
-      self.state.job_id = vim.fn.jobstart({ 'bash', '-c', cmd }, {
-        stdout_buffered = true,
-        on_stdout = function(_, data)
-          if not vim.api.nvim_buf_is_valid(bufnr) then return end
-          vim.api.nvim_chan_send(chan, table.concat(data, '\r\n'))
-        end,
-        on_exit = function()
-          vim.schedule(function()
-            if not vim.api.nvim_buf_is_valid(bufnr) then return end
-            pcall(function()
-              vim.bo[bufnr].scrollback = 9999
-              vim.bo[bufnr].scrollback = 9998
-            end)
-            if vim.api.nvim_win_is_valid(winid) then
-              pcall(vim.api.nvim_win_set_cursor, winid, { 1, 0 })
-            end
-          end)
-        end,
-      })
-    end,
-  })
+  opts.previewer = Git.term_previewer('Stash Diff', function(entry, winid)
+    local width = vim.api.nvim_win_get_width(winid)
+    local cmd = 'git stash show -p --color=always ' .. vim.fn.shellescape(entry.value)
+    if has_delta then
+      cmd = cmd .. ' | delta --side-by-side --width=' .. width
+    end
+    return { 'bash', '-c', cmd }
+  end)
 
   opts.layout_config = { preview_width = 0.65 }
   opts.prompt_title = table.concat({

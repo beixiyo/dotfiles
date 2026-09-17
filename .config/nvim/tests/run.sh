@@ -1,44 +1,7 @@
 #!/bin/sh
-
+# 一键测试：递归跑 tests/**/test_*.lua，每文件独立 nvim -l 子进程，汇总退出码
+# 用法：tests/run.sh [过滤词]   过滤词匹配测试文件路径子串
+# 与 cwd 无关（按脚本自身路径定位 run.lua），幂等可重复跑
 set -eu
 
-tests_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-state_dir=$(mktemp -d)
-trap 'rm -rf "$state_dir"' EXIT
-
-scratch_output="$state_dir/scratch-output"
-noice_output="$state_dir/noice-output"
-hover_output="$state_dir/hover-output"
-
-status=0
-XDG_STATE_HOME="$state_dir" nvim --headless -u NONE -l "$tests_dir/test_scratch.lua" >"$scratch_output" 2>&1 || status=$?
-if [ "$status" -eq 0 ]; then
-  XDG_STATE_HOME="$state_dir" nvim --headless -u NONE -l "$tests_dir/test_lsp_revision_hover.lua" >"$hover_output" 2>&1 || status=$?
-fi
-if [ "$status" -eq 0 ]; then
-  XDG_STATE_HOME="$state_dir" nvim --headless -l "$tests_dir/test_noice_confirm.lua" >"$noice_output" 2>&1 || status=$?
-fi
-
-if [ -z "${NO_COLOR:-}" ]; then
-  if [ "$status" -eq 0 ]; then
-    color='\033[32m'
-  else
-    color='\033[31m'
-  fi
-  reset='\033[0m'
-else
-  color=''
-  reset=''
-fi
-
-printf '%b' "$color"
-cat "$scratch_output"
-if [ -f "$noice_output" ]; then
-  cat "$noice_output"
-fi
-if [ -f "$hover_output" ]; then
-  cat "$hover_output"
-fi
-printf '%b' "$reset"
-
-exit "$status"
+exec nvim -l "$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)/run.lua" "$@"

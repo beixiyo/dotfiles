@@ -67,6 +67,9 @@ return {
 
 ## 常用命令
 
+- `tests/run.sh [过滤词]`：一键跑全部测试（等价 `nvim -l tests/run.lua`；递归 `tests/**/test_*.lua`，每文件独立子进程，失败隔离；退出码非 0 = 有失败，幂等可重复跑）
+- 新增测试：放 `tests/<分类>/test_*.lua`，样板 `dofile(vim.fs.find('harness.lua', { upward = true, ... })[1])` 取得断言 / git fixture / notify 捕获 / wait；失败消息写被破坏的契约；清理必须包进 `with_git_repo` 或 pcall 保证失败路径也执行
+- headless 测试只覆盖数据与异步逻辑；keymap、preview 滚动、telescope UI 交互仍需完整配置手动验证
 - `:PluginManager` / `<leader>fp`：插件管理 UI
 - `:PackUpdate [name ...]`：更新全部或指定插件
 - `:PackDev [name]`：查看本地开发重定向
