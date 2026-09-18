@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
-# macos.sh — macOS 通知 + 点击/切回跳转 tmux pane
+# macos.sh — macOS terminal-notifier 通知 + 点击跳转 tmux pane + 回到 pane 自动关闭
 # 被 main.sh source，不可单独执行
 #
-# 通知经 kitty OSC 99 写发起 pane 的 tty（通知归属 kitty，点击前置 kitty），拿不到 pane tty 时
-# 退化为 osascript display notification。不用 terminal-notifier：2.0.0 在 macOS 26 上点击回调全废
-# 跳转不依赖通知回调，由「前台从非终端变为终端」的变化沿检测承担：
-# 用户点击通知或主动切回终端 → 自动 switch-client + select-pane 到发起 pane
+# 与 linux.sh 同构：terminal-notifier ≥ 3.0 的 -action 会阻塞等待用户操作并把结果打到 stdout
+# （点击本体 → @ACTIONCLICKED，点按钮 → 按钮名，关闭 → @CLOSED，超时 → @TIMEOUT），
+# 跳转只在真实点击时发生；后台 watcher 发现用户已回到发起 pane 时用 -remove 关掉通知
+# 2.0.0（2017 年、基于已废弃 NSUserNotification）在 macOS 26 上点击回调全废，必须 ≥ 3.0
+#
+# 一次性准备：brew 安装的 app bundle 不在 /Applications，首次请求权限会被拒
+# （"Notifications are not allowed for this application"），需手动注册到 LaunchServices：
+#   /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
+#     -f /opt/homebrew/Cellar/terminal-notifier/<ver>/terminal-notifier.app
+# 之后 `terminal-notifier -diagnose` 应显示 authorized
 
 # _dbg <msg>: NOTIFY_DEBUG=1 时追加到调试日志（排查通知不显示 / 跳转不触发）
 _dbg() {
@@ -52,7 +58,7 @@ _macos_front_bundle() {
   printf '%s' "$_front"
 }
 
-# _macos_front_is_terminal: 前台 App 是终端时返回 0（轮询用）
+# _macos_front_is_terminal: 前台 App 是终端时返回 0
 _macos_front_is_terminal() {
   local _front
   _front=$(_macos_front_bundle) || return 1
@@ -74,102 +80,103 @@ _macos_focus_not_terminal() {
   esac
 }
 
-# _pct_encode: kitty OSC 99 payload 安全编码（; % \ 三字符）
-_pct_encode() {
-  local _s="$1"
-  _s=${_s//%/%25}
-  _s=${_s//;/%3B}
-  printf '%s' "${_s//\\/%5C}"
+# _macos_at_pane <pane> <socket>: 终端在前台且某个 client 的活动 pane 就是发起 pane 时返回 0
+# 精确到 window-pane：只切回终端但停在别的 pane 不算回来，与 Linux 侧 _user_present 同粒度
+_macos_at_pane() {
+  local _pane="$1" _socket="$2" _cl _cur
+  _macos_front_is_terminal || return 1
+  while IFS= read -r _cl; do
+    _cur=$(tmux -S "$_socket" display-message -c "$_cl" -p '#{pane_id}' 2>/dev/null)
+    [[ "$_cur" == "$_pane" ]] && return 0
+  done < <(tmux -S "$_socket" list-clients -F '#{client_name}' 2>/dev/null)
+  return 1
 }
 
-# _osc99_notify <tty> <title> <body>: 写入指定 tty 的 kitty OSC 99 桌面通知
-# 通知归属 kitty，点击由 macOS 前置 kitty（不会打开无关 App）；
-# 写 tmux pane tty 必须经 DCS passthrough 包装（tmux 拦截后转发给外层终端），
-# 且 tmux 需 allow-passthrough all：为 on 时 pane 所在 window 不是当前 window 会被静默丢弃
-# i= 每次调用唯一：同 id 会替换上一条（macOS 上非无缝），多个 agent 相继完成时会互相覆盖
-_osc99_notify() {
-  local _tty="$1" _title="$2" _body="$3" _id="n$$"
-  _title=$(_pct_encode "$_title")
-  _body=$(_pct_encode "$_body")
-  local _seq=$'\e]99;i='"${_id}"':d=0;'"${_title}"$'\e\\'$'\e]99;i='"${_id}"':d=1:p=body;'"${_body}"$'\e\\'
-  printf '%s' $'\ePtmux;'"${_seq//$'\e'/$'\e\e'}"$'\e\\' > "$_tty" 2>/dev/null
+# _macos_jump <pane> <socket> <app_name>: 所有在连 client 切到发起 pane 所在 window，选中该 pane，前置终端
+# 用 -c 逐 client 切换：后台脚本没有 client 上下文，不带 -c 的 switch-client 无法确定目标
+_macos_jump() {
+  local _pane="$1" _socket="$2" _name="$3" _sess _win _cl
+  _sess=$(tmux -S "$_socket" display-message -t "$_pane" -p '#{session_name}' 2>/dev/null)
+  _win=$(tmux -S "$_socket" display-message -t "$_pane" -p '#{window_index}' 2>/dev/null)
+  if [[ -n "$_sess" && -n "$_win" ]]; then
+    while IFS= read -r _cl; do
+      [[ -n "$_cl" ]] && tmux -S "$_socket" switch-client -c "$_cl" -t "${_sess}:${_win}" 2>/dev/null \
+        && _dbg "switched client=${_cl}"
+    done < <(tmux -S "$_socket" list-clients -F '#{client_name}' 2>/dev/null)
+  fi
+  tmux -S "$_socket" select-pane -t "$_pane" 2>/dev/null
+  osascript -e "tell application \"${_name}\" to activate" 2>/dev/null
 }
 
 # _notify_macos <desc> <body> <saved_pane> <tmux_socket>
+# 副作用：显示系统通知；用户点击时切换 tmux client/pane 并前置终端；后台进程最长存活 NOTIFY_TIMEOUT_MINUTES
 _notify_macos() {
   local desc="$1"
   local body="$2"
   local saved_pane="$3"
   local tmux_socket="$4"
 
-  # 按优先级确定要聚焦的终端（沿触发跳转后 osascript activate 用）
-  local _term _name
-  _term=$(_macos_term); _name=${_term##*|}
-
-  # 通知显示：OSC 99 写发起 pane 的 tty（kitty 原生，点击前置 kitty）；
-  # 拿不到 pane tty（非 tmux / 已关闭）则退化 osascript
-  local _pane_tty
-  _pane_tty=$(tmux -S "${tmux_socket}" display-message -t "${saved_pane}" -p '#{pane_tty}' 2>/dev/null)
-  if [[ -n "$_pane_tty" && -w "$_pane_tty" ]]; then
-    _dbg "osc99 pane=${saved_pane} tty=${_pane_tty} passthrough=$(tmux -S "${tmux_socket}" show -gv allow-passthrough 2>/dev/null)"
-    _osc99_notify "$_pane_tty" "$desc" "$body"
-  else
+  # 无 terminal-notifier：仅显示（归属 Script Editor），无点击跳转、无自动关闭
+  if ! command -v terminal-notifier &>/dev/null; then
     local _esc_desc=${desc//\\/\\\\}; _esc_desc=${_esc_desc//\"/\\\"}
     local _esc_body=${body//\\/\\\\}; _esc_body=${_esc_body//\"/\\\"}
     osascript -e "display notification \"${_esc_body}\" with title \"${_esc_desc}\"" &
+    return 0
   fi
 
-  [[ -n "$saved_pane" && -n "$tmux_socket" ]] || return 0
+  # 按优先级确定点击后要聚焦的终端
+  local _term _name
+  _term=$(_macos_term); _name=${_term##*|}
+
+  # group 每次唯一：既是 -remove 的句柄，也避免同 app 多条通知互相替换
+  local _group="${NOTIFY_APP_NAME:-notify}-$$"
+  local _timeout=$(( NOTIFY_TIMEOUT_MINUTES * 60 ))
 
   (
-    _dbg "start pane=${saved_pane} socket=${tmux_socket}"
+    _dbg "start pane=${saved_pane} socket=${tmux_socket} group=${_group}"
+    local _tmp
+    _tmp=$(mktemp -t notify-macos)
 
-    local _deadline=$(( SECONDS + 300 ))
-    # 前台沿检测：记录初始状态，仅「非终端 → 终端」变化沿触发跳转，
-    # 避免用户一直在终端里其它 window 干活时被误拽
-    local _was_terminal=0
-    _macos_front_is_terminal && _was_terminal=1
-    while (( SECONDS < _deadline )); do
-      local _cl _cur _now_terminal=0
-      # 每轮只采样一次前台状态：沿判断与状态更新共用同一次结果，
-      # 否则切换恰好落在两次采样之间会被记成「一直在终端」而错过沿
-      _macos_front_is_terminal && _now_terminal=1
+    # -action 让 terminal-notifier 阻塞到用户操作或超时，结果写 stdout（见文件头）
+    terminal-notifier -title "$desc" -message "${body:-$desc}" -group "$_group" \
+      -action '↩ Return to terminal' -timeout "$_timeout" >"$_tmp" 2>/dev/null &
+    local _npid=$!
 
-      # 沿检测优先：前台从非终端变为终端（点击通知或主动切回）→ 直接带到发起 pane
-      # 必须在 user_back 之前：否则用户回终端后顺手点进发起 pane 会抢先触发 user_back
-      # 退出，跳转永远轮不到；沿触发时 active 已是 saved 则 select 无害
-      if ! (( _was_terminal )) && (( _now_terminal )); then
-        _dbg "front switched to terminal, jumping to pane"
-        local _sess _win
-        _sess=$(tmux -S "$tmux_socket" display-message -t "$saved_pane" -p '#{session_name}' 2>/dev/null)
-        _win=$(tmux -S "$tmux_socket" display-message -t "$saved_pane" -p '#{window_index}' 2>/dev/null)
-        _dbg "sess=${_sess} win=${_win}"
-        if [[ -n "$_sess" && -n "$_win" ]]; then
-          while IFS= read -r _cl; do
-            [[ -n "$_cl" ]] && tmux -S "$tmux_socket" switch-client -c "$_cl" -t "${_sess}:${_win}" 2>/dev/null \
-              && _dbg "switched client=${_cl}"
-          done < <(tmux -S "$tmux_socket" list-clients -F '#{client_name}' 2>/dev/null)
-        fi
-        tmux -S "$tmux_socket" select-pane -t "$saved_pane" 2>/dev/null
-        osascript -e "tell application \"${_name}\" to activate" 2>/dev/null
-        exit 0
-      fi
-
-      # 前台一直是终端（未离开过）：用户已在发起 pane（自己切回来了）→ 结束等待
-      if (( _was_terminal )); then
-        while IFS= read -r _cl; do
-          _cur=$(tmux -S "$tmux_socket" display-message -c "$_cl" -p '#{pane_id}' 2>/dev/null)
-          if [[ "$_cur" == "$saved_pane" ]]; then
-            _dbg "user switched back manually"
-            exit 0
+    # watcher：用户【真正回到发起 pane】时关闭通知并结束等待；通知消失或超时后随 _npid 退出
+    local _watcher=
+    if [[ -n "$saved_pane" && -n "$tmux_socket" ]]; then
+      (
+        while kill -0 "$_npid" 2>/dev/null; do
+          if _macos_at_pane "$saved_pane" "$tmux_socket"; then
+            terminal-notifier -remove "$_group" >/dev/null 2>&1
+            kill "$_npid" 2>/dev/null
+            _dbg "user at pane, notification removed"
+            break
           fi
-        done < <(tmux -S "$tmux_socket" list-clients -F '#{client_name}' 2>/dev/null)
-      fi
-      _was_terminal=$_now_terminal
+          sleep 1
+        done
+      ) &
+      _watcher=$!
+    fi
 
-      sleep 0.5
-    done
-    _dbg "timeout, no action"
+    wait "$_npid" 2>/dev/null
+    local _rc=$?
+    [[ -n "$_watcher" ]] && _kill_tree "$_watcher"
+
+    local _action
+    _action=$(cat "$_tmp" 2>/dev/null)
+    rm -f "$_tmp"
+    _dbg "result=${_action:-<none>} rc=${_rc}"
+
+    case "$_action" in
+      '@ACTIONCLICKED'|'↩ Return to terminal')
+        [[ -n "$saved_pane" && -n "$tmux_socket" ]] && _macos_jump "$saved_pane" "$tmux_socket" "$_name"
+        ;;
+      '@TIMEOUT')
+        # 与 Linux transient 通知到期消失同语义
+        terminal-notifier -remove "$_group" >/dev/null 2>&1
+        ;;
+    esac
   ) </dev/null >/dev/null 2>&1 &
   disown $!
 }

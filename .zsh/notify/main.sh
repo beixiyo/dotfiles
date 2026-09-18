@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # main.sh — 通用完成通知入口（支持点击跳转 tmux pane + 显示对话上下文）
 # 用法: main.sh <app 名> [上下文标题]
-# 依赖: macOS: kitty（OSC 99 通知）+ tmux allow-passthrough all；非 tmux 时退化 osascript
+# 依赖: macOS: brew install terminal-notifier（≥ 3.0，见 macos.sh 头部的一次性 lsregister 步骤；无则退化 osascript 仅显示）
 #       Linux: notify-send (libnotify)
 
 _dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
