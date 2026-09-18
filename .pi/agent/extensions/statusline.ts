@@ -123,9 +123,9 @@ const EDITOR_BADGE = {
   bg: '#4aa5f0',
   /** 前景色（hex）；缺省按背景亮度自动取深/浅 */
   fg: undefined as HexColor | undefined,
-  /** 会话名最长显示宽度（列），超出尾部省略 */
-  maxWidth: 24,
-} as const satisfies { enabled: boolean; bg: HexColor; fg?: HexColor; maxWidth: number }
+  /** 徽标最长显示宽度（列，含前后底色空格），超出尾部省略；null = 跟随编辑器渲染宽度 */
+  maxWidth: null as number | null,
+} as const satisfies { enabled: boolean; bg: HexColor; fg?: HexColor; maxWidth: number | null }
 
 // ════════════════════ 实现 ════════════════════
 
@@ -184,8 +184,9 @@ function autoBadgeFg(bg: HexColor): HexColor {
  * 检测不到时保守输出 256 色索引（truecolor 终端也兼容） */
 const TRUECOLOR = /truecolor|24bit/i.test(process.env.COLORTERM ?? '')
 
-function badgeLabel(name: string): string {
-  const text = ` ${truncateToWidth(name, EDITOR_BADGE.maxWidth, '…')} `
+/** 徽标最长显示宽度（列），含前后底色空格，名称部分占 maxWidth - 2 */
+function badgeLabel(name: string, maxWidth: number): string {
+  const text = ` ${truncateToWidth(name, Math.max(1, maxWidth - 2), '…')} `
   const bg = parseHex(EDITOR_BADGE.bg)
   const fg = parseHex(EDITOR_BADGE.fg ?? autoBadgeFg(EDITOR_BADGE.bg))
   if (!bg || !fg) return text
@@ -243,9 +244,9 @@ class SessionBadgeEditor implements EditorComponent {
     const lines = this.inner.render(width)
     const name = this.getName()
     if (!name || lines.length === 0) return lines
-    const label = badgeLabel(name)
+    const label = badgeLabel(name, EDITOR_BADGE.maxWidth ?? width)
     const labelWidth = visibleWidth(label)
-    if (labelWidth >= width) return lines
+    if (labelWidth > width) return lines
     lines[0] = truncateToWidth(lines[0]!, width - labelWidth, '') + label
     return lines
   }
