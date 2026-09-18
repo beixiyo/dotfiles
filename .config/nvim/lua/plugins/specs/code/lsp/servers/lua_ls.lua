@@ -49,7 +49,16 @@ local function root_dir(bufnr, on_dir)
     root = vim.fs.joinpath(home, parts[1])
   end
 
-  if root and vim.uv.fs_stat(root) then on_dir(root) end
+  if root and vim.uv.fs_stat(root) then
+    on_dir(root)
+    return
+  end
+
+  -- 兑底：无任何 marker（或仅命中 HOME 的 dotfiles .git）的零散 Lua 文件，
+  -- 以其所在目录为 root 启动（单文件模式）。文件直接位于 HOME 顶层时不启动，
+  -- 避免把整个 dotfiles 仓库当成 workspace；vendors 插件有自己的 .git 走 marker 分支，不受影响
+  local dir = vim.fs.dirname(path)
+  if dir and vim.fs.normalize(dir) ~= home then on_dir(dir) end
 end
 
 local function inject_project_libraries(_, config)
