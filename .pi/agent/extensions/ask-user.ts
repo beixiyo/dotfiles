@@ -56,12 +56,12 @@ export class AskUserSelectComponent implements Component, Focusable {
     this.container.addChild(new Spacer(1))
     this.input = new Input({
       prompt: '❯ ',
-      placeholder: placeholder ?? '自定义答案（留空则选择上方选项）',
+      placeholder: placeholder ?? 'Custom answer (empty = use selection)',
       placeholderStyle: (text) => theme.fg('muted', text),
     })
     this.container.addChild(this.input)
     this.container.addChild(new Spacer(1))
-    this.container.addChild(new Text(theme.fg('dim', '↑↓ 选择 · 直接输入自定义答案 · enter 确认 · esc 取消'), 1, 0))
+    this.container.addChild(new Text(theme.fg('dim', '↑↓ select · type for custom answer · enter confirm · esc cancel'), 1, 0))
     this.container.addChild(new Spacer(1))
     this.updateList()
   }
@@ -141,7 +141,7 @@ const tool: ToolDefinition<typeof parameters> = {
       return {
         content: [{
           type: 'text',
-          text: 'ask_user 在非交互模式下不可用（无对话框 UI），请改用纯文本向用户提问。',
+          text: 'ask_user is unavailable in non-interactive mode (no dialog UI). Ask the user in plain text instead.',
         }],
         isError: true,
         details: undefined,
@@ -162,15 +162,15 @@ const tool: ToolDefinition<typeof parameters> = {
 
     if (signal?.aborted) {
       return {
-        content: [{ type: 'text', text: '弹窗已被中止' }],
+        content: [{ type: 'text', text: 'Dialog aborted' }],
         isError: true,
         details: undefined,
       }
     }
 
     const text = answer === undefined
-      ? '用户关闭了弹窗且未作答。不要重试弹窗，改用纯文本提问或自行选择合理默认值继续'
-      : `用户回答：${answer}`
+      ? 'The user closed the dialog without answering. Do not retry the dialog; ask in plain text or pick a reasonable default and continue'
+      : `User answered: ${answer}`
 
     return { content: [{ type: 'text', text }], details: undefined }
   },
