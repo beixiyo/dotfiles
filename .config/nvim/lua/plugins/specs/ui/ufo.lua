@@ -144,6 +144,61 @@ return {
     vim.o.foldlevelstart = 99
     vim.o.foldenable = true
 
+    --- 折起行虚拟文本：基线复刻 ufo 默认 handler（截断 + ' ⋯ ' UfoFoldedEllipsis），
+    --- 末尾拼 vv-symbols 引用计数。折叠时 eol 幽灵文本被 ufo 接管，
+    --- 不拼进来则函数一折叠 refs 就不可见；refs 异步到达后 ufo 更新循环会重渲染折起行
+    ---@param virtText table
+    ---@param lnum integer 1-based
+    ---@param endLnum integer
+    ---@param width integer
+    ---@param truncate fun(text: string, width: integer): string
+    ---@param ctx table { bufnr: integer, winid: integer }
+    ---@return table
+    local function virt_text_with_refs(virtText, lnum, endLnum, width, truncate, ctx)
+      local refs
+      local ok_symbols, symbols = pcall(require, 'vv-symbols')
+      if ok_symbols and ctx and ctx.bufnr then
+        local ok, chunks = pcall(symbols.reference_chunks, ctx.bufnr, lnum)
+        refs = ok and chunks or nil
+      end
+
+      local suffix = ' ⋯ '
+      local refs_width = 0
+      if refs then
+        refs_width = 2
+        for _, chunk in ipairs(refs) do
+          refs_width = refs_width + vim.fn.strdisplaywidth(chunk[1])
+        end
+      end
+
+      local new_virt_text = {}
+      local target_width = width - vim.fn.strdisplaywidth(suffix) - refs_width
+      local cur_width = 0
+      for _, chunk in ipairs(virtText) do
+        local chunk_text = chunk[1]
+        local chunk_width = vim.fn.strdisplaywidth(chunk_text)
+        if target_width > cur_width + chunk_width then
+          table.insert(new_virt_text, chunk)
+        else
+          chunk_text = truncate(chunk_text, target_width - cur_width)
+          table.insert(new_virt_text, { chunk_text, chunk[2] })
+          chunk_width = vim.fn.strdisplaywidth(chunk_text)
+          -- truncate 返回宽度可能小于参数，用空格补齐
+          if cur_width + chunk_width < target_width then
+            suffix = suffix .. (' '):rep(target_width - cur_width - chunk_width)
+          end
+          break
+        end
+        cur_width = cur_width + chunk_width
+      end
+      if refs then
+        table.insert(new_virt_text, { '  ', 'UfoFoldedFg' })
+        vim.list_extend(new_virt_text, refs)
+      end
+      table.insert(new_virt_text, { suffix, 'UfoFoldedEllipsis' })
+      return new_virt_text
+    end
+
     -- lsp → treesitter → indent 三级 fallback
     -- 数组写法 { "lsp", "treesitter" } 只支持两级，treesitter 失败会抛 UfoFallbackException
     -- 无法降级，导致切窗口/隐藏 toggleterm 后重算折叠时报错
@@ -163,6 +218,7 @@ return {
     ---@type UfoConfig
     ufo.setup({
       open_fold_hl_timeout = 150,
+      fold_virt_text_handler = virt_text_with_refs,
       -- 保留 ufo 的 provider、预览和手动折叠，但打开 buffer 时不自动关闭任何 fold
       close_fold_kinds_for_ft = {},
       preview = {
