@@ -331,6 +331,48 @@ class SessionBadgeEditor implements EditorComponent {
   set focused(value: boolean) {
     ;(this.inner as unknown as { focused: boolean }).focused = value
   }
+
+  // ── app 级动作转发（必须）──
+  // pi 安装自定义编辑器时按鸭子类型（"actionHandlers" in editor && instanceof Map）
+  // 把 app.clear（C-c 清空/双击退出）、app.exit、escape 中断等处理器拷贝到最外层
+  // 组件。包装类不暴露这些成员时拷贝被整体跳过，内层编辑器的处理器表为空，
+  // 所有 app 级快捷键失效（症状：双击 C-c 无法退出）。转发到 inner 后，
+  // pi 写入的处理器由 inner.handleInput 分发时原样读到，包装层零参与
+  get actionHandlers(): Map<string, () => void> | undefined {
+    return (this.inner as unknown as { actionHandlers?: Map<string, () => void> }).actionHandlers
+  }
+
+  get onEscape(): (() => void) | undefined {
+    return (this.inner as unknown as { onEscape?: () => void }).onEscape
+  }
+
+  set onEscape(fn: (() => void) | undefined) {
+    ;(this.inner as unknown as { onEscape?: () => void }).onEscape = fn
+  }
+
+  get onCtrlD(): (() => void) | undefined {
+    return (this.inner as unknown as { onCtrlD?: () => void }).onCtrlD
+  }
+
+  set onCtrlD(fn: (() => void) | undefined) {
+    ;(this.inner as unknown as { onCtrlD?: () => void }).onCtrlD = fn
+  }
+
+  get onPasteImage(): (() => void) | undefined {
+    return (this.inner as unknown as { onPasteImage?: () => void }).onPasteImage
+  }
+
+  set onPasteImage(fn: (() => void) | undefined) {
+    ;(this.inner as unknown as { onPasteImage?: () => void }).onPasteImage = fn
+  }
+
+  get onExtensionShortcut(): ((data: string) => boolean) | undefined {
+    return (this.inner as unknown as { onExtensionShortcut?: (data: string) => boolean }).onExtensionShortcut
+  }
+
+  set onExtensionShortcut(fn: ((data: string) => boolean) | undefined) {
+    ;(this.inner as unknown as { onExtensionShortcut?: (data: string) => boolean }).onExtensionShortcut = fn
+  }
 }
 
 export default function(pi: ExtensionAPI) {
