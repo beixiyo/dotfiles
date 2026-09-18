@@ -57,8 +57,12 @@ case "$action" in
     clear_pane "$target"
     ;;
   focus-window)
-    active_pane=$(tmux -S "$socket" display-message -p -t "$target" '#{pane_id}' 2>/dev/null)
-    [[ -n "$active_pane" ]] && clear_pane "$active_pane"
+    # 切回 window 即视为已看到：清掉该 window 内所有 pane 的完成提示与 tab badge，
+    # 不要求光标落在完成的 pane 上（分屏时完成的 pane 本就在视野内）
+    while read -r pane done; do
+      [[ "$done" == 1 ]] && clear_pane "$pane"
+    done < <(tmux -S "$socket" list-panes -t "$target" -F '#{pane_id} #{@ai_pane_done}' 2>/dev/null)
+    tmux -S "$socket" set-option -w -u -t "$target" @ai_window_done 2>/dev/null
     ;;
 esac
 
