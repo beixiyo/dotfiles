@@ -4,6 +4,7 @@
 -- 所有 git 操作走 shared.git_async（exit code 唯一成败信号，stderr 并入失败通知）
 -- C-a 新建分支：vim.ui.input 弹名字，以选中分支为起点 checkout -b
 -- CR checkout 远程分支时自动建本地 tracking branch（避免 detached HEAD）
+--   同名本地分支已存在时退回普通 checkout，随后 --ff-only 同步到选中远端（diverged 仅提示）
 -- 删除/合并/rebase 用 vim.fn.confirm 单键 y/n 确认（参照 vv-explorer，无需回车）
 -- C-d 支持 Tab 多选批量删除：当前分支跳过，本地合并一条命令，远程按 remote 分组
 -- 批量删除是部分成功语义，失败组事后校验仍存在的分支：点名通知并 refresh 校准列表
@@ -124,7 +125,9 @@ function M.open(opts)
           return
         end
 
-        -- 远程：先建 tracking branch；同名本地已存在则退回普通 checkout（首次失败静默兜底）
+        -- 远程：先建 tracking branch；同名本地已存在则退回普通 checkout
+        -- fetch 只更新远端追踪 ref，旧本地分支会停留在上次 checkout 的位置
+        -- 故 checkout 后追加 --ff-only 同步：可 ff 则前进到选中远端，diverged 安全失败仅提示
         local _, branch = Data.parse_remote(entry.value)
         if not branch then return end
         vim.fn.jobstart({ 'git', 'checkout', '-b', branch, '--track', entry.value }, {
@@ -136,18 +139,16 @@ function M.open(opts)
               end)
               return
             end
-            vim.fn.jobstart({ 'git', 'checkout', branch }, {
-              on_exit = function(_, code2)
-                vim.schedule(function()
-                  if code2 == 0 then
-                    vim.notify('Checked out: ' .. branch, vim.log.levels.INFO)
-                    checktime()
-                  else
-                    vim.notify('Checkout failed: ' .. branch, vim.log.levels.ERROR)
-                  end
-                end)
-              end,
-            })
+            Git.git_async({ 'git', 'checkout', branch }, function(code2)
+              if code2 ~= 0 then return 'Checkout failed: ' .. branch end
+            end, function()
+              Git.git_async({ 'git', 'merge', '--ff-only', entry.value }, function(code3)
+                if code3 == 0 then
+                  return 'Checked out: ' .. branch .. ' (synced to ' .. entry.value .. ')'
+                end
+                return 'Checked out: ' .. branch .. ', cannot fast-forward to ' .. entry.value .. ', manual sync needed'
+              end, nil, checktime)
+            end)
           end,
         })
       end)
