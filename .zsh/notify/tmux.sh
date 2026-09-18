@@ -4,9 +4,12 @@
 # 依赖调用方 scope 中已设置：_saved_pane, _tmux_socket
 
 # _user_present: 用户当前正盯着发起通知的终端 pane 时返回 0
-# 规则：niri 可用且焦点不在终端 → 明确不在场；否则看 tmux 活动 pane 是否仍是本 pane
+# 规则：niri/macOS 焦点不在终端 → 明确不在场；否则看 tmux 活动 pane 是否仍是本 pane
+# macOS 补充：前台已是终端 → 在场（tmux tab 高亮/BEL 已足够提示，不发系统通知）
 _user_present() {
   _niri_up && ! _focused_is_terminal && return 1
+  _macos_focus_not_terminal && return 1
+  [[ "$(uname)" == "Darwin" ]] && return 0
   [[ -z "$_saved_pane" ]] && return 0
 
   # 遍历所有 client，避免后台进程没有 client 上下文导致无 -c 时返回空
@@ -20,13 +23,20 @@ _user_present() {
 }
 
 # _pid_under_sshd <pid>: 进程祖先链（最多 25 层）中出现 sshd* 则返回 0（该会话来自 SSH）
-# 依赖 Linux /proc；非 Linux（如 macOS 无 /proc）读取失败而返回 1，交由 SSH_CONNECTION 兜底
+# Linux 读 /proc；macOS 无 /proc，用 ps -o comm/ppid 走链（任一环节进程消失则终止链返回 1）
 _pid_under_sshd() {
   local _pid="$1" _comm _i=0
   while [[ -n "$_pid" && "$_pid" != 0 && "$_pid" != 1 && $_i -lt 25 ]]; do
-    _comm=$(cat "/proc/$_pid/comm" 2>/dev/null) || return 1
+    if [[ -r "/proc/$_pid/comm" ]]; then
+      _comm=$(cat "/proc/$_pid/comm" 2>/dev/null) || return 1
+      _pid=$(awk '/^PPid:/{print $2}' "/proc/$_pid/status" 2>/dev/null)
+    elif command -v ps &>/dev/null; then
+      _comm=$(ps -o comm= -p "$_pid" 2>/dev/null) || return 1
+      _pid=$(ps -o ppid= -p "$_pid" 2>/dev/null | tr -d ' ')
+    else
+      return 1
+    fi
     case "$_comm" in sshd*) return 0 ;; esac
-    _pid=$(awk '/^PPid:/{print $2}' "/proc/$_pid/status" 2>/dev/null)
     _i=$((_i + 1))
   done
   return 1
@@ -45,11 +55,15 @@ _is_loopback_host() {
 # 依赖调用方 scope 的 _tmux_socket
 _is_remote_session() {
   if [[ -n "$_tmux_socket" ]] && command -v tmux &>/dev/null; then
-    local _cpid
+    local _cpid _seen=0
     while IFS= read -r _cpid; do
       [[ -n "$_cpid" ]] || continue
+      _seen=1
       _pid_under_sshd "$_cpid" && return 0
     done < <(tmux -S "$_tmux_socket" list-clients -F '#{client_pid}' 2>/dev/null)
+    # 有在连 client 且祖先链均无 sshd → 本地会话，直接判非远程；
+    # 此时 pane 环境里的 SSH_CONNECTION 是 tmux 服务器启动时冻结的历史，不代表当前驱动方式
+    (( _seen )) && return 1
   fi
 
   if [[ -n "${SSH_CONNECTION:-}" ]]; then

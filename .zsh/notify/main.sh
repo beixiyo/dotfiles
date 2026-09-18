@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # main.sh — 通用完成通知入口（支持点击跳转 tmux pane + 显示对话上下文）
 # 用法: main.sh <app 名> [上下文标题]
-# 依赖: macOS: brew install terminal-notifier (可选，无则退化为基础通知)
+# 依赖: macOS: kitty（OSC 99 通知）+ tmux allow-passthrough all；非 tmux 时退化 osascript
 #       Linux: notify-send (libnotify)
 
 _dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -12,6 +12,7 @@ NOTIFY_TIMEOUT_MINUTES="${NOTIFY_TIMEOUT_MINUTES:-15}" # 通知显示时长（�
 NOTIFY_MAX="${NOTIFY_MAX:-10}"                # 同一 app 最多保留数量；0 表示不限
 NOTIFY_SOUND="${NOTIFY_SOUND:-0}"             # 1：通过终端 BEL 播放完成提示音
 NOTIFY_DESKTOP="${NOTIFY_DESKTOP:-1}"         # 1：发送桌面系统通知
+NOTIFY_DEBUG="${NOTIFY_DEBUG:-0}"             # 1：把通知/跳转过程写入 /tmp/notify-debug.log
 
 # shellcheck source=niri.sh
 source "$_dir/niri.sh"

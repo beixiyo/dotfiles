@@ -41,7 +41,7 @@ function killProcessGroup(child: ChildProcess): void {
   }
 }
 
-/** 射后不理：通知类副作用不得阻塞 agent 关闭（terminal-notifier 可能驻留等点击） */
+/** 射后不理：通知类副作用不得阻塞 agent 关闭（macos.sh 会后台轮询最长 5 分钟等用户切回） */
 function fireAndForget(cmd: string): void {
   spawn('bash', ['-c', cmd], { stdio: 'ignore', detached: true }).unref()
 }
