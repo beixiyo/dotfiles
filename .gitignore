@@ -283,6 +283,9 @@
 !.pi/agent/extensions/
 !.pi/agent/extensions/**
 .pi/agent/extensions/**/node_modules/
+# 自定义主题（JSON 纯配色，无敏感信息）
+!.pi/agent/themes/
+!.pi/agent/themes/**
 
 # -- one click config --
 !one-click-config/

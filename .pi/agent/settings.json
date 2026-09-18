@@ -2,7 +2,7 @@
   "defaultProvider": "zai",
   "defaultModel": "glm-5.3",
   "lastChangelogVersion": "0.85.1",
-  "theme": "dark",
+  "theme": "pretty-cat",
   "packages": [
     "npm:pi-mcp-adapter",
     "npm:pi-subagents",
