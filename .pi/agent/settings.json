@@ -2,11 +2,14 @@
   "defaultProvider": "zai",
   "defaultModel": "glm-5.3",
   "lastChangelogVersion": "0.85.1",
+  "autocompleteMaxVisible": 8,
   "theme": "pretty-cat",
   "packages": [
     "npm:pi-mcp-adapter",
     "npm:pi-subagents",
-    "npm:pi-vim"
+    "npm:pi-vim",
+    "npm:@ff-labs/pi-fff",
+    "npm:@jl-org/pi-exts"
   ],
   "autoRename": {
     "model": "zai/glm-5-turbo",

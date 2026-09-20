@@ -11,8 +11,7 @@
  * - 引擎静默输出 = 放行（引擎故障同样 fail-open，与其在 Claude/Codex 下的语义一致）
  */
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
-import type { ChildProcess } from 'node:child_process'
-import { spawn } from 'node:child_process'
+import { fireAndForget, runDetached } from './lib/proc'
 
 const ENGINE = '~/.claude/hooks/deny-compound-bypass-ast.ts'
 const ENGINE_TIMEOUT_MS = 15_000
@@ -25,53 +24,20 @@ interface EngineOutput {
 }
 
 function askEngine(payload: object): Promise<EngineOutput | null> {
-  return new Promise((resolve) => {
-    // detached 使子进程自成进程组（pgid = pid），超时时可整组击杀 bash→bun，不留孤儿
-    const child = spawn('bash', ['-c', `bun run ${ENGINE}`], {
-      stdio: ['pipe', 'pipe', 'ignore'],
-      detached: true,
-    })
-    let out = ''
-    const timer = setTimeout(() => killProcessGroup(child), ENGINE_TIMEOUT_MS)
-
-    child.stdout.on('data', (chunk) => {
-      out += chunk
-    })
-    child.on('error', () => {
-      clearTimeout(timer)
-      resolve(null)
-    })
-    child.on('close', () => {
-      clearTimeout(timer)
+  return runDetached(`bun run ${ENGINE}`, { input: JSON.stringify(payload), waitMs: ENGINE_TIMEOUT_MS })
+    .then((result) => {
+      if (!result) return null
       try {
-        resolve(JSON.parse(out) as EngineOutput)
+        return JSON.parse(result.stdout) as EngineOutput
       }
       catch {
-        resolve(null)
+        return null
       }
     })
-
-    child.stdin.end(JSON.stringify(payload))
-  })
-}
-
-/** 负 pid 击杀整组进程，组不存在时退回单进程击杀 */
-function killProcessGroup(child: ChildProcess): void {
-  try {
-    if (child.pid) process.kill(-child.pid, 'SIGKILL')
-    else child.kill('SIGKILL')
-  }
-  catch {
-    child.kill('SIGKILL')
-  }
 }
 
 function notifyNeedYou(): void {
-  spawn(
-    'bash',
-    ['-c', 'NOTIFY_APP_NAME=pi bash ~/.zsh/notify/main.sh \'Pi needs you\''],
-    { stdio: 'ignore', detached: true },
-  ).unref()
+  fireAndForget('NOTIFY_APP_NAME=pi bash ~/.zsh/notify/main.sh \'Pi needs you\'')
 }
 
 export default function(pi: ExtensionAPI) {

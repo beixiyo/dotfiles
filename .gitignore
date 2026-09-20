@@ -277,6 +277,8 @@
 .pi/**
 !.pi/agent/
 !.pi/agent/settings.json
+# 扩展的 LSP/tsc 类型依赖声明
+!.pi/agent/package.json
 # models.json 的 apiKey 用 "$ENV_VAR" / "!command" 引用，明文不要提交
 !.pi/agent/models.json
 !.pi/agent/keybindings.json
