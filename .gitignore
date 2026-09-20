@@ -282,6 +282,8 @@
 # models.json 的 apiKey 用 "$ENV_VAR" / "!command" 引用，明文不要提交
 !.pi/agent/models.json
 !.pi/agent/keybindings.json
+# MCP 全局 override（仅 server 声明 + OAuth 客户端引用，无 token；凭据在 auth.json，不跟踪）
+!.pi/agent/mcp.json
 !.pi/agent/extensions/
 !.pi/agent/extensions/**
 .pi/agent/extensions/**/node_modules/
