@@ -86,7 +86,7 @@ tmux server（后台守护进程）
 - 每 15 分钟自动保存
 - tmux server 启动时自动恢复最近一次环境
 - Neovim 使用 session 策略恢复
-- Claude、Codex 和 OpenCode 会改写为各自的继续会话命令
+- Claude、Codex、OpenCode 和 pi 会改写为各自的继续会话命令
 
 关闭终端但 tmux server 仍运行时，只需重新 attach；tmux server 或机器重启后的恢复才由 resurrect / continuum 负责。恢复会重建布局并重新运行配置过的命令，不会让关机前的原进程跨重启继续存活
 
