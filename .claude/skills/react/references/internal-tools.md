@@ -6,13 +6,13 @@
 ```ts
 import {
   // 事件相关
-  useOnWinHidden, useBindWinEvent, useClickOutside, useShortCutKey, useDoubleKeyDown, useMouse,
+  useOnWinHidden, useBindWinEvent, useClickOutside, useShortCutKey, useDoubleKeyDown, useMouse, useKeyboardLayer,
   // 滚动相关
   useScrollBottom, useScrollReachBottom, useScrollRestore, useWheelDirection,
   // 生命周期，effect 可接收 async fn
   useRefresh, onMounted, onUnmounted, useUpdateEffect, useCustomEffect,
   // 网络请求
-  useReq, useWatchReq,
+  useReq, useWatchReq, useOnlineStatus,
   // 观察器
   useIntersectionObserver, useResizeObserver, useMutationObserver,
   // 状态管理
@@ -26,11 +26,11 @@ import {
   // Ref 相关
   useComposedRef, useConst, useLatestCallback,
   // 元素坐标相关
-  useElBounding, useFloatingPosition,
+  useElBounding, useFloatingPosition, useAutoResize,
   // DOM 相关
   useInsertStyle, vShow, useRestoreFocus,
   // 其他 Hooks
-  useStateWithPromise, useTextOverflow, useViewportHeight, useWorker,
+  useStateWithPromise, useTextOverflow, useViewportHeight, useMediaQuery, usePageVisibility, useWorker,
 } from 'hooks' // packages/hooks
 
 import {

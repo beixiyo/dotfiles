@@ -1,14 +1,13 @@
 ---
 name: react
-description: 编写或修改 React/TSX/JSX 组件、Hooks、自定义 Hook、useState/useEffect、forwardRef、memo、@preact/signals-react/signal 状态，或在用户自己的前端项目中需要复用 hooks/comps/utils 等内部包约定时调用。外部项目需先读项目配置和现有风格，不强行套用内部约定
+description: 编写或修改 React/TSX/JSX 组件、Hook、useState/useEffect、memo、@preact/signals-react/signal 状态，或在用户自己的前端项目中需要复用 hooks/comps/utils 等内部包约定时调用。外部项目需先读项目配置和现有风格，不强行套用内部约定
 ---
-
-本文件保留适用范围和核心约束，示例与 API 资料按当前任务读取
 
 ## 适用范围
 - 适用于 React 组件与 Hooks 开发，下方通用约定不以项目是否使用内部包为前提
 - 涉及特定包、路由或主题机制的条目，先核实当前项目是否提供对应能力，不假定依赖或配置存在
 - 项目已有明确规范时，以项目配置、现有代码和 AGENTS.md / CLAUDE.md 为准
+- 内部源码模板在 https://github.com/beixiyo/react-tool
 
 ## 通用项目约定
 
@@ -44,8 +43,9 @@ description: 编写或修改 React/TSX/JSX 组件、Hooks、自定义 Hook、use
 - effect 用于外部系统同步；创建订阅、连接或定时器等资源时负责清理
 - 在采用内部 hooks 包的项目中，回调沿用 `useLatestCallback` 约定；需要重新同步的响应式输入仍应显式表达，具体行为以项目源码为准
 - 数据请求沿用项目已有的数据层；采用 `useReq` / `useWatchReq` 的项目不手写 fetch effect
-- 需要 setState 后同步读取最新值时检查项目 `useGetState` 的能力，没有则告知
-- `useStable` 仅用于可能导致重复触发或循环的复杂对象/数组，不用于基础类型
+- 需要 setState 后同步读取最新值时检查项目 `useGetState` 的能力
+- 内部项目的组件接收对象/数组 props 时，在组件入口用 `useStable` 按内容稳定引用；例如 `const images = useStable(incomingImages)`
+- `useStable` 是深比较：非普通数据对象（DOM、React 元素、类实例等），或数据量大到深比较得不偿失时不要用
 
 ## 按需资料
 
