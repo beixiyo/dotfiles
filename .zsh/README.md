@@ -235,7 +235,7 @@ remote/分支/OID、ahead/behind、dirty 文件、冲突文件和原始冲突 di
 | 包管理 | `update [pkg...]` | 更新指定软件或整个系统 |
 | 包管理 | `pkgs` | 交互式查看已安装软件包 |
 | 下载 | `download <url> [path]` | 按 aria2c、wget、curl 顺序选择下载器 |
-| 系统 | `cb` | 跨平台复制或读取剪贴板 |
+| 系统 | `cb` | 跨平台复制或读取剪贴板；SSH 远程无 GUI 时走 OSC52 写回本地终端 |
 | 系统 | `sysinfo` | 查看 OS、CPU、内存、磁盘与运行时间 |
 | Mihomo | `mihomo-set [node]` | 测速并切换代理节点 |
 
@@ -246,7 +246,7 @@ remote/分支/OID、ahead/behind、dirty 文件、冲突文件和原始冲突 di
 ├── functions/*.zsh          # 改变当前 Shell 状态的薄封装
 ├── functions/bun/src/*.ts   # fzf 界面、数据处理和复杂逻辑
 ├── functions/_preview/      # fzf 预览脚本
-├── functions/_actions/      # fzf 操作回调
+├── functions/_actions/      # fzf 操作回调与 OSC52 剪贴板桥
 ├── functions/pkg/           # 跨平台包管理
 ├── plugins/                 # Zsh 插件
 ├── aliases.zsh              # 条件别名

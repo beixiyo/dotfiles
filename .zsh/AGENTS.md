@@ -10,7 +10,7 @@ This directory uses **"Zsh thin shell, Bun as core"**: Bun handles fzf construct
 | **Shared utils (TS)** | `log`, `die`, `assertCmd`, `hasCmd` | `functions/bun/src/utils.ts` |
 | **Zsh thin shell** | cd / export / one-line glue | `functions/*.zsh` |
 | **Bun core** | fzf build & spawn, list generation, complex logic | `functions/bun/src/*.ts` |
-| **Bash callbacks** | fzf preview / execute / become callbacks | `functions/_preview/*.sh`, `functions/_actions/*.sh` |
+| **Bash callbacks** | fzf preview / execute / become callbacks, OSC52 clipboard bridge | `functions/_preview/*.sh`, `functions/_actions/*.sh` |
 | **pkg shared** | Distro detection, PM command builder, desktop refresh | `functions/pkg/_common.zsh` |
 
 ---
