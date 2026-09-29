@@ -44,6 +44,15 @@ return {
         local dir = vim.fn.isdirectory(path) == 1 and path or vim.fs.dirname(path)
         require('tools.term').open_at(dir)
       end,
+
+      -- <leader>sg / <leader>ff：以光标节点（或多选节点）为范围启动 fff，目录含全部子孙，文件仅自身
+      -- 范围以 glob token 写进 query（可编辑 / <M-p> 调整），不切换 fff 索引根
+      ['<leader>sg'] = function()
+        require('plugins.specs.tools.fff.scope').live_grep(require('vv-explorer').get_target_paths())
+      end,
+      ['<leader>ff'] = function()
+        require('plugins.specs.tools.fff.scope').find_files(require('vv-explorer').get_target_paths())
+      end,
     },
   },
 }

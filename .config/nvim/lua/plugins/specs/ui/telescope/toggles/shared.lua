@@ -45,6 +45,19 @@ function M.compile_rg_input(input)
   return compiled, nil
 end
 
+-- 默认排除 lock 产物：体量大、hash 行超长且几乎无搜索价值；
+-- lock 文件通常被 git 跟踪（不在 .gitignore），rg 默认不会跳过
+local DEFAULT_EXCLUDE_GLOBS = {
+  'pnpm-lock.yaml',
+  'package-lock.json',
+  'yarn.lock',
+  'bun.lockb',
+  'bun.lock',
+  'deno.lock',
+  'Cargo.lock',
+  'go.sum',
+}
+
 function M.build_rg_args(state, base_additional_args, opts)
   local args = {}
   if type(base_additional_args) == 'function' then
@@ -65,6 +78,14 @@ function M.build_rg_args(state, base_additional_args, opts)
   for _, glob in ipairs(globs) do
     args[#args + 1] = '--glob'
     args[#args + 1] = glob
+  end
+
+  -- 用户显式给出 glob（M-p）时完全尊重用户意图，可借此搜 lock 等默认排除项
+  if state.glob_input == '' then
+    for _, exclude in ipairs(DEFAULT_EXCLUDE_GLOBS) do
+      args[#args + 1] = '--glob'
+      args[#args + 1] = '!' .. exclude
+    end
   end
   return args
 end

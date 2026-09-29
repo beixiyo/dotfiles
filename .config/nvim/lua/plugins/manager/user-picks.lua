@@ -9,7 +9,6 @@ return {
   ["agentic"] = false,
   ["bufferline"] = false,
   ["comment"] = false,
-  ["fff"] = false,
   ["im-select"] = false,
   ["trouble"] = false,
 }

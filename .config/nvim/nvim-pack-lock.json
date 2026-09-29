@@ -38,9 +38,9 @@
       "rev": "30ff0f00917076b13c61a428895a7edc7f0094ca",
       "src": "https://github.com/hughfenghen/fenghen-im-select.nvim"
     },
-    "fff.nvim": {
-      "rev": "37bda06c0cb1da0a32877f30b182683b2d0728d8",
-      "src": "https://github.com/dmtrKovalenko/fff.nvim"
+    "fff": {
+      "rev": "708d57bb3559b0313a537f31a210e2ad6c9addc5",
+      "src": "https://github.com/dmtrKovalenko/fff"
     },
     "flash.nvim": {
       "rev": "5f0f270fdc7c5b0c21d903ee85b9cb06f2ac636a",

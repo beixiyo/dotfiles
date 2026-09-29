@@ -2,6 +2,7 @@
 -- 布局：全屏水平，左侧 ~40 列（prompt+list），右侧预览占剩余
 -- C sorter 由 telescope-fzf-native 提供（FFI），pcall load_extension 兜底
 -- 检查 fzf-native 是否启用: lua print(require('telescope').extensions.fzf and '✓' or '✗')
+-- sg/sw/ff 已切 fff（原生分组 grep + frecency 文件搜索）；文件顶部 visual_* helpers 暂无引用，供回退 keys 使用
 local function get_visual_selection()
   local mode = vim.fn.mode()
   if not vim.tbl_contains({ 'v', 'V', '\22' }, mode) then
@@ -137,13 +138,14 @@ return {
         desc = icons.tools .. ' Telescope tools',
       },
 
-      {
-        '<leader>ff',
-        function()
-          require('plugins.specs.ui.telescope.toggles').find_files()
-        end,
-        desc = icons.find_file .. ' Find files',
-      },
+      -- <leader>ff 同 sg/sw 已切给 fff（frecency + typo 容错），回退时取消注释
+      -- {
+      --   '<leader>ff',
+      --   function()
+      --     require('plugins.specs.ui.telescope.toggles').find_files()
+      --   end,
+      --   desc = icons.find_file .. ' Find files',
+      -- },
       {
         '<leader>sb',
         function()
@@ -151,14 +153,15 @@ return {
         end,
         desc = icons.find_text .. ' Find in buffer',
       },
-      {
-        '<leader>sg',
-        function()
-          require('plugins.specs.ui.telescope.toggles').live_grep()
-        end,
-        desc = icons.find_text .. ' Find text',
-      },
-      { '<leader>sg', visual_live_grep, mode = 'x', desc = icons.find_text .. ' Search selection' },
+      -- <leader>sg / <leader>sw 已切给 fff（原生分组 grep），回退时取消下方注释
+      -- {
+      --   '<leader>sg',
+      --   function()
+      --     require('plugins.specs.ui.telescope.toggles').live_grep()
+      --   end,
+      --   desc = icons.find_text .. ' Find text',
+      -- },
+      -- { '<leader>sg', visual_live_grep, mode = 'x', desc = icons.find_text .. ' Search selection' },
       {
         '<leader>sh',
         function()
@@ -166,14 +169,15 @@ return {
         end,
         desc = icons.commands .. ' Help tags',
       },
-      {
-        '<leader>sw',
-        function()
-          require('plugins.specs.ui.telescope.toggles').grep_string()
-        end,
-        desc = icons.words .. ' Find word',
-      },
-      { '<leader>sw', visual_grep_string, mode = 'x', desc = icons.words .. ' Find selection' },
+      -- <leader>sw 同上，回退时取消注释
+      -- {
+      --   '<leader>sw',
+      --   function()
+      --     require('plugins.specs.ui.telescope.toggles').grep_string()
+      --   end,
+      --   desc = icons.words .. ' Find word',
+      -- },
+      -- { '<leader>sw', visual_grep_string, mode = 'x', desc = icons.words .. ' Find selection' },
     }
   end,
 
@@ -225,8 +229,9 @@ return {
             ['<esc>'] = actions.close,
             ['<C-n>'] = actions.move_selection_next,
             ['<C-p>'] = actions.move_selection_previous,
-            ['<Up>'] = actions.cycle_history_prev,
-            ['<Down>'] = actions.cycle_history_next,
+            -- 历史回放用 <C-Up>/<C-Down>（与 fff 统一），方向键保持默认上下移动
+            ['<C-Up>'] = actions.cycle_history_prev,
+            ['<C-Down>'] = actions.cycle_history_next,
             ['<C-d>'] = actions.preview_scrolling_down,
             ['<C-u>'] = actions.preview_scrolling_up,
             ['<C-e>'] = function(bufnr)
