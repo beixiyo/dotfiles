@@ -13,6 +13,7 @@ return {
     'VVSymbolsFilter',
     'VVSymbolsRefresh',
     'VVSymbolsReferences',
+    'VVSymbolsPeek',
     'VVSymbolsLensEnable',
     'VVSymbolsLensDisable',
     'VVSymbolsEnable',
@@ -57,6 +58,8 @@ return {
   end,
   config = function(_, opts)
     require('vv-symbols').setup(opts)
+    -- 预览落点与 fff 匹配共用主题派生淡底（tools/match_hl.lua）
+    require('tools.match_hl').link({ 'VVSymbolsPreview' })
 
     local group = vim.api.nvim_create_augroup('VVSymbolsNativeQuickfix', { clear = true })
 

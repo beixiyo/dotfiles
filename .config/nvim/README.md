@@ -28,7 +28,7 @@
   <tr>
     <td align="center"><a href="https://github.com/beixiyo/vv-log-hl.nvim">vv-log-hl.nvim ↗<br><img src="https://github.com/beixiyo/vv-log-hl.nvim/releases/download/assets-2026-07-25/vv-log-hl.png" alt="vv-log-hl.nvim demo" width="300"></a></td>
     <td align="center"><a href="https://github.com/beixiyo/vv-mcp.nvim">vv-mcp.nvim ↗<br><img src="https://raw.githubusercontent.com/beixiyo/vsc-lsp-mcp/main/docAssets/demo.webp" alt="vv-mcp.nvim demo" width="300"></a></td>
-    <td></td>
+    <td align="center"><a href="https://github.com/beixiyo/vv-symbols.nvim">vv-symbols.nvim ↗<br><img src="https://github.com/beixiyo/vv-symbols.nvim/releases/download/assets-2026-09-30/symbols.png" alt="vv-symbols.nvim demo" width="300"></a></td>
   </tr>
 </table>
 
