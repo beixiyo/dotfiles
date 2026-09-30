@@ -35,8 +35,21 @@
   },
   "excludes": [
     "**/node_modules",
+    "**/*.lock",
     "**/*-lock.json",
-    "**/lock.json"
+    "**/*-lock.yaml",
+    "**/lock.json",
+    "**/npm-shrinkwrap.json",
+    "**/yarn.lock",
+    "**/deno.lock",
+    "**/bun.lock",
+    "**/dist",
+    "**/build",
+    "**/out",
+    "**/coverage",
+    "**/.cache",
+    "**/.turbo",
+    "**/.nx"
   ],
   "plugins": [
     "https://plugins.dprint.dev/typescript-0.96.1.wasm",
