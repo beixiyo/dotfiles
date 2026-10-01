@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+# remote-session — 判断当前会话是否被远程（SSH / mosh）驱动（shell 侧唯一实现，tmux 内外通用）
+#
+# 只提供机制与几种常用组合；“任一 / 全部”等策略由调用方选择
+# Lua 侧对应实现（nvim 插件需自包含，不依赖本脚本）：
+#   ~/.config/nvim/vendors/vv-utils.nvim/lua/vv-utils/sys/remote.lua —— 判据必须与本文件保持一致
+# 一致性测试：~/.zsh/tests/remote-session.test.sh（模拟远程进程链，同时跑本脚本与 Lua 实现）
+#
+# 判据（按顺序）：
+#   1. 在 tmux 内且有在连 client：逐个 client 看进程祖先链
+#      能识别「本地起的 tmux 被 SSH attach 复用」：此时 pane 环境里的 SSH_* 是 tmux 启动时的陈旧快照，不采信
+#   2. 否则（不在 tmux / 没有 client）：调用者自身的进程祖先链
+#      环境变量可能被 sudo -i、env -i、后台服务清掉或伪造，进程链更可靠
+#   3. 再否则看环境变量：SSH_CONNECTION 两端都是回环 → 本地，否则远程；SSH_CONNECTION 缺字段时看 SSH_TTY
+#      用来兜住进程链看不到的情况（如 mosh-server 已脱离 sshd、ps 不可用）
+#   进程祖先链（含自身，最多 25 层）任一进程名以 sshd 或 mosh-server 开头 → 远程
+#     进程名取 ps comm 的第一个词、去掉结尾冒号再取 basename：
+#     /usr/sbin/sshd → sshd；"sshd-session: es@ttys010" → sshd-session（OpenSSH 9.8+）
+#
+# 用法：remote-session [-S socket] [-t target] <command>     （-h / --help / help 打印本说明）
+#   -S socket   tmux socket；默认取 $TMUX 第一段
+#   -t target   只看连在 target（session / pane）所属 session 上的 client；默认看整个 server
+#   clients     每行一个 tmux client：<pid> <remote|local> <client_name>；不在 tmux / 无 client 时无输出
+#   tmux-any    退出码 0=有远程 client  1=全是本地  2=不在 tmux / 没有 client / 查询失败
+#   tmux-all    退出码 0=全是远程 client  1=有本地 client  2=同上
+#   any         （默认）完整判据 1→2→3，退出码只有 0=远程 / 1=本地
+#
+# 调用方与各自策略：
+#   ~/.zsh/notify/tmux.sh             any        远程时不弹本机桌面通知
+#   ~/.zsh/functions/utils/check.zsh  tmux-any   is_tmux_ssh_attached
+#   ~/.zsh/functions/_actions/clip.sh tmux-any   复制 / 粘贴走 OSC52（zsh 的 cb、Bun fzf 工具、docker 共用）
+
+set -u
+
+case "${1:-}" in
+  -h | --help | help)
+    # 打印文件头注释（第 2 行到第一个非注释行之前）作为帮助
+    sed -n '2,/^[^#]/{/^#/s/^# \{0,1\}//p;}' "$0"
+    exit 0
+    ;;
+esac
+
+MAX_DEPTH=25
+# 不在 tmux 时 TMUX 可能根本未定义：set -u 下须带默认值
+socket="${TMUX:-}"
+socket="${socket%%,*}"
+target=""
+
+while getopts 'S:t:' opt; do
+  case "$opt" in
+    S) socket="$OPTARG" ;;
+    t) target="$OPTARG" ;;
+    *) exit 2 ;;
+  esac
+done
+shift $((OPTIND - 1))
+cmd="${1:-any}"
+
+# _classify <list>: list 为 ";" 分隔的 "<pid> <name>" 项；逐项输出 <pid> <remote|local> <name>
+# 一次 ps 拿全量进程表，祖先链在 awk 里走（兼容 macOS 自带 bash 3.2，无关联数组）
+# 列表用 ; 拼成一行再传：macOS 自带 awk 的 -v 值不允许含换行（newline in string）
+_classify() {
+  ps -A -o pid= -o ppid= -o comm= 2>/dev/null | awk -v items="$1" -v max="$MAX_DEPTH" '
+    {
+      pid = $1; ppid[pid] = $2
+      name = $3; sub(/:$/, "", name); sub(/.*\//, "", name)
+      comm[pid] = name
+    }
+    END {
+      n = split(items, lines, ";")
+      for (i = 1; i <= n; i++) {
+        if (lines[i] == "") continue
+        split(lines[i], f, " ")
+        p = f[1]; kind = "local"
+        for (d = 0; d < max && (p in comm); d++) {
+          if (comm[p] ~ /^(sshd|mosh-server)/) { kind = "remote"; break }
+          if (ppid[p] <= 1) break
+          p = ppid[p]
+        }
+        print f[1], kind, f[2]
+      }
+    }'
+}
+
+# _clients: 输出 <pid> <remote|local> <client_name>；无 tmux / 无 client / 失败时无输出
+_clients() {
+  [[ -n "$socket" ]] && command -v tmux >/dev/null 2>&1 || return 0
+
+  local list
+  if [[ -n "$target" ]]; then
+    list=$(tmux -S "$socket" list-clients -t "$target" -F '#{client_pid} #{client_name}' 2>/dev/null)
+  else
+    list=$(tmux -S "$socket" list-clients -F '#{client_pid} #{client_name}' 2>/dev/null)
+  fi
+  [[ -n "$list" ]] || return 0
+  _classify "$(printf '%s' "$list" | tr '\n' ';')"
+}
+
+# _self_remote: 调用者自身（本脚本进程向上）的祖先链是否经远程登录
+_self_remote() {
+  [[ "$(_classify "$$ self" | awk '{print $2}')" == remote ]]
+}
+
+# _tmux_verdict <any|all>: 0 / 1 / 2，语义见文件头
+_tmux_verdict() {
+  local mode="$1" out remote=0 local_=0 kind
+  out=$(_clients)
+  [[ -n "$out" ]] || return 2
+  while read -r _ kind _; do
+    [[ "$kind" == remote ]] && remote=$((remote + 1)) || local_=$((local_ + 1))
+  done <<< "$out"
+  if [[ "$mode" == any ]]; then
+    (( remote > 0 )) && return 0 || return 1
+  fi
+  (( local_ == 0 )) && return 0 || return 1
+}
+
+_is_loopback() {
+  local host
+  host=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')
+  [[ "$host" == localhost || "$host" == ::1 || "$host" == 127.* ]]
+}
+
+# _env_says_remote: 进程链看不出远程时，看本进程的 SSH 环境变量
+_env_says_remote() {
+  local src _sport dst _dport
+  if [[ -n "${SSH_CONNECTION:-}" ]]; then
+    read -r src _sport dst _dport <<< "$SSH_CONNECTION"
+    if [[ -n "$src" && -n "$dst" ]]; then
+      _is_loopback "$src" && _is_loopback "$dst" && return 1
+      return 0
+    fi
+  fi
+  [[ -n "${SSH_TTY:-}" ]]
+}
+
+case "$cmd" in
+  clients) _clients ;;
+  tmux-any) _tmux_verdict any ;;
+  tmux-all) _tmux_verdict all ;;
+  any)
+    _tmux_verdict any
+    rc=$?
+    (( rc == 2 )) || exit "$rc"
+    _self_remote || _env_says_remote
+    ;;
+  *)
+    echo "usage: remote-session [-S socket] [-t target] [clients|tmux-any|tmux-all|any]（-h 查看说明）" >&2
+    exit 2
+    ;;
+esac

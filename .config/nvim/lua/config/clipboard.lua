@@ -35,37 +35,21 @@ vim.opt.clipboard = "unnamedplus"
 -- 逃生舱：NVIM_FORCE_OSC52=1 只走 OSC52（copy 不再 wl-copy）；NVIM_FORCE_WL=1 只走本地
 -- =======================
 
--- 某进程的 environ 是否含 SSH 连接标记（判断该 tmux 客户端是否经 SSH 连入）
--- 背景：持久化共享 tmux server 里，session 级 SSH_TTY/SSH_CONNECTION 是 server 启动时的陈旧
--- 快照；但「客户端进程」（tmux attach 进程）的 environ 永远是本次连接的真实环境，查它最可靠
--- （已实测可靠区分本地 kitty 与 SSH 客户端）
-local function pid_is_ssh(pid)
-  local f = io.open("/proc/" .. pid .. "/environ", "rb")
-  if not f then return false end
-  local data = f:read("*a") or ""
-  f:close()
-  -- environ 以 \0 分隔，子串匹配即可命中 `SSH_CONNECTION=...`
-  return data:find("SSH_CONNECTION=", 1, true) ~= nil or data:find("SSH_TTY=", 1, true) ~= nil
-end
-
 -- 本会话是否存在「本地（非 SSH）客户端」
+-- 背景：持久化共享 tmux server 里，session 级 SSH_TTY/SSH_CONNECTION 是 server 启动时的陈旧快照，
+-- 只能看客户端进程本身：逐 client 的远程判定由 vv-utils.sys.tmux_clients 提供（祖先链含 sshd / mosh-server，跨平台）
 -- 为何不挑「当前客户端」：本地 kitty 与 Claude 的 SSH 常并存于同一会话，挑当前客户端会被
 -- 谁最近活跃左右、不稳定。改判「只要有一个本地客户端在线就认为人在本地」，正好覆盖
 -- 「kitty + SSH 并存」=本地；只有「全是 SSH 客户端」才算远程
+-- 粘贴时才调用（vv-utils 由插件系统加载，晚于本文件），不可用时按「非本地」回退内部寄存器
 local function has_local_tmux_client()
   if not vim.env.TMUX then return false end
-  local pane = vim.env.TMUX_PANE or ""
-  local sid = ""
-  if pane ~= "" then
-    sid = vim.fn.system("tmux display-message -p -t '" .. pane .. "' '#{session_id}' 2>/dev/null"):gsub("%s+", "")
-  end
-  local cmd = sid ~= ""
-    and ("tmux list-clients -t '" .. sid .. "' -F '#{client_pid}' 2>/dev/null")
-    or "tmux list-clients -F '#{client_pid}' 2>/dev/null"
-  local out = vim.fn.system(cmd)
-  if out == "" then return false end
-  for pid in out:gmatch("%d+") do
-    if not pid_is_ssh(pid) then return true end
+  local ok, sys = pcall(require, "vv-utils.sys")
+  if not ok then return false end
+  local clients = sys.tmux_clients({ target = vim.env.TMUX_PANE })
+  if not clients then return false end
+  for _, c in ipairs(clients) do
+    if not c.remote then return true end
   end
   return false
 end
@@ -77,7 +61,9 @@ local function is_local_now()
   if vim.env.NVIM_FORCE_WL then return true end
   -- 持久 tmux 里 env 陈旧 → 看本会话客户端：有本地客户端才算本地
   if vim.env.TMUX then return has_local_tmux_client() end
-  -- 非 tmux：直接看本进程 SSH 迹象
+  -- 非 tmux：看本进程 SSH 环境变量（与 vv-utils.sys.is_remote 同一判据：两端皆回环不算远程）
+  local ok, sys = pcall(require, "vv-utils.sys")
+  if ok then return not sys.is_remote() end
   return not (vim.env.SSH_CONNECTION or vim.env.SSH_TTY or vim.env.SSH_CLIENT)
 end
 
@@ -133,7 +119,7 @@ elseif vim.fn.has("nvim-0.10") == 1 then
       return function(lines, regtype)
         -- 1) OSC52 → 到达你此刻所在的终端（本地 kitty / 远程 attach 的 SSH 客户端皆可），
         --    经 tmux 转发亦稳定。这是修复点：不依赖 nvim 启动时机
-        --    GUI / headless 没有终端 OSC52 通道，不能写 OSC52，否则 Neovide 会卡在复制路径上。
+        --    GUI / headless 没有终端 OSC52 通道，不能写 OSC52，否则 Neovide 会卡在复制路径上
         if should_copy_osc52() then
           osc52_copy[reg](lines, regtype)
         end

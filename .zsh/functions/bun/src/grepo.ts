@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { existsSync, statSync } from 'node:fs'
-import { assertCmd, fzf, FUNC_DIR, detectClipCopy, shellQuote, spawnFzfCapture } from './fzf-shared'
+import { CLIP_COPY_CMD, assertCmd, fzf, FUNC_DIR, shellQuote, spawnFzfCapture } from './fzf-shared'
 
 async function main(): Promise<void> {
   assertCmd('fzf')
@@ -54,7 +54,7 @@ async function main(): Promise<void> {
   repos = [...new Set(repos)].sort()
   if (repos.length === 0) return
 
-  const clipCmd = detectClipCopy()
+  const clipCmd = CLIP_COPY_CMD
   const clipQ = shellQuote(clipCmd)
 
   const previewCmd = [

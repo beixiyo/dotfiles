@@ -3,7 +3,7 @@
 import { existsSync, statSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { assertCmd, fzf, FUNC_DIR, BUN_SRC, detectClipCopy, shellQuote } from './fzf-shared'
+import { CLIP_COPY_CMD, assertCmd, fzf, FUNC_DIR, BUN_SRC, shellQuote } from './fzf-shared'
 
 async function main(): Promise<void> {
   assertCmd('fzf')
@@ -30,7 +30,7 @@ async function main(): Promise<void> {
   const rgBase = `rg --column --line-number --no-heading --color=never --smart-case --hidden --no-ignore-parent${rgNoIgnore} --glob '!.git'`
   const fsChangeReload = `${rgBase} {q} ${shellQuote(dir)} < /dev/null | bun run '${BUN_SRC}/fs-list.ts' 2>/dev/null || true`
 
-  const clipCmd = detectClipCopy()
+  const clipCmd = CLIP_COPY_CMD
   const panel = `${FUNC_DIR}/_actions/fx-panel.sh`
 
   // 动态 channel 状态：放进 mkdtemp 私有随机目录（0700），channel 文件以

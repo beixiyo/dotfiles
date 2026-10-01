@@ -4,7 +4,6 @@
  * Shared fzf configuration and helpers for bun-based fzf commands.
  */
 
-import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { die } from './utils'
 
@@ -47,57 +46,11 @@ export const fzf = {
   grepoPreviewWindow: 'right:28%:border-left:wrap',
 } as const
 
-function isWSL(): boolean {
-  if (process.env.WSL_DISTRO_NAME || process.env.WSLENV) return true
-  try {
-    return /microsoft/i.test(readFileSync('/proc/version', 'utf8'))
-  }
-  catch {
-    return false
-  }
-}
+/** 剪贴板入口脚本：与 zsh 的 cb 共用，后端（OSC52 / pbcopy / ...）在每次复制时现场选择，最终兜底 OSC52 */
+export const CLIP_SCRIPT = `${FUNC_DIR}/_actions/clip.sh`
 
-/** tmux 是否存在经 ssh attach 的客户端（客户端进程父链为 sshd）：剪贴板应跟随对端 */
-function isTmuxSshAttached(): boolean {
-  if (!process.env.TMUX) return false
-
-  const clients = Bun.spawnSync(['tmux', 'list-clients', '-F', '#{client_pid}'], {
-    stdout: 'pipe',
-    stderr: 'ignore',
-  })
-  if (!clients.success) return false
-
-  for (const line of clients.stdout.toString().split('\n')) {
-    const parentId = psField('ppid=', line.trim())
-    if (!parentId) continue
-    if (psField('comm=', parentId).startsWith('sshd')) return true
-  }
-  return false
-}
-
-/** 读取进程字段（ps -o <field>= -p <pid>），失败返回空串 */
-function psField(field: string, pid: string): string {
-  if (!/^\d+$/.test(pid)) return ''
-  const r = Bun.spawnSync(['ps', '-o', field, '-p', pid], { stdout: 'pipe', stderr: 'ignore' })
-  return r.success ? r.stdout.toString().trim() : ''
-}
-
-export function detectClipCopy(): string {
-  // 本地 tmux 被 ssh attach，或 ssh 登录无 GUI 的远程机：
-  // OSC52 会被 tmux 广播给所有客户端，各端写各的剪贴板，优先于本地工具
-  if (
-    isTmuxSshAttached()
-    || (process.env.SSH_TTY && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY)
-  ) {
-    return `${FUNC_DIR}/_actions/osc52.sh copy`
-  }
-  if (Bun.which('pbcopy')) return 'pbcopy'
-  if (Bun.which('wl-copy')) return 'wl-copy'
-  if (isWSL()) return 'clip.exe'
-  if (Bun.which('xclip')) return 'xclip -selection clipboard'
-  if (Bun.which('xsel')) return 'xsel --clipboard --input'
-  return 'cat'
-}
+/** 复制命令（shell 字符串，用于 fzf execute 管道） */
+export const CLIP_COPY_CMD = `${CLIP_SCRIPT} copy`
 
 export function shellQuote(s: string): string {
   return `'${s.replace(/'/g, '\'\\\'\'')}'`

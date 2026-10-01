@@ -3,9 +3,13 @@
 # 被 main.sh source，不可单独执行
 # 依赖调用方 scope 中已设置：_saved_pane, _tmux_socket
 
+# 远程判定的唯一 shell 实现（逐 client 判 remote / local，tmux 外看自身进程链与环境变量），见脚本头部
+_REMOTE_SESSION="${REMOTE_SESSION_BIN:-$HOME/.local/bin/remote-session}"
+
 # _user_present: 用户当前正盯着发起通知的终端 pane 时返回 0
 # 规则：niri/macOS 焦点不在终端 → 明确不在场；否则看 tmux 活动 pane 是否仍是本 pane
 # macOS 补充：前台已是终端 → 在场（tmux tab 高亮/BEL 已足够提示，不发系统通知）
+# niri 下跳过远程 client：物理机桌面在场与否只看本地 client 停在哪
 _user_present() {
   _niri_up && ! _focused_is_terminal && return 1
   _macos_focus_not_terminal && return 1
@@ -13,72 +17,27 @@ _user_present() {
   [[ -z "$_saved_pane" ]] && return 0
 
   # 遍历所有 client，避免后台进程没有 client 上下文导致无 -c 时返回空
-  local _cl _cpid _cur
-  while read -r _cl _cpid; do
-    _niri_up && _pid_under_sshd "$_cpid" && continue
+  local _cpid _kind _cl _cur
+  while read -r _cpid _kind _cl; do
+    [[ -n "$_cl" ]] || continue
+    _niri_up && [[ "$_kind" == remote ]] && continue
     _cur=$(tmux -S "$_tmux_socket" display-message -c "$_cl" -p '#{pane_id}' 2>/dev/null)
     [[ "$_cur" == "$_saved_pane" ]] && return 0
-  done < <(tmux -S "$_tmux_socket" list-clients -F '#{client_name} #{client_pid}' 2>/dev/null)
+  done < <("$_REMOTE_SESSION" -S "$_tmux_socket" clients 2>/dev/null)
   return 1
 }
 
-# _pid_under_sshd <pid>: 进程祖先链（最多 25 层）中出现 sshd* 则返回 0（该会话来自 SSH）
-# Linux 读 /proc；macOS 无 /proc，用 ps -o comm/ppid 走链（任一环节进程消失则终止链返回 1）
-_pid_under_sshd() {
-  local _pid="$1" _comm _i=0
-  while [[ -n "$_pid" && "$_pid" != 0 && "$_pid" != 1 && $_i -lt 25 ]]; do
-    if [[ -r "/proc/$_pid/comm" ]]; then
-      _comm=$(cat "/proc/$_pid/comm" 2>/dev/null) || return 1
-      _pid=$(awk '/^PPid:/{print $2}' "/proc/$_pid/status" 2>/dev/null)
-    elif command -v ps &>/dev/null; then
-      _comm=$(ps -o comm= -p "$_pid" 2>/dev/null) || return 1
-      _pid=$(ps -o ppid= -p "$_pid" 2>/dev/null | tr -d ' ')
-    else
-      return 1
-    fi
-    # macOS 的 ps comm 是完整路径（/usr/sbin/sshd），取 basename 再匹配
-    case "${_comm##*/}" in sshd*) return 0 ;; esac
-    _i=$((_i + 1))
-  done
-  return 1
-}
-
-_is_loopback_host() {
-  # 不用 ${1,,}：那是 bash 4+ 语法，hook 环境退到 /bin/bash 3.2 会 bad substitution
-  local _host
-  _host=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')
-  [[ "$_host" == "localhost" || "$_host" == "::1" || "$_host" == 127.* ]]
-}
-
-# _is_remote_session: 用户正通过 SSH 远程驱动（通知发到物理机 mako、远程看不到）时返回 0
-# 主判据：任一【在连】tmux 客户端的进程祖先含 sshd —— 能识别「公司 kitty 本地起 tmux、
-#   家里 wezterm SSH attach 复用」这种场景：复用已存在的 pane 时其环境里【没有】SSH_CONNECTION
-#   （tmux 服务器是本地起的，环境被冻结），只有客户端进程祖先链才暴露远程身份
-# 兜底：非 tmux 场景，Claude 直接跑在 SSH shell 里 → 看 SSH_CONNECTION / SSH_TTY
-# 依赖调用方 scope 的 _tmux_socket
+# _is_remote_session: 用户正通过 SSH / mosh 远程驱动（通知发到物理机桌面、远程看不到）时返回 0
+# 策略：任一在连 tmux client 来自远程即远程；不在 tmux / 无 client 时看自身进程链，再看 SSH 环境变量
+#   能识别「本地起的 tmux 被 SSH attach 复用」：此时 pane 环境里没有 SSH_CONNECTION，只有 client 祖先链暴露远程身份
+# 依赖调用方 scope 的 _tmux_socket；remote-session 缺失时按本地处理
 _is_remote_session() {
-  if [[ -n "$_tmux_socket" ]] && command -v tmux &>/dev/null; then
-    local _cpid _seen=0
-    while IFS= read -r _cpid; do
-      [[ -n "$_cpid" ]] || continue
-      _seen=1
-      _pid_under_sshd "$_cpid" && return 0
-    done < <(tmux -S "$_tmux_socket" list-clients -F '#{client_pid}' 2>/dev/null)
-    # 有在连 client 且祖先链均无 sshd → 本地会话，直接判非远程；
-    # 此时 pane 环境里的 SSH_CONNECTION 是 tmux 服务器启动时冻结的历史，不代表当前驱动方式
-    (( _seen )) && return 1
+  [[ -x "$_REMOTE_SESSION" ]] || return 1
+  if [[ -n "$_tmux_socket" ]]; then
+    "$_REMOTE_SESSION" -S "$_tmux_socket" any
+  else
+    TMUX='' "$_REMOTE_SESSION" any
   fi
-
-  if [[ -n "${SSH_CONNECTION:-}" ]]; then
-    local _src _src_port _dst _dst_port
-    read -r _src _src_port _dst _dst_port <<< "$SSH_CONNECTION"
-    [[ -n "$_src_port" && -n "$_dst" && -n "$_dst_port" ]] || return 1
-    _is_loopback_host "$_src" && _is_loopback_host "$_dst" && return 1
-    return 0
-  fi
-
-  [[ -n "${SSH_TTY:-}" ]] && return 0
-  return 1
 }
 
 # _switch_tmux_pane <pane> <socket>: 切换到指定 tmux pane

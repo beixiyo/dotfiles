@@ -10,6 +10,7 @@
  *   dispatch <action> [line...]      - 解析选中行并执行 docker 操作（logs/exec/copy/stop/run/restart/delete/image）
  */
 
+import { CLIP_SCRIPT } from './fzf-shared'
 import { COLORS, ICONS } from './shared'
 
 // 容器 / 镜像图标（Nerd Font），带颜色；格式为 类型\t图标\tID\t...，dispatch 用 cut -f3 取 ID
@@ -47,21 +48,6 @@ async function runDockerTty(args: string[]): Promise<number> {
 
 function writeLine(line: string) {
   process.stdout.write(line + '\n')
-}
-
-/** 按优先级检测可用剪贴板命令，返回 spawn 参数数组 */
-function resolveClipCmd(): string[] | null {
-  const candidates: [string, string[]][] = [
-    ['pbcopy', ['pbcopy']],
-    ['clip.exe', ['clip.exe']],
-    ['wl-copy', ['wl-copy']],
-    ['xclip', ['xclip', '-selection', 'clipboard']],
-    ['xsel', ['xsel', '--clipboard', '--input']],
-  ]
-  for (const [bin, cmd] of candidates) {
-    if (Bun.which(bin)) return cmd
-  }
-  return null
 }
 
 // --- list: 供 dd / dex / dlogs / dcp 的 fzf 数据源 ---
@@ -134,14 +120,12 @@ async function dispatch(action: string, lines: string[]) {
       break
     case 'copy':
       if (firstId) {
-        const clipCmd = resolveClipCmd()
-        if (clipCmd) {
-          // 不从 fzf execute 继承 stdout，避免无 TTY 时 kqueue EINVAL
-          const proc = Bun.spawn(clipCmd, { stdin: 'pipe', stdout: 'ignore', stderr: 'ignore' })
-          proc.stdin.write(firstId)
-          proc.stdin.end()
-          await proc.exited
-        }
+        // 与 cb / fzf 工具共用 clip.sh：远程（ssh attach）时走 OSC52
+        // 不从 fzf execute 继承 stdout，避免无 TTY 时 kqueue EINVAL
+        const proc = Bun.spawn([CLIP_SCRIPT, 'copy'], { stdin: 'pipe', stdout: 'ignore', stderr: 'ignore' })
+        proc.stdin.write(firstId)
+        proc.stdin.end()
+        await proc.exited
         // 从 fzf execute 运行时 stdout 可能不可用，用 stderr 输出
         const out = process.stderr?.writable ? process.stderr : process.stdout
         if (out?.write) out.write(`Copied: ${firstId}\n`)

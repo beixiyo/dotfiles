@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { assertCmd, fzf, FUNC_DIR, BUN_SRC, detectClipCopy, shellQuote, spawnFzf } from './fzf-shared'
+import { CLIP_COPY_CMD, assertCmd, fzf, FUNC_DIR, BUN_SRC, shellQuote, spawnFzf } from './fzf-shared'
 import { existsSync, statSync } from 'node:fs'
 
 async function main(): Promise<void> {
@@ -47,7 +47,7 @@ async function main(): Promise<void> {
   const reloadStart = `${rgCmdStr} '' ${shellQuote(dir)} < /dev/null | bun run '${BUN_SRC}/fs-list.ts' 2>/dev/null`
   const reloadChange = `${rgCmdStr} {q} ${shellQuote(dir)} < /dev/null | bun run '${BUN_SRC}/fs-list.ts' 2>/dev/null || true`
 
-  const clipCmd = detectClipCopy()
+  const clipCmd = CLIP_COPY_CMD
   const copyAbs = `bun run '${BUN_SRC}/path.ts' abs {+2} 2>/dev/null | ${clipCmd}`
 
   const header = [
