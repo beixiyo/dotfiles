@@ -250,6 +250,8 @@
 !.claude/skills/**
 # lark-* skills 不纳入版本管理（符号链接，去尾斜杠才能匹配）
 .claude/skills/lark-*
+# synced/ 由 Claude 自动生成，不纳入版本管理
+.claude/skills/synced/
 !.claude/agents/
 !.claude/agents/**
 
@@ -282,8 +284,8 @@
 # models.json 的 apiKey 用 "$ENV_VAR" / "!command" 引用，明文不要提交
 !.pi/agent/models.json
 !.pi/agent/keybindings.json
-# MCP 全局 override（仅 server 声明 + OAuth 客户端引用，无 token；凭据在 auth.json，不跟踪）
-!.pi/agent/mcp.json
+# mcp.json 由 ai-sync 从 ~/.claude.json 派生（含 figma oauth.clientName），不跟踪；
+# mcp-auth.json（OAuth token）、mcp.log 同样被 .pi/** 忽略
 !.pi/agent/extensions/
 !.pi/agent/extensions/**
 .pi/agent/extensions/**/node_modules/
