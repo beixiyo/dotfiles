@@ -7,7 +7,7 @@ import { runEslint } from './eslint'
 import { isLintableFile } from './file-types'
 import { runOxlint } from './oxlint'
 import { runPrettier } from './prettier'
-import { runVvMcp } from './vv-mcp'
+// import { runVvMcp } from './vv-mcp'
 import { runNvimCleanTrailing } from './vv-utils'
 
 const CODE_EXTENSIONS = new Set([
@@ -67,5 +67,8 @@ export function formatFile(filePath: string, cwd: string): void {
 
   // runOxfmt(filePath, cwd)
   runDprint(filePath, cwd) || runPrettier(filePath, cwd)
-  runVvMcp(filePath, cwd)
+
+  // vv-mcp 停用：fix_document 兜底套用 diagnostic quick fixes，改到一半出现 transient
+  // unused var 时会把 oxlint LSP 的「禁用规则」修复写成 oxlint-disable 注释
+  // runVvMcp(filePath, cwd)
 }

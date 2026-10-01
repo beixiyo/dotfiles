@@ -7,8 +7,10 @@
  *   - Codex：apply_patch → tool_input.command 承载 patch 文本，解析其
  *     `*** Add/Update/Delete File:` 与 `*** Move to:` 指令取改动文件（可多文件）
  *
- * 处理顺序：vv-utils :VVCleanTrailing → Oxlint / ESLint → Oxfmt → dprint / Prettier → vv-mcp
+ * 处理顺序：vv-utils :VVCleanTrailing → Oxlint / ESLint → Oxfmt → dprint / Prettier
  * 其中 Oxlint 与 ESLint、dprint 与 Prettier 都是按可执行文件存在情况二选一
+ * vv-mcp（Neovim LSP 修复）已停用：会自动套用 oxlint 的「禁用规则」quick fix，
+ * 详见 formatters/index.ts 内注释
  * 注：同步读到 stdin EOF，天然 drain stdin——避开 Codex PostToolUse
  *     不读 stdin 就 Broken pipe 的坑（openai/codex#32667）
  */
