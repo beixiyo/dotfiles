@@ -15,5 +15,12 @@
     "thinkingLevel": "minimal",
     "maxLen": 24
   },
-  "treeFilterMode": "no-tools"
+  "treeFilterMode": "no-tools",
+  "customHooks": {
+    "agentSettled": "export AI_AGENT_NAME='Pi' NOTIFY_APP_NAME=pi NOTIFY_SOUND=1 NOTIFY_DESKTOP=1; bash ~/.config/tmux/scripts/ai-status.sh done \"$TMUX_PANE\"; bash ~/.zsh/notify/main.sh",
+    "uiPrompt": [
+      "AI_AGENT_NAME='Pi' bash ~/.config/tmux/scripts/ai-status.sh wait \"$TMUX_PANE\"",
+      "NOTIFY_APP_NAME=pi bash ~/.zsh/notify/main.sh 'Pi needs you'"
+    ]
+  }
 }

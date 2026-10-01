@@ -11,7 +11,7 @@
  * - 引擎静默输出 = 放行（引擎故障同样 fail-open，与其在 Claude/Codex 下的语义一致）
  */
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
-import { fireAndForget, runDetached } from './lib/proc'
+import { runDetached } from './lib/proc'
 
 const ENGINE = '~/.claude/hooks/deny-compound-bypass-ast.ts'
 const ENGINE_TIMEOUT_MS = 15_000
@@ -34,10 +34,6 @@ function askEngine(payload: object): Promise<EngineOutput | null> {
         return null
       }
     })
-}
-
-function notifyNeedYou(): void {
-  fireAndForget('NOTIFY_APP_NAME=pi bash ~/.zsh/notify/main.sh \'Pi needs you\'')
 }
 
 export default function(pi: ExtensionAPI) {
@@ -76,7 +72,7 @@ export default function(pi: ExtensionAPI) {
       return { block: true, reason: `${reason} (non-interactive mode, approval unavailable)` }
     }
 
-    notifyNeedYou()
+    /** 通知由 hooks.ts 的 ui_prompt_start 统一发出，这里不重复 */
     const choice = await ctx.ui.select(`⚠️ Permission approval\n\n${reason}\n\nAllow execution?`, ['Yes', 'No'])
     return choice === 'Yes' ? undefined : { block: true, reason: 'Blocked by user' }
   })

@@ -36,6 +36,21 @@ _TERM_APPS=(kitty ghostty wezterm)
 _saved_pane="$TMUX_PANE"
 _tmux_socket="${TMUX%%,*}"
 
+# --- 读取 hook stdin（只能读一次；context.sh 复用 _hook_json） ---
+# 带 agent_id 的事件来自 subagent / teammate，不是“主会话在等你”，直接不通知
+# 限时读：非 hook 调用方（如 opencode 插件的 Bun $）会继承父进程 stdin，若是永不关闭的管道，cat 会永久阻塞
+_hook_json=""
+[[ -t 0 ]] || IFS= read -r -d '' -t 2 _hook_json
+# 只过滤“完成”类事件；PermissionRequest / PreToolUse(AskUserQuestion) 等“需要你”的事件即使来自 subagent 也要通知
+if [[ -n "$_hook_json" ]]; then
+  _agent_id=$(printf '%s' "$_hook_json" | jq -r '.agent_id // empty' 2>/dev/null)
+  _hook_event=$(printf '%s' "$_hook_json" | jq -r '.hook_event_name // empty' 2>/dev/null)
+  _dbg "hook event=${_hook_event:-?} agent_id=${_agent_id:-<none>}"
+  case "$_hook_event" in
+    Stop|SubagentStop|TeammateIdle|TaskCompleted) [[ -n "$_agent_id" ]] && exit 0 ;;
+  esac
+fi
+
 _notify_terminal_sound
 [[ "$NOTIFY_DESKTOP" == 1 ]] || exit 0
 
@@ -61,6 +76,7 @@ fi
 
 desc="${1:-${AI_AGENT_NAME:-Terminal}}"
 _body=$(_extract_context "${2:-}")
+_dbg "notify title=${desc} body=${_body//$'\n'/ | }"
 
 # --- 分发到平台对应通知模块 ---
 

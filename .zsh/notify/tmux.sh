@@ -36,14 +36,17 @@ _pid_under_sshd() {
     else
       return 1
     fi
-    case "$_comm" in sshd*) return 0 ;; esac
+    # macOS 的 ps comm 是完整路径（/usr/sbin/sshd），取 basename 再匹配
+    case "${_comm##*/}" in sshd*) return 0 ;; esac
     _i=$((_i + 1))
   done
   return 1
 }
 
 _is_loopback_host() {
-  local _host="${1,,}"
+  # 不用 ${1,,}：那是 bash 4+ 语法，hook 环境退到 /bin/bash 3.2 会 bad substitution
+  local _host
+  _host=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')
   [[ "$_host" == "localhost" || "$_host" == "::1" || "$_host" == 127.* ]]
 }
 

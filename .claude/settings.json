@@ -29,6 +29,19 @@
             "command": "bun run ~/.claude/hooks/deny-compound-bypass-ast.ts"
           }
         ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "AI_AGENT_NAME='Claude Code' bash ~/.config/tmux/scripts/ai-status.sh wait \"$TMUX_PANE\" -"
+          },
+          {
+            "type": "command",
+            "command": "NOTIFY_APP_NAME=claude-code bash ~/.zsh/notify/main.sh 'Claude Code needs you'"
+          }
+        ]
       }
     ],
     "Stop": [
@@ -36,7 +49,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "export AI_AGENT_NAME='Claude Code' NOTIFY_APP_NAME=claude-code NOTIFY_SOUND=1 NOTIFY_DESKTOP=1; bash ~/.config/tmux/scripts/ai-status.sh done \"$TMUX_PANE\"; bash ~/.zsh/notify/main.sh"
+            "command": "AI_AGENT_NAME='Claude Code' bash ~/.config/tmux/scripts/ai-status.sh done \"$TMUX_PANE\" -"
+          },
+          {
+            "type": "command",
+            "command": "export AI_AGENT_NAME='Claude Code' NOTIFY_APP_NAME=claude-code NOTIFY_SOUND=1 NOTIFY_DESKTOP=1; bash ~/.zsh/notify/main.sh"
           }
         ]
       }
@@ -54,7 +71,12 @@
     ],
     "PermissionRequest": [
       {
+        "matcher": "^(?!AskUserQuestion$)",
         "hooks": [
+          {
+            "type": "command",
+            "command": "AI_AGENT_NAME='Claude Code' bash ~/.config/tmux/scripts/ai-status.sh wait \"$TMUX_PANE\" -"
+          },
           {
             "type": "command",
             "command": "NOTIFY_APP_NAME=claude-code bash ~/.zsh/notify/main.sh 'Claude Code needs you'"

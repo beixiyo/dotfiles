@@ -52,7 +52,21 @@ cx() {
     )
   fi
 
-  command env "${codex_env[@]}" codex "$@"
+  # 交互会话不走共享 app-server daemon：hook 由 daemon 执行时继承的是 daemon 启动时的环境，
+  # TMUX_PANE 等指向旧 pane，tmux badge / 通知跳转会落错（上面补的 env 同样传不到）
+  # 只看第一个参数：无子命令（含直接带 prompt / 选项）→ 前置；resume / fork → 跟在子命令后；其余子命令原样透传
+  # 显式 --remote 连远程 app server 时不加
+  local -a codex_args=("$@")
+  if (( ! ${codex_args[(I)--remote*]} )); then
+    case "$1" in
+      resume|fork) codex_args=("$1" --no-daemon "${@:2}") ;;
+      ''|-*) codex_args=(--no-daemon "$@") ;;
+      agents|exec|e|review|login|logout|mcp|plugin|app-server|remote-control|app|completion|update|doctor|sandbox|debug|apply|a|queue|archive|delete|migrate-rollouts|unarchive|cloud|exec-server|features|help) ;;
+      *) codex_args=(--no-daemon "$@") ;;
+    esac
+  fi
+
+  command env "${codex_env[@]}" codex "${codex_args[@]}"
 }
 
 # safe-rm

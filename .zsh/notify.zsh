@@ -21,9 +21,9 @@ _notify_precmd() {
   _notify_cmd_time=0
   (( elapsed < _notify_threshold )) && return
 
-  # 交互式/编辑器程序退出不通知
+  # 交互式/编辑器程序退出不通知；AI agent 已有各自的 hook 通知（~/.zsh/notify/main.sh），避免重复
   case "${_notify_cmd_text%% *}" in
-    nvim|vim|vi|v|nano|emacs|hx|less|man|top|htop|btop|fzf|claude|opencode) return ;;
+    nvim|vim|vi|v|nano|emacs|hx|less|man|top|htop|btop|fzf|claude|cc|opencode|oc|codex|cx|pi) return ;;
   esac
 
   local icon="✅"

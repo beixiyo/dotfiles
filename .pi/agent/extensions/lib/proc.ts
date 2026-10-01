@@ -51,7 +51,17 @@ export function runDetached(cmd: string, opts: { input?: string; waitMs?: number
   })
 }
 
-/** 射后不理：通知类副作用不阻塞调用方（进程 unref，父进程可先行退出） */
-export function fireAndForget(cmd: string): void {
-  spawn('bash', ['-c', cmd], { stdio: 'ignore', detached: true }).unref()
+/** 射后不理：通知类副作用不阻塞调用方（进程 unref，父进程可先行退出）
+ * `input` 非空时灌入 stdin（Claude hook 同款 JSON 约定），否则 stdin 为 /dev/null */
+export function fireAndForget(cmd: string, input?: string): void {
+  if (input === undefined) {
+    spawn('bash', ['-c', cmd], { stdio: 'ignore', detached: true }).unref()
+    return
+  }
+
+  const child = spawn('bash', ['-c', cmd], { stdio: ['pipe', 'ignore', 'ignore'], detached: true })
+  /** 子进程提前退出会让写入 EPIPE，吞掉避免拖垮 pi */
+  child.stdin.on('error', () => {})
+  child.stdin.end(input)
+  child.unref()
 }
