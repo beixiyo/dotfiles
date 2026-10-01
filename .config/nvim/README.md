@@ -28,7 +28,20 @@
   <tr>
     <td align="center"><a href="https://github.com/beixiyo/vv-log-hl.nvim">vv-log-hl.nvim ↗<br><img src="https://github.com/beixiyo/vv-log-hl.nvim/releases/download/assets-2026-07-25/vv-log-hl.png" alt="vv-log-hl.nvim demo" width="300"></a></td>
     <td align="center"><a href="https://github.com/beixiyo/vv-mcp.nvim">vv-mcp.nvim ↗<br><img src="https://raw.githubusercontent.com/beixiyo/vsc-lsp-mcp/main/docAssets/demo.webp" alt="vv-mcp.nvim demo" width="300"></a></td>
-    <td align="center"><a href="https://github.com/beixiyo/vv-symbols.nvim">vv-symbols.nvim ↗<br><img src="https://github.com/beixiyo/vv-symbols.nvim/releases/download/assets-2026-09-30/symbols.png" alt="vv-symbols.nvim demo" width="300"></a></td>
+  </tr>
+</table>
+
+<table align="center">
+  <tr>
+    <td colspan="2" align="center"><a href="https://github.com/beixiyo/vv-symbols.nvim">vv-symbols.nvim ↗</a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="https://github.com/beixiyo/vv-symbols.nvim/releases/download/assets-2026-09-30/symbols.png">符号树<br><img src="https://github.com/beixiyo/vv-symbols.nvim/releases/download/assets-2026-09-30/symbols.png" alt="符号树" width="380"></a></td>
+    <td align="center"><a href="https://github.com/beixiyo/vv-symbols.nvim/releases/download/assets-2026-09-30/references-count.png">引用计数<br><img src="https://github.com/beixiyo/vv-symbols.nvim/releases/download/assets-2026-09-30/references-count.png" alt="引用计数" width="380"></a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="https://github.com/beixiyo/vv-symbols.nvim/releases/download/assets-2026-09-30/references.png">引用列表<br><img src="https://github.com/beixiyo/vv-symbols.nvim/releases/download/assets-2026-09-30/references.png" alt="引用列表" width="380"></a></td>
+    <td align="center"><a href="https://github.com/beixiyo/vv-symbols.nvim/releases/download/assets-2026-09-30/preview.png">浮窗预览<br><img src="https://github.com/beixiyo/vv-symbols.nvim/releases/download/assets-2026-09-30/preview.png" alt="浮窗预览" width="380"></a></td>
   </tr>
 </table>
 
