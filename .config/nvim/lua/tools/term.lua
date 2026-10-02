@@ -198,13 +198,15 @@ end
 -- 在专用浮窗里跑一条一次性命令（与交互 shell 分开，保留输出便于看结果/退出码）
 ---@param cmd string[]  完整 argv
 ---@param dir? string   工作目录
-function M.run(cmd, dir)
-  if not cmd or #cmd == 0 then return end
+---@param opts? { float_opts?: table, close_on_exit?: boolean } close_on_exit 默认 false；float_opts 透传给 toggleterm
+---@return boolean opened 是否成功创建并打开终端
+function M.run(cmd, dir, opts)
+  if not cmd or #cmd == 0 then return false end
 
   local mod = get_terminal_mod()
   if not mod then
     vim.notify('tools.term: failed to load toggleterm', vim.log.levels.ERROR)
-    return
+    return false
   end
 
   -- toggleterm 的 cmd 是 shell 字符串，逐段 shellescape 拼接，兼容空格/特殊字符
@@ -215,11 +217,15 @@ function M.run(cmd, dir)
     cmd = cmdstr,
     dir = dir and vim.fn.fnameescape(dir) or nil,
     direction = 'float',
+    float_opts = opts and opts.float_opts or nil,
     hidden = true,
-    close_on_exit = false, -- 跑完保留输出（覆盖全局 close_on_exit=true）
+    close_on_exit = opts and opts.close_on_exit == true or false, -- 默认跑完保留输出
     on_open = set_term_keys,
   })
   run_term:open()
+  local opened = run_term:is_open()
+  if not opened then pcall(function() run_term:shutdown() end) end
+  return opened
 end
 
 return M
