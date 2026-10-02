@@ -1,8 +1,15 @@
--- 插件安装/更新后自动重新生成 .luarc.json（需要 bun）
+-- LuaLS 项目类型库查询与清单生成；新增本地 vendor 不依赖旧清单也能取得基础类型
 local M = {}
 
 local pending
-local manifest_path = vim.fn.stdpath('config') .. '/.luarc-libraries.json'
+local config_path = vim.fn.stdpath('config')
+local manifest_path = config_path .. '/.luarc-libraries.json'
+local vendor_root = vim.fs.normalize(config_path .. '/vendors')
+
+local function is_vendor_project(root)
+  return root and vim.fs.dirname(root) == vendor_root
+    and vim.fn.isdirectory(root .. '/lua') == 1
+end
 
 local function load_manifest()
   local file = io.open(manifest_path, 'r')
@@ -15,17 +22,22 @@ local function load_manifest()
   return ok and type(manifest) == 'table' and manifest or nil
 end
 
+--- 返回项目类型库；清单尚未包含本地 vendor 时兜底提供 Neovim/luv 基础类型
 ---@param root string?
 ---@return string[]
 function M.libraries_for(root)
+  if not root then return {} end
+  root = vim.fs.normalize(root)
+
   local manifest = load_manifest()
-  if not (manifest and root and manifest.projects) then return {} end
+  local project = manifest and manifest.projects and manifest.projects[root]
+  if not project and not is_vendor_project(root) then return {} end
 
-  local project = manifest.projects[vim.fs.normalize(root)]
-  if not project then return {} end
-
-  local libraries = vim.deepcopy(manifest.base or {})
-  vim.list_extend(libraries, project)
+  local libraries = vim.deepcopy(manifest and manifest.base or {
+    '${3rd}/luv/library',
+    vim.env.VIMRUNTIME .. '/lua',
+  })
+  vim.list_extend(libraries, project or {})
   return libraries
 end
 
@@ -74,6 +86,14 @@ local function needs_generate()
     local content = vim.fn.readfile(path)
     local text = table.concat(content):gsub('%s', '')
     if text == '' or text == '{}' then return true end
+  end
+
+  -- 本地 clone 的插件不会产生 PackChanged；不能只以清单文件存在判断有效
+  local manifest = load_manifest()
+  if not (manifest and manifest.projects) then return true end
+  for _, lua_dir in ipairs(vim.fn.glob(vendor_root .. '/*/lua', false, true)) do
+    local project = vim.fs.normalize(vim.fs.dirname(lua_dir))
+    if is_vendor_project(project) and not manifest.projects[project] then return true end
   end
   return false
 end

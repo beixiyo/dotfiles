@@ -78,6 +78,14 @@
 
 使用 `:PackDev` 查看全部重定向，或 `:PackDev <name>` 查看单项判定
 
+## LuaLS 类型库
+
+- `scripts/gen-luarc.ts` 生成根 `.luarc.json` 和 `.luarc-libraries.json`；后者记录各 vendor 的直接 `require` 依赖
+- LuaLS 按最近 marker 将 vendor 作为独立项目，通过 `before_init` 调用 `luarc.libraries_for(root)` 注入基础类型和项目依赖
+- 新 vendor 尚未写入清单、或清单缺失时，直接位于 `vendors/` 且具有 `lua/` 的插件根仍取得 Neovim/luv 基础类型；不会向其他 Lua 项目注入
+- 启动时检查清单缺失、空文件和新增 vendor；安装/更新事件触发延迟生成。手动修改已有插件的依赖后运行 `:PackGenTypes`
+- 清单生成不会自动刷新已启动的 LuaLS client；生成后需重启相关 client 或重新打开 Neovim
+
 ## Build
 
 - `':Command'`：在 schedule 中先 `packadd`，再执行 Ex 命令
