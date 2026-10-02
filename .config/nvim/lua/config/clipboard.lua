@@ -28,7 +28,8 @@ vim.opt.clipboard = "unnamedplus"
 --       - 本地终端：系统剪贴板照旧可用，OSC52 冗余无害
 --       - 远程 attach：OSC52 到达你家终端；本机剪贴板命令即使落在宿主机也无害
 --       - GUI / headless：没有终端 OSC52 通道，只写本机系统剪贴板，避免 Neovide 卡死
---   * paste：OSC52 读不可靠，故仍按「此刻是否本地」实时判定（每次粘贴现算，不冻结）：
+--   * paste：OSC52 读不可靠，故仍按「此刻是否本地」运行时判定（不冻结；判定结果最多复用 1 秒，
+--       NVIM_FORCE_* 逃生舱优先、不经缓存）：
 --       本地 → pbpaste / wl-paste / xclip（保留「外部应用 Ctrl-c → nvim p」入站粘贴）；
 --       远程 → 内部寄存器兜底
 --
@@ -54,17 +55,32 @@ local function has_local_tmux_client()
   return false
 end
 
--- 此刻是否「本地」（仅 paste 方向需要：决定读宿主机系统剪贴板还是回退内部寄存器）
--- 每次粘贴实时调用，不缓存、不冻结
-local function is_local_now()
-  if vim.env.NVIM_FORCE_OSC52 then return false end
-  if vim.env.NVIM_FORCE_WL then return true end
+-- 实际判定「本地 / 远程」：会同步执行外部命令（tmux list-clients / ps -A，约数十 ms）
+local function detect_local()
   -- 持久 tmux 里 env 陈旧 → 看本会话客户端：有本地客户端才算本地
   if vim.env.TMUX then return has_local_tmux_client() end
-  -- 非 tmux：看本进程 SSH 环境变量（与 vv-utils.sys.is_remote 同一判据：两端皆回环不算远程）
+  -- 非 tmux：交给 vv-utils.sys.is_remote（先看 nvim 自身进程祖先链是否经 sshd / mosh-server，
+  -- 再按 SSH 环境变量兜底：两端皆回环不算远程）；vv-utils 不可用时只看环境变量
   local ok, sys = pcall(require, "vv-utils.sys")
   if ok then return not sys.is_remote() end
   return not (vim.env.SSH_CONNECTION or vim.env.SSH_TTY or vim.env.SSH_CLIENT)
+end
+
+-- 判定结果缓存 1 秒：每次粘贴都同步跑外部命令（非 tmux 时 ps -A 约 25ms），
+-- 宏 / 连续 p 会被逐次拖慢；attach / detach 是人为操作，1 秒内的滞后可以接受，仍不会被启动时判定冻结
+local LOCAL_CACHE_TTL_NS = 1e9
+local local_cache = { value = false, at = nil }
+
+-- 此刻是否「本地」（仅 paste 方向需要：决定读宿主机系统剪贴板还是回退内部寄存器）
+-- 每次粘贴调用，判定结果最多复用 1 秒；逃生舱环境变量不经缓存，始终优先生效
+local function is_local_now()
+  if vim.env.NVIM_FORCE_OSC52 then return false end
+  if vim.env.NVIM_FORCE_WL then return true end
+  if local_cache.at and vim.uv.hrtime() - local_cache.at < LOCAL_CACHE_TTL_NS then return local_cache.value end
+  local_cache.value = detect_local()
+  -- 时间戳取判定结束时刻：退化时判定本身可能 ≥1s（命令超时），取开始时刻会写入即过期
+  local_cache.at = vim.uv.hrtime()
+  return local_cache.value
 end
 
 local function has_attached_ui()

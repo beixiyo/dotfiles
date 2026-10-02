@@ -12,7 +12,13 @@
 #   2. 否则（不在 tmux / 没有 client）：调用者自身的进程祖先链
 #      环境变量可能被 sudo -i、env -i、后台服务清掉或伪造，进程链更可靠
 #   3. 再否则看环境变量：SSH_CONNECTION 两端都是回环 → 本地，否则远程；SSH_CONNECTION 缺字段时看 SSH_TTY
-#      用来兜住进程链看不到的情况（如 mosh-server 已脱离 sshd、ps 不可用）
+#      用来兜住进程链看不到的情况（如 mosh-server 已脱离 sshd）
+#   ps 失败 = 进程链信息不可用：tmux 判定视为“判不出”（退出码 2），any 跳过第 2 步直接按环境变量兜底
+#   一次调用最多执行一次 ps（tmux 分支与自身进程链共用同一份进程表）
+#   超时：本脚本调用 tmux / ps 不设超时；Lua 侧单条命令超时均按失败处理：
+#     同步版（is_remote）先等约 500ms，超时发 SIGKILL 后再等至多 500ms（单条最坏约 1s）；
+#     异步版（is_remote_async）等 500ms 即发 SIGKILL 并立即按失败处理，不等进程退出
+#     仅在 tmux server 或 ps 挂住时两边行为可能不同：本脚本一直等待，Lua 侧超时后按“判不出 / ps 失败”兜底
 #   进程祖先链（含自身，最多 25 层）任一进程名以 sshd 或 mosh-server 开头 → 远程
 #     进程名取 ps comm 的第一个词、去掉结尾冒号再取 basename：
 #     /usr/sbin/sshd → sshd；"sshd-session: es@ttys010" → sshd-session（OpenSSH 9.8+）
@@ -20,8 +26,8 @@
 # 用法：remote-session [-S socket] [-t target] <command>     （-h / --help / help 打印本说明）
 #   -S socket   tmux socket；默认取 $TMUX 第一段
 #   -t target   只看连在 target（session / pane）所属 session 上的 client；默认看整个 server
-#   clients     每行一个 tmux client：<pid> <remote|local> <client_name>；不在 tmux / 无 client 时无输出
-#   tmux-any    退出码 0=有远程 client  1=全是本地  2=不在 tmux / 没有 client / 查询失败
+#   clients     每行一个 tmux client：<pid> <remote|local> <client_name>；不在 tmux / 无 client / 查询或 ps 失败时无输出
+#   tmux-any    退出码 0=有远程 client  1=全是本地  2=不在 tmux / 没有 client / 查询失败 / ps 失败
 #   tmux-all    退出码 0=全是远程 client  1=有本地 client  2=同上
 #   any         （默认）完整判据 1→2→3，退出码只有 0=远程 / 1=本地
 #
@@ -56,11 +62,28 @@ done
 shift $((OPTIND - 1))
 cmd="${1:-any}"
 
+# 进程表（ps 输出）惰性加载并缓存：一次调用里 tmux 分支与自身进程链共用，ps 最多执行一次
+# 不能在 $(...) 子 shell 里加载，否则缓存传不回来
+ps_table=""
+ps_state=unloaded # unloaded / ok / failed
+
+# _load_ps: 0=进程表可用  1=ps 失败（不存在 / 非零退出 / 无输出）
+_load_ps() {
+  if [[ "$ps_state" == unloaded ]]; then
+    if ps_table=$(ps -A -o pid= -o ppid= -o comm= 2>/dev/null) && [[ -n "$ps_table" ]]; then
+      ps_state=ok
+    else
+      ps_state=failed
+    fi
+  fi
+  [[ "$ps_state" == ok ]]
+}
+
 # _classify <list>: list 为 ";" 分隔的 "<pid> <name>" 项；逐项输出 <pid> <remote|local> <name>
-# 一次 ps 拿全量进程表，祖先链在 awk 里走（兼容 macOS 自带 bash 3.2，无关联数组）
+# 调用前须 _load_ps 成功；祖先链在 awk 里走（兼容 macOS 自带 bash 3.2，无关联数组）
 # 列表用 ; 拼成一行再传：macOS 自带 awk 的 -v 值不允许含换行（newline in string）
 _classify() {
-  ps -A -o pid= -o ppid= -o comm= 2>/dev/null | awk -v items="$1" -v max="$MAX_DEPTH" '
+  printf '%s\n' "$ps_table" | awk -v items="$1" -v max="$MAX_DEPTH" '
     {
       pid = $1; ppid[pid] = $2
       name = $3; sub(/:$/, "", name); sub(/.*\//, "", name)
@@ -82,9 +105,13 @@ _classify() {
     }'
 }
 
-# _clients: 输出 <pid> <remote|local> <client_name>；无 tmux / 无 client / 失败时无输出
+# _clients: 把 <pid> <remote|local> <client_name> 逐行写入 clients_out
+# 返回 0=已分类  1=不在 tmux / 无 client / 查询失败 / ps 失败（clients_out 为空）
+# 直接在当前 shell 调用（不要包进 $(...)），以便 ps 缓存对后续判定可见
+clients_out=""
 _clients() {
-  [[ -n "$socket" ]] && command -v tmux >/dev/null 2>&1 || return 0
+  clients_out=""
+  [[ -n "$socket" ]] && command -v tmux >/dev/null 2>&1 || return 1
 
   local list
   if [[ -n "$target" ]]; then
@@ -92,23 +119,23 @@ _clients() {
   else
     list=$(tmux -S "$socket" list-clients -F '#{client_pid} #{client_name}' 2>/dev/null)
   fi
-  [[ -n "$list" ]] || return 0
-  _classify "$(printf '%s' "$list" | tr '\n' ';')"
+  [[ -n "$list" ]] || return 1
+  _load_ps || return 1
+  clients_out=$(_classify "$(printf '%s' "$list" | tr '\n' ';')")
 }
 
-# _self_remote: 调用者自身（本脚本进程向上）的祖先链是否经远程登录
+# _self_remote: 调用者自身（本脚本进程向上）的祖先链是否经远程登录；调用前须 _load_ps 成功
 _self_remote() {
   [[ "$(_classify "$$ self" | awk '{print $2}')" == remote ]]
 }
 
 # _tmux_verdict <any|all>: 0 / 1 / 2，语义见文件头
 _tmux_verdict() {
-  local mode="$1" out remote=0 local_=0 kind
-  out=$(_clients)
-  [[ -n "$out" ]] || return 2
+  local mode="$1" remote=0 local_=0 kind
+  _clients || return 2
   while read -r _ kind _; do
     [[ "$kind" == remote ]] && remote=$((remote + 1)) || local_=$((local_ + 1))
-  done <<< "$out"
+  done <<< "$clients_out"
   if [[ "$mode" == any ]]; then
     (( remote > 0 )) && return 0 || return 1
   fi
@@ -135,14 +162,19 @@ _env_says_remote() {
 }
 
 case "$cmd" in
-  clients) _clients ;;
+  clients)
+    _clients && printf '%s\n' "$clients_out"
+    exit 0
+    ;;
   tmux-any) _tmux_verdict any ;;
   tmux-all) _tmux_verdict all ;;
   any)
     _tmux_verdict any
     rc=$?
     (( rc == 2 )) || exit "$rc"
-    _self_remote || _env_says_remote
+    # ps 失败时自身进程链不可用，直接按环境变量兜底
+    if _load_ps && _self_remote; then exit 0; fi
+    _env_says_remote
     ;;
   *)
     echo "usage: remote-session [-S socket] [-t target] [clients|tmux-any|tmux-all|any]（-h 查看说明）" >&2

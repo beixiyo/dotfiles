@@ -16,9 +16,19 @@
 # 场景：
 #   tmux client：A sshd-session → tmux；B sshd-session → zsh → tmux；M mosh-server → tmux；
 #                C 本地 bash → tmux；D A + C 并存
-#   不在 tmux：自身进程链（环境变量清空，只有祖先链能暴露远程）；仅环境变量
+#   -t target：target 所属 session 有远程 client / 只有本地 client / target 不存在（退出码 2 ↔ nil）
+#   ps 不可用（PATH 前置总是失败的假 ps，远程 client 在连）：tmux 判定为“判不出”，按环境变量兜底，ps 只调一次
+#   不在 tmux：自身进程链（环境变量清空，只有祖先链能暴露远程）；ps 不可用时按环境变量；仅环境变量
+#   在 tmux 但无 client：退回自身进程链
+#   每个 vv-utils is_remote 检查都同时跑 is_remote_async，两者结论不一致即失败
+#   OpenSSH 9.8+ 改写的进程名（含冒号、空格、斜杠，如 "sshd-session: es@pts/0"）作 client 祖先 / 自身祖先：
+#     判据必须先取第一个词再取 basename，否则 basename 取到 "0" 判成本地
+#     （去结尾冒号一步不影响 sshd* / mosh-server* 前缀判定，结论不变，无法也无需在此覆盖）
+#     仅 macOS 覆盖：Linux 的 ps comm 来自内核（可执行文件名），不随进程标题改写，也无法含斜杠
 #
 # 用法：bash ~/.zsh/tests/remote-session.test.sh   全部通过退出码 0
+#   remote-session 经 `#!/usr/bin/env bash` 取 PATH 上的 bash；验证 macOS 自带 bash 3.2：
+#   PATH=/bin:$PATH /bin/bash ~/.zsh/tests/remote-session.test.sh（开头会打印实际使用的 bash 版本）
 
 set -u
 
@@ -66,11 +76,27 @@ check() {
 rc() { "$@" >/dev/null 2>&1; echo $?; }
 
 # Lua 实现的两个查询，写成脚本文件，便于在任意进程链下执行
+# lua-clients：tmux_clients({ target = $RS_TARGET })；返回 nil 时输出 nil
 cat > "$work/lua-clients.sh" <<EOF
-nvim --headless -u NONE --cmd "set rtp+=$VV" -c "lua local r = require('vv-utils.sys.remote'); local out = {}; for _, c in ipairs(r.tmux_clients() or {}) do out[#out+1] = c.pid .. ' ' .. (c.remote and 'remote' or 'local') end; table.sort(out); io.write(table.concat(out, ','))" -c 'qa!' 2>&1
+nvim --headless -u NONE --cmd "set rtp+=$VV" -c "lua local r = require('vv-utils.sys.remote'); local cs = r.tmux_clients({ target = vim.env.RS_TARGET }); if not cs then io.write('nil') return end; local out = {}; for _, c in ipairs(cs) do out[#out+1] = c.pid .. ' ' .. (c.remote and 'remote' or 'local') end; table.sort(out); io.write(table.concat(out, ','))" -c 'qa!' 2>&1
+EOF
+# lua-is-remote：同时跑 is_remote 与 is_remote_async，一致时输出 remote / local，否则输出 mismatch(...)
+cat > "$work/lua-is-remote.lua" <<EOF
+vim.opt.rtp:prepend('$VV')
+local r = require('vv-utils.sys.remote')
+local function word(v) return v and 'remote' or 'local' end
+local sync = r.is_remote()
+local async
+r.is_remote_async(function(v) async = v end)
+vim.wait(3000, function() return async ~= nil end)
+if async == sync then
+  io.write(word(sync))
+else
+  io.write(('mismatch(sync=%s,async=%s)'):format(word(sync), async == nil and 'timeout' or word(async)))
+end
 EOF
 cat > "$work/lua-is-remote.sh" <<EOF
-nvim --headless -u NONE --cmd "set rtp+=$VV" -c "lua io.write(require('vv-utils.sys.remote').is_remote() and 'remote' or 'local')" -c 'qa!' 2>&1
+nvim --headless -u NONE -l '$work/lua-is-remote.lua' 2>&1
 EOF
 lua_clients() { bash "$work/lua-clients.sh"; }
 lua_is_remote() { bash "$work/lua-is-remote.sh"; }
@@ -130,10 +156,15 @@ run_case() {
   unset TMUX
 }
 
+echo "remote-session 解释器：$(env bash -c 'echo "bash $BASH_VERSION"')"
+
 tmux -S "$T" -f /dev/null new-session -d -s t
 tmux -S "$H" -f /dev/null new-session -d -s host -x 120 -y 40
 SSHD=$(fake sshd-session)
 MOSH=$(fake mosh-server)
+# 改写后的进程标题（仅 macOS 可构造，见文件头）；为空表示跳过相关场景
+SSHD_TITLE=""
+[[ "$(uname)" == Darwin ]] && SSHD_TITLE="exec -a 'sshd-session: es@pts/0' bash"
 ATTACH='TMUX= tmux -S "$T" attach -t t; :'
 
 echo "== 无 client"
@@ -166,11 +197,90 @@ wait_clients 2
 run_case "D  A + C 同时在连" local,remote 0 1
 detach_all
 
+if [[ -n "$SSHD_TITLE" ]]; then
+  attach_client E "$SSHD_TITLE -c '$ATTACH'"
+  wait_clients 1
+  run_case "E  'sshd-session: es@pts/0' → tmux" remote 0 0
+  detach_all
+else
+  echo "== E  跳过：改写后的进程标题仅 macOS 可构造"
+fi
+
+echo "== -t target（只看 target 所属 session 的 client）"
+# session t 由远程 client 连着，session u 只有本地 client
+tmux -S "$T" new-session -d -s u
+PANE_T=$(tmux -S "$T" display -p -t t: '#{pane_id}')
+PANE_U=$(tmux -S "$T" display -p -t u: '#{pane_id}')
+ATTACH_U='TMUX= tmux -S "$T" attach -t u; :'
+attach_client TA "$SSHD -c '$ATTACH'"
+attach_client TU "exec bash -c '$ATTACH_U'"
+wait_clients 2
+# target_case <label> <target> <want tmux-any> <want 分类（target 不存在时为 nil）>
+target_case() {
+  local label="$1" target="$2" want_any="$3" want_kind="$4" b l kind
+  export TMUX="$T,0,0"
+  b=$("$RS" -t "$target" clients | awk '{print $1, $2}' | sort | paste -sd, -)
+  l=$(RS_TARGET="$target" lua_clients)
+  check "${label}：bash/lua 分类一致（空 ↔ nil）" "${b:-nil}" "$l"
+  kind=nil
+  [[ -n "$b" ]] && kind=$(echo "$b" | tr ',' '\n' | awk '{print $2}' | sort -u | paste -sd, -)
+  check "${label}：分类为 $want_kind" "$kind" "$want_kind"
+  check "${label}：remote-session -t tmux-any" "$(rc "$RS" -t "$target" tmux-any)" "$want_any"
+  unset TMUX
+}
+target_case "target=session t 的 pane（远程 client）" "$PANE_T" 0 remote
+target_case "target=session u 的 pane（仅本地 client）" "$PANE_U" 1 local
+target_case "target 不存在" '%999999' 2 nil
+detach_all
+tmux -S "$T" kill-session -t u
+
+echo "== ps 不可用（远程 client 在连；进程链信息不可用 → 按环境变量兜底）"
+# 假 ps：记录调用次数后失败。shell 与 nvim 的 vim.system 都按 PATH 找 ps
+mkdir -p "$work/fakeps"
+cat > "$work/fakeps/ps" <<EOF
+#!/bin/sh
+echo call >> '$work/ps-calls'
+exit 1
+EOF
+chmod +x "$work/fakeps/ps"
+# no_ps [VAR=val...] <cmd...>：在假 ps + target server 的环境下执行，先清零调用计数
+no_ps() { rm -f "$work/ps-calls"; env PATH="$work/fakeps:$PATH" TMUX="$T,0,0" "$@"; }
+ps_calls() { if [[ -f "$work/ps-calls" ]]; then wc -l < "$work/ps-calls" | tr -d ' '; else echo 0; fi; }
+
+attach_client P "$SSHD -c '$ATTACH'"
+wait_clients 1
+check "remote-session tmux-any → 2（判不出）" "$(no_ps "$RS" tmux-any >/dev/null 2>&1; echo $?)" 2
+check "remote-session tmux-all → 2（判不出）" "$(no_ps "$RS" tmux-all >/dev/null 2>&1; echo $?)" 2
+check "remote-session clients 无输出" "$(no_ps "$RS" clients 2>&1)" ""
+check "vv-utils tmux_clients → nil" \
+  "$(no_ps nvim --headless -u NONE --cmd "set rtp+=$VV" -c "lua io.write(tostring(require('vv-utils.sys.remote').tmux_clients()))" -c 'qa!' 2>&1)" nil
+check "有 SSH_TTY：remote-session any" "$(no_ps SSH_TTY=/dev/ttys001 "$RS" any >/dev/null 2>&1; echo $?)" 0
+check "有 SSH_TTY：remote-session ps 只调一次" "$(ps_calls)" 1
+check "有 SSH_TTY：vv-utils is_remote" "$(no_ps SSH_TTY=/dev/ttys001 bash "$work/lua-is-remote.sh")" remote
+# lua-is-remote 同时跑同步与异步两次判定：每次判定 ps 只调一次 → 共 2 次
+check "有 SSH_TTY：vv-utils ps 每次判定只调一次（同步 + 异步）" "$(ps_calls)" 2
+check "无 SSH 环境变量：remote-session any" "$(no_ps "$RS" any >/dev/null 2>&1; echo $?)" 1
+check "无 SSH 环境变量：vv-utils is_remote" "$(no_ps bash "$work/lua-is-remote.sh")" local
+detach_all
+
+echo "== 不在 tmux 且 ps 不可用（按环境变量）"
+# no_ps_notmux [VAR=val...] <cmd...>：假 ps，且 TMUX 未定义
+no_ps_notmux() { rm -f "$work/ps-calls"; env -u TMUX PATH="$work/fakeps:$PATH" "$@"; }
+check "有 SSH_TTY：remote-session any" "$(no_ps_notmux SSH_TTY=/dev/ttys001 "$RS" any >/dev/null 2>&1; echo $?)" 0
+check "有 SSH_TTY：vv-utils is_remote" "$(no_ps_notmux SSH_TTY=/dev/ttys001 bash "$work/lua-is-remote.sh")" remote
+check "SSH_CONNECTION 两端回环：remote-session any" \
+  "$(no_ps_notmux SSH_CONNECTION='127.0.0.1 1 127.0.0.1 22' "$RS" any >/dev/null 2>&1; echo $?)" 1
+check "SSH_CONNECTION 两端回环：vv-utils is_remote" \
+  "$(no_ps_notmux SSH_CONNECTION='127.0.0.1 1 127.0.0.1 22' bash "$work/lua-is-remote.sh")" local
+check "无 SSH 环境变量：remote-session any" "$(no_ps_notmux "$RS" any >/dev/null 2>&1; echo $?)" 1
+check "无 SSH 环境变量：vv-utils is_remote" "$(no_ps_notmux bash "$work/lua-is-remote.sh")" local
+
 echo "== 不在 tmux：自身进程链（环境变量清空，只有祖先链能暴露远程）"
+# self_case <label> <prefix> <want> [tmux env]：tmux env 默认 unset TMUX（不在 tmux）
 self_case() {
-  local label="$1" prefix="$2" want="$3"
+  local label="$1" prefix="$2" want="$3" tmux_env="${4:-unset TMUX}"
   # unset 而非置空：不在 tmux 时 TMUX 根本未定义（曾因 set -u 下直接读 $TMUX 而报错退出）
-  local env='unset TMUX; export SSH_CONNECTION= SSH_TTY= SSH_CLIENT='
+  local env="$tmux_env; export SSH_CONNECTION= SSH_TTY= SSH_CLIENT="
   check "${label}：remote-session any" \
     "$(run_clean "$env; $prefix -c '\"\$0\" any >/dev/null 2>&1; echo \$?; :' '$RS'")" "$want"
   check "${label}：vv-utils is_remote" \
@@ -179,6 +289,16 @@ self_case() {
 self_case "在 sshd-session 之下" "$SSHD" 0
 self_case "在 mosh-server 之下" "$MOSH" 0
 self_case "本地（无远程祖先）" "exec bash" 1
+if [[ -n "$SSHD_TITLE" ]]; then
+  self_case "在 'sshd-session: es@pts/0' 之下" "$SSHD_TITLE" 0
+fi
+
+echo "== 在 tmux 但无 client：退回自身进程链（两边一致）"
+check "前提：tmux-any 无 client → 2" "$(TMUX="$T,0,0" rc "$RS" tmux-any)" 2
+IN_T="export TMUX='$T,0,0'"
+self_case "tmux 内、在 sshd-session 之下" "$SSHD" 0 "$IN_T"
+self_case "tmux 内、在 mosh-server 之下" "$MOSH" 0 "$IN_T"
+self_case "tmux 内、本地（无远程祖先）" "exec bash" 1 "$IN_T"
 
 echo "== 不在 tmux：环境变量兜底（祖先链干净时）"
 env_case() {
