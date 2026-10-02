@@ -1,6 +1,6 @@
 name = "luna_high"
 description = "范围明确、可独立交付的编码、定点分析和常规 review"
-model = "gpt-5.6-luna"
+model = "gpt-6-luna"
 model_reasoning_effort = "high"
 developer_instructions = """
 先确认目标、范围和可验证完成条件
