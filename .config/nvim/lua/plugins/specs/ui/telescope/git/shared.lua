@@ -44,6 +44,7 @@ end
 --- 通用 ANSI terminal previewer：命令输出经 nvim_open_term 渲染到 telescope preview buffer
 --- 旧 job 先 stop，旧 chan 显式 close；回调比对 job_id，被终止的旧任务交付的缓冲输出自弃
 ---（stdout_buffered 下 jobstop 后仍可能交付一次，不比对会污染当前 entry 的 preview）
+--- 骨架：jobstart 前先写一行灰色 Loading…，stdout 到达时先清屏归位再写（空输出也会清掉骨架）
 ---@param title string
 ---@param make_cmd function fun(entry: table, winid: number): string[] 返回完整 argv
 function M.term_previewer(title, make_cmd)
@@ -62,6 +63,7 @@ function M.term_previewer(title, make_cmd)
       local winid = self.state.winid
       local chan = vim.api.nvim_open_term(bufnr, {})
       self.state.chan = chan
+      vim.api.nvim_chan_send(chan, '\27[90mLoading…\27[0m')
 
       local job_id
       job_id = vim.fn.jobstart(make_cmd(entry, winid), {
@@ -69,7 +71,7 @@ function M.term_previewer(title, make_cmd)
         on_stdout = function(_, data)
           if self.state.job_id ~= job_id then return end
           if not vim.api.nvim_buf_is_valid(bufnr) then return end
-          vim.api.nvim_chan_send(chan, table.concat(data, '\r\n'))
+          vim.api.nvim_chan_send(chan, '\27[2J\27[H' .. table.concat(data, '\r\n'))
         end,
         on_exit = function()
           vim.schedule(function()

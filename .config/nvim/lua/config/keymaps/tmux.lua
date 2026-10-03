@@ -29,7 +29,9 @@ local function send_path_to_pane(is_visual)
       diags     = {}
     else
       local p = vim.fn.expand('%:p')
-      if p == '' then return end
+      if p == '' then
+        return vim.notify("Send path: current buffer has no file path", vim.log.levels.WARN)
+      end
       p = require('vv-utils.path').norm(p)
 
       if is_visual then
@@ -55,7 +57,7 @@ local function send_path_to_pane(is_visual)
           end
         end
       end
-      return require('vv-utils.editor').copy(clip, { title = 'CopyPath' })
+      return require('vv-utils.editor').copy(clip, { title = 'CopyPath', silent = true })
     end
 
     local text = base_text

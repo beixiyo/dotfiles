@@ -1,5 +1,6 @@
 -- fff — Rust 编写的极速文件/内容搜索（Smith-Waterman + 内存索引 + 后台 watcher）
--- grep 模式原生按文件分组：文件名组头 + treesitter 语法着色 + 匹配高亮（FFFMatch p200 压语法 p120）
+-- grep 模式原生按文件分组：文件名组头 + treesitter 语法着色 + 匹配高亮（p200 压语法 p120）
+-- 匹配色使用 fff 默认的 IncSearch，由主题定义
 -- <leader>ff / <leader>sg / <leader>sw 归属本插件；telescope 侧同键位实现已摘除（见 telescope/init.lua 注释，可回退）
 -- 辅助模块：query.lua（query 分词 / 路径→glob）、filter_input.lua（<M-p> 筛选弹窗）、scope.lua（按路径限定搜索）、
 --          grep_renderer.lua（grep 列表裁掉前导缩进）
@@ -21,13 +22,6 @@ return {
     title = 'FFF Files',
     lazy_sync = true,           -- 延迟索引到首次打开 picker（避免 UIEnter 提前初始化 conf）
     prompt_vim_mode = true,     -- 输入框支持 N 模式（对齐 telescope）
-    hl = {
-      -- 列表与 preview 统一用 tools.match_hl 派生的强调色 fg + 同色相淡底（FFFMatch → VVMatch）
-      matched = 'FFFMatch',
-      grep_match = 'FFFMatch',
-      -- preview 目标行保留 fff 的 CursorLine 整行底（line_hl_group 硬编码）；该行匹配的淡底被吞，
-      -- 靠 VVMatch 的 fg + bold 穿透区分；其余行匹配显示淡底。要三层完整需改 fff 的 location_utils.highlight_grep_matches
-    },
     layout = {
       -- width 不能设 1：fff 内部 preview_width = terminal_width*0.5
       -- 两侧边框一加总宽 = terminal+1，会把 preview 挤到覆盖 list 右边框
@@ -58,8 +52,6 @@ return {
   ---@param _ PackSpec
   ---@param opts FffConfig
   config = function(_, opts)
-    require('tools.match_hl').link({ 'FFFMatch' })
-
     -- fff 配置里 mappings 与 keymaps 平级（顶层字段，仅作用于输入框）
     opts.mappings = { i = { ['<M-p>'] = require('plugins.specs.tools.fff.filter_input').open } }
 

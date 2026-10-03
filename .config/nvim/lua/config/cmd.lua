@@ -63,7 +63,9 @@ vim.api.nvim_create_user_command("CopyPathLine", function(opts)
       line = line_arg,
     })
   end
-  if not p then return end
+  if not p then
+    return vim.notify("CopyPathLine: current buffer has no file path", vim.log.levels.WARN)
+  end
 
   local diags = vim.diagnostic.get(0, { lnum = vim.fn.line('.') - 1 })
   if #diags > 0 then
@@ -76,7 +78,7 @@ vim.api.nvim_create_user_command("CopyPathLine", function(opts)
     end
   end
 
-  editor.copy(p, { title = 'CopyPath' })
+  editor.copy(p, { title = 'CopyPath', silent = true })
 end, { range = true, desc = "复制当前文件路径 + 行号" })
 
 

@@ -4,6 +4,9 @@ local M = {}
 
 ---@type tokyonight.HighlightsFn
 function M.get(c, opts)
+  -- 匹配色：色板 search_match（pretty_* 系列为粉色）；其他配色没有该字段时退回 orange
+  local sm = c.search_match or c.orange
+
   -- stylua: ignore
   return {
     Foo                         = { bg = c.magenta2, fg = c.fg },
@@ -53,8 +56,8 @@ function M.get(c, opts)
     PmenuThumb                  = { bg = c.fg_gutter }, -- Popup menu: Thumb of the scrollbar.
     Question                    = { fg = c.blue }, -- |hit-enter| prompt and yes/no questions
     QuickFixLine                = { bg = c.bg_visual, bold = true }, -- Current |quickfix| item in the quickfix window. Combined with |hl-CursorLine| when the cursor is there.
-    Search                      = { bg = c.bg_search, fg = c.fg }, -- Last search pattern highlighting (see 'hlsearch').  Also used for similar items that need to stand out.
-    IncSearch                   = { bg = c.orange, fg = c.black }, -- 'incsearch' highlighting; also used for the text replaced with ":s///c"
+    Search                      = { fg = sm, bg = Util.blend_bg(sm, 0.15) }, -- 所有匹配：淡底（'hlsearch' 及需要突出的同类条目）
+    IncSearch                   = { fg = sm, bg = Util.blend_bg(sm, 0.25), bold = true }, -- 当前匹配：深一档 + 粗体（'incsearch' 及 ":s///c" 待替换文本）
     CurSearch                   =  "IncSearch",
     SpecialKey                  = { fg = c.dark3 }, -- Unprintable characters: text displayed differently from what it really is.  But not 'listchars' whitespace. |hl-Whitespace|
     SpellBad                    = { sp = c.error, undercurl = true }, -- Word that is not recognized by the spellchecker. |spell| Combined with the highlighting used otherwise.

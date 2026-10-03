@@ -18,12 +18,17 @@ local Hover = require('plugins.specs.code.lsp.hover')
 -- on_conflict = 'skip'：LSP 常给出互斥的备选修复（如 tailwind 对同义类既提供
 -- 「删 A」也提供「删 B」），范围重叠。整体放弃会导致一个都改不了，这里改为
 -- 先到先得，重叠的候选跳过并在通知里报数，剩余修复照常应用
+-- fix_document 内部 vim.wait 同步阻塞，期间帧不推进：只能先 echo 静态提示并 redraw，结果由 notify 覆盖
 local function apply_all_quickfix()
-  local result = require('vv-utils.lsp.code_actions').fix_document({
-    bufnr = vim.api.nvim_get_current_buf(),
-    save = false,
-    on_conflict = 'skip',
-  })
+  local result = require('vv-utils.loading').blocking(
+    { echo = 'Fixing all…' },
+    require('vv-utils.lsp.code_actions').fix_document,
+    {
+      bufnr = vim.api.nvim_get_current_buf(),
+      save = false,
+      on_conflict = 'skip',
+    }
+  )
   if result.error then
     local level = result.error.code == 'no_quickfixes' and vim.log.levels.INFO or vim.log.levels.WARN
     return vim.notify(result.error.message, level)

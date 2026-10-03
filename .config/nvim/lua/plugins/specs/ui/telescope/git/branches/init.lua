@@ -1,5 +1,6 @@
 -- 分支管理 picker：本地+远程统一显示，时间排序+分级高亮
 -- 本地分支在上，远程分支在下，各自按 committerdate 降序
+-- 列表走 finders.new_oneshot_job 异步取数，picker 立即打开（prompt 计数旁的 * 即加载中）
 -- 全局 defaults 把 C-d/C-r/C-y 绑成了 preview scroll，attach_mappings 里显式重绑回来
 -- 所有 git 操作走 shared.git_async（exit code 唯一成败信号，stderr 并入失败通知）
 -- C-a 新建分支：vim.ui.input 弹名字，以选中分支为起点 checkout -b
@@ -8,6 +9,7 @@
 -- 删除/合并/rebase 用 vim.fn.confirm 单键 y/n 确认（参照 vv-explorer，无需回车）
 -- C-d 支持 Tab 多选批量删除：当前分支跳过，本地合并一条命令，远程按 remote 分组
 -- 批量删除是部分成功语义，失败组事后校验仍存在的分支：点名通知并 refresh 校准列表
+-- 删除 / rebase / merge / fetch 在途时，结果窗标题显示动画 loading，全部完成后恢复
 -- M-y 多选时空格拼接复制；数据与展示映射见 data.lua，previewer 见 shared.term_previewer
 -- 批量删除的分组与事后校验见 delete.lua（纯/异步函数，tests/telescope/ 直测）
 local M = {}
@@ -15,6 +17,7 @@ local Git   = require('plugins.specs.ui.telescope.git.shared')
 local Data  = require('plugins.specs.ui.telescope.git.branches.data')
 local Delete = require('plugins.specs.ui.telescope.git.branches.delete')
 local Keys  = require('vv-utils.keys')
+local Loading = require('vv-utils.loading')
 
 -- 单键 y/n 确认（默认 No），参照 vv-explorer 删除弹窗
 local function confirm(question)
@@ -53,7 +56,9 @@ function M.open(opts)
     })
   end
 
-  local function make_entry(item)
+  local function make_entry(line)
+    local item = Data.parse_ref_line(line)
+    if not item then return nil end
     return {
       value      = item.name,
       ordinal    = item.name,
@@ -69,10 +74,7 @@ function M.open(opts)
   end
 
   local function new_finder()
-    return finders.new_table({
-      results = Data.get_branches(),
-      entry_maker = make_entry,
-    })
+    return finders.new_oneshot_job(Data.REFS_CMD, { entry_maker = make_entry })
   end
 
   local previewer = Git.term_previewer('Branch Log', function(entry)
@@ -108,6 +110,48 @@ function M.open(opts)
       local checktime_and_refresh = function()
         checktime()
         refresh_branches()
+      end
+
+      -- 结果窗标题作为在途操作提示（行内显示需 picker:refresh 重绘，会把光标重置到首行）
+      -- busy(label) 返回幂等 done；并发操作共用计数，标题显示最新 label，全部 done 后恢复原标题
+      -- picker 已关闭（get_current_picker 失败或 closed）时停掉动画、不再写标题
+      local pending, ticker = 0, nil
+      local function live_picker()
+        local ok, picker = pcall(action_state.get_current_picker, prompt_bufnr)
+        if not ok or not picker or picker.closed or not picker.results_border then return nil end
+        return picker
+      end
+      local function set_results_title(text)
+        local picker = live_picker()
+        if not picker then return false end
+        pcall(picker.results_border.change_title, picker.results_border, text)
+        return true
+      end
+      local function busy(label)
+        pending = pending + 1
+        if ticker then
+          ticker:set_label(label)
+        else
+          ticker = Loading.ticker({
+            label = label,
+            on_frame = function(frame, text)
+              if not set_results_title(frame .. ' ' .. text) and ticker then
+                ticker:stop()
+              end
+            end,
+          })
+        end
+        local finished = false
+        return function()
+          if finished then return end
+          finished = true
+          pending = pending - 1
+          if pending > 0 then return end
+          if ticker then ticker:stop() end
+          ticker = nil
+          local picker = live_picker()
+          if picker then set_results_title(picker.results_title or '') end
+        end
       end
 
       -- CR: checkout。本地直接切；远程自动建本地 tracking branch（避免 detached HEAD）
@@ -202,11 +246,12 @@ function M.open(opts)
 
           local remote, branch = Data.parse_remote(entry.value)
           if not confirm('Delete remote branch ' .. entry.value .. ' ?') then return end
+          local done = busy('Deleting ' .. entry.value .. ' …')
           Git.git_async({ 'git', 'push', remote, '--delete', branch }, function(code)
             return code == 0
               and ('Deleted remote branch: ' .. entry.value)
               or  ('Delete failed: ' .. entry.value .. ' (exit ' .. code .. ')')
-          end, refresh_branches)
+          end, refresh_branches, done)
           return
         end
 
@@ -261,12 +306,15 @@ function M.open(opts)
             if code ~= 0 then verify_and_refresh('local', nil, locals) end
           end)
         end
+        -- 远程按 remote 分组并行，每组各持一个 done，全部分组结束才恢复标题
         for remote, list in pairs(by_remote) do
           local args = { 'git', 'push', remote, '--delete' }
           for _, name in ipairs(list) do args[#args + 1] = name end
+          local done = busy('Deleting ' .. remote_cnt .. ' remote branches …')
           Git.git_async(args, function(code)
             if code == 0 then return 'Deleted ' .. #list .. ' remote branches (' .. remote .. ')' end
           end, refresh_branches, function(code)
+            done()
             if code ~= 0 then verify_and_refresh('remote', remote, list) end
           end)
         end
@@ -277,11 +325,12 @@ function M.open(opts)
         local entry = action_state.get_selected_entry()
         if not entry then return end
         if not confirm('Rebase current branch onto ' .. entry.value .. ' ?') then return end
+        local done = busy('Rebasing onto ' .. entry.value .. ' …')
         Git.git_async({ 'git', 'rebase', entry.value }, function(code)
           return code == 0
             and ('Rebased onto: ' .. entry.value)
             or  ('Rebase failed (exit ' .. code .. ')')
-        end, checktime_and_refresh)
+        end, checktime_and_refresh, done)
       end)
 
       -- C-y: merge（全局 defaults 绑成了 preview scroll，重绑回来）
@@ -289,22 +338,23 @@ function M.open(opts)
         local entry = action_state.get_selected_entry()
         if not entry then return end
         if not confirm('Merge ' .. entry.value .. ' into current branch ?') then return end
+        local done = busy('Merging ' .. entry.value .. ' …')
         Git.git_async({ 'git', 'merge', entry.value }, function(code)
           return code == 0
             and ('Merged: ' .. entry.value)
             or  ('Merge failed (exit ' .. code .. ')')
-        end, checktime_and_refresh)
+        end, checktime_and_refresh, done)
       end)
 
       -- M-f: fetch --all，成功后原地刷新（保留搜索词；picker 已关则静默跳过，不重建 UI）
       map({ 'i', 'n' }, '<M-f>', function()
-        vim.notify('git fetch --all ...', vim.log.levels.INFO)
         Git.git_async(
           { 'git', 'fetch', '--all' },
           function(code)
             return code ~= 0 and ('Fetch failed (exit ' .. code .. ')') or nil
           end,
-          refresh_branches
+          refresh_branches,
+          busy('Fetching all remotes …')
         )
       end)
 

@@ -18,7 +18,7 @@ if vim.fn.has('nvim-0.13') == 0 then
   })
 end
 
--- 复制高亮
+-- 复制高亮：用默认的标准组 IncSearch，颜色由主题决定
 vim.api.nvim_create_autocmd('TextYankPost', {
   group = augroup('highlight_yank'),
   callback = function()

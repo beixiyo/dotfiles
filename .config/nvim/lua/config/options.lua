@@ -22,8 +22,10 @@ opt.smartindent = true -- C 风格 { 与 cinwords 的额外缩进；设了 inden
 
 -- 鼠标、确认、编码
 opt.mouse = "a" -- 启用鼠标（普通/插入/可视等模式）
--- Shift+左键 扩展选区（需终端把 Shift+点击 发给 Neovim）。WezTerm 默认用 Shift 绕过鼠标上报，需改 bypass 修饰键
-opt.mousemodel = "extend"
+-- 右键弹内置 PopUp 菜单并把光标移到点击处（Neovim 默认值）；不用 "extend"，它让右键扩展选区
+-- Shift+左键 扩展选区由 config.keymaps.mouse 的 <S-LeftMouse> 映射负责，与本选项无关
+-- （需终端把 Shift+点击 发给 Neovim。WezTerm 默认用 Shift 绕过鼠标上报，需改 bypass 修饰键）
+opt.mousemodel = "popup_setpos"
 opt.confirm = true -- 未保存缓冲区退出/切换时弹出确认
 opt.encoding = "utf-8" -- Neovim 内部使用的编码
 opt.fileencoding = "utf-8" -- 写入文件时使用的编码

@@ -65,6 +65,22 @@ return {
 - 全局快捷键放 spec `keys`；buffer-local 交互由 owning 插件注册
 - UI 配色优先使用 `require('tools.palette')`，不要在多个 spec 散落相同色值
 
+## Loading / 骨架规范
+
+统一基于 `vv-utils.loading`，API 与边界见 [loading README](vendors/vv-utils.nvim/lua/vv-utils/loading/README.md)，落点决策案例见 [LOADING_AUDIT](vendors/LOADING_AUDIT.md)
+
+- **何时加**：按键后要等可感知的异步操作（git / LSP / 网络 / 大目录 IO / 外部进程）且界面看不出已生效或显示陈旧内容；同步瞬时操作不加。可能很快完成的操作设 `delay_ms`（常用 150）避免闪烁
+- **落点**：放在用户视线所在、不会被截掉的位置，优先级依次为
+  1. 行内贴近对象：名字后 `pos = 'inline'`；名字前固定宽度槽（图标、折叠箭头）`pos = 'overlay'` + `width` 补齐，不挤动文字
+  2. 没有可锚定行的浮窗：`win_text` 写 title / footer
+  3. Telescope：结果窗标题（`results_border:change_title` + `ticker`）或预览骨架（先写灰色 `Loading…`，首个 stdout 到达时清屏）
+  4. 无任何界面且同步阻塞：`blocking` 的 echo
+- **禁止长行行尾**：`eol` / `right_align` 只用于短且固定的行（空状态、短 header）；面板窄、代码行不折行，长行 eol 必被截掉（vv-git worktree 删除的教训）
+- **选型**：单一位置用 `mark`；浮窗边框用 `win_text`；需拼进复合 UI（prompt、Telescope 标题）用 `ticker`；同一位置多个并发 / latest-wins 请求用 `slot` 引用计数；多行同时在途用一个 `mark` 的 `get_pos` 返回数组；同步阻塞用 `blocking`。不要自建 uv timer，全部走共享时钟
+- **生命周期**：stop / release 挂在请求终结（`vv-utils.async` 的 disposer：finish / cancel / dispose 都会调用）上，不能只挂成功回调；`stop()` 幂等。latest-wins 下旧请求终结不得停掉新请求的显示（用 `slot`）。帧持续到结果真正渲染为止（如 stage 写入成功后等随后发起的 reload 渲染完），失败立即撤掉。`get_pos` 每帧重新定位，目标不在时返回 nil 隐藏；buffer wipe / 窗口关闭自动停止，`ticker` 由调用方负责停止
+- **视觉**：帧与 label 分开上色，默认 `VVLoading`（蓝 `#7aa2f7`）与 `VVLoadingLabel`（link `Comment`），不要硬编码色值；同一窗口同一槽位不叠加多个 `win_text`
+- **不阻塞主线程**：同步阻塞期间帧不会推进。长任务必须异步化，大量 IO 用 uv timer 分片让出（参考 `vv-utils.fs.delete_async`），不用 `vim.schedule` 自递归
+
 ## 常用命令
 
 - `tests/run.sh [过滤词]`：一键跑全部测试（等价 `nvim -l tests/run.lua`；递归 `tests/**/test_*.lua`，每文件独立子进程，失败隔离；退出码非 0 = 有失败，幂等可重复跑）

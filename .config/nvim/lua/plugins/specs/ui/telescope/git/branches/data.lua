@@ -56,49 +56,44 @@ end
 
 -- ── 数据获取 ─────────────────────────────────────────────────────────────────
 
--- vim.fn.systemlist 传 table 走 execvp，不经过 shell，tab 字符不会被拆分
-local function query_refs(ref_path)
-  return vim.fn.systemlist({
-    'git', 'for-each-ref',
-    '--sort=-committerdate',
-    '--format=%(refname:short)\t%(committerdate:unix)\t%(HEAD)\t%(subject)',
-    ref_path,
-  })
-end
+--- 一条 for-each-ref 取本地+远程：多个 --sort 时最后一个是主键
+--- refname:rstrip=-2 只保留 refs/heads | refs/remotes 两段，按字典序本地在前；组内 committerdate 降序
+--- 用完整 refname（非 :short）以便按前缀判断 is_remote，避免 feat/login 这类本地名被误判
+--- 作为 argv 交给 finders.new_oneshot_job / systemlist，不经 shell，%09 由 git 展开为 tab
+M.REFS_CMD = {
+  'git', 'for-each-ref',
+  '--sort=-committerdate',
+  '--sort=refname:rstrip=-2',
+  '--format=%(refname)%09%(committerdate:unix)%09%(HEAD)%09%(subject)',
+  'refs/heads', 'refs/remotes',
+}
 
-local function parse_lines(lines, is_remote)
-  local result = {}
-  for _, line in ipairs(lines) do
-    local name, ts_str, head, subject = line:match('^([^\t]+)\t(%d+)\t([^\t]*)\t(.*)')
-    if not name then goto continue end
-    if name:match('/HEAD$') then goto continue end
-    -- 过滤裸 remote 名（如 "origin"，不含 /）
-    if is_remote and not name:find('/', 1, true) then goto continue end
-    local ts = tonumber(ts_str) or 0
-    result[#result + 1] = {
-      name      = name,
-      ts        = ts,
-      is_head   = head == '*',
-      is_remote = is_remote,
-      subject   = subject or '',
-      time_str  = time_fmt(ts),
-      time_hl   = time_hl(ts),
-      branch_hl = branch_hl(name, is_remote),
-    }
-    ::continue::
-  end
-  return result
-end
+--- 解析 REFS_CMD 的一行输出；/HEAD 符号引用、裸 remote 名与无法解析的行返回 nil
+--- （async_oneshot_finder 会丢弃 entry_maker 返回的 nil）
+---@param line string
+---@return table?
+function M.parse_ref_line(line)
+  local ref, ts_str, head, subject = line:match('^([^\t]+)\t(%d+)\t([^\t]*)\t(.*)')
+  if not ref then return nil end
 
---- 本地+远程统一列表：本地在上、远程在下，各自按 committerdate 降序
----@return table[]
-function M.get_branches()
-  local local_b  = parse_lines(query_refs('refs/heads'),   false)
-  local remote_b = parse_lines(query_refs('refs/remotes'),  true)
-  local all = {}
-  for _, e in ipairs(local_b)  do all[#all + 1] = e end
-  for _, e in ipairs(remote_b) do all[#all + 1] = e end
-  return all
+  local name = ref:match('^refs/remotes/(.+)$')
+  local is_remote = name ~= nil
+  if not is_remote then name = ref:match('^refs/heads/(.+)$') end
+  if not name or name:match('/HEAD$') then return nil end
+  -- 过滤裸 remote 名（如 "origin"，不含 /）
+  if is_remote and not name:find('/', 1, true) then return nil end
+
+  local ts = tonumber(ts_str) or 0
+  return {
+    name      = name,
+    ts        = ts,
+    is_head   = head == '*',
+    is_remote = is_remote,
+    subject   = subject or '',
+    time_str  = time_fmt(ts),
+    time_hl   = time_hl(ts),
+    branch_hl = branch_hl(name, is_remote),
+  }
 end
 
 --- 'origin/feat/x' → 'origin', 'feat/x'（仅对确定远程的名字调用）
