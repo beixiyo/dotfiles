@@ -29,6 +29,8 @@ opt.mousemodel = "popup_setpos"
 opt.confirm = true -- 未保存缓冲区退出/切换时弹出确认
 opt.encoding = "utf-8" -- Neovim 内部使用的编码
 opt.fileencoding = "utf-8" -- 写入文件时使用的编码
+-- 读取文件时依次尝试的编码：BOM → utf-8 → 中文 GBK 系（gb18030 是 gbk 超集）→ latin1 兜底（必定成功，放最后）
+opt.fileencodings = "ucs-bom,utf-8,gb18030,gbk,latin1"
 
 -- 搜索与补全
 opt.ignorecase = true -- 搜索默认忽略大小写
