@@ -3,22 +3,26 @@ local map, icons = h.map, h.icons
 
 map({ "n", "x" }, "j", "v:count == 0 ? 'gj' : 'j'", { expr = true })
 map({ "n", "x" }, "k", "v:count == 0 ? 'gk' : 'k'", { expr = true })
-map({ "n", "x" }, "$", "v:count == 0 ? 'g$' : '$'", { expr = true })
+-- 当前行是否在窗口里折成多行：只有折行时 $ / A / I 才改用屏幕行版本，
+-- 否则走原生键，保留 . 重复（A,<Esc> 后在别的行 . 仍追加到行尾）与 $ 的列粘滞
+local function line_wraps()
+  if not vim.wo.wrap then return false end
+  local info = vim.fn.getwininfo(vim.api.nvim_get_current_win())[1]
+  return vim.fn.virtcol("$") - 1 > info.width - info.textoff
+end
 
+map({ "n", "x" }, "$", function()
+  return (vim.v.count == 0 and line_wraps()) and "g$" or "$"
+end, { expr = true })
+
+-- expr 直接返回按键：不用 feedkeys 补发（会排到已输入的键之后，I-<Esc> 这类连续输入会乱序）
+-- 折行时 g^i 在屏幕行第一个非空字符处插入
 map("n", "I", function()
-  if vim.v.count > 0 then
-    vim.api.nvim_feedkeys(vim.v.count .. "I", "n", false)
-    return
-  end
-  vim.cmd("normal! g0")
-  local lnum, col = vim.fn.line("."), vim.fn.col(".")
-  local idx = vim.fn.getline("."):find("%S", col)
-  if idx then
-    vim.api.nvim_win_set_cursor(0, { lnum, idx - 1 })
-  end
-  vim.cmd("startinsert")
-end, { desc = "Insert at display line start" })
-map("n", "A", "v:count == 0 ? 'g$a' : 'A'", { expr = true, desc = "Append at display line end" })
+  return (vim.v.count == 0 and line_wraps()) and "g^i" or "I"
+end, { expr = true, desc = "Insert at display line start" })
+map("n", "A", function()
+  return (vim.v.count == 0 and line_wraps()) and "g$a" or "A"
+end, { expr = true, desc = "Append at display line end" })
 
 map("n", "n", "nzz", { desc = "Next match" })
 map("n", "N", "Nzz", { desc = "Previous match" })
