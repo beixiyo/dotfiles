@@ -10,6 +10,9 @@ return {
 
   keys = {
     -- <leader>tt 移到 config/keymaps/tmux.lua：tmux 下走 popup，不加载本插件
+    -- Ctrl+` 在 kitty/WezTerm/Ghostty 中显式发送 CSI-u（\e[96;5u），Neovim 解码为 <C-`>
+    -- n/i 模式无 <C-`> 映射时会回退成 <C-@>，但 t 模式不回退，必须显式映射 <C-`>
+    { '<C-`>', '<cmd>ToggleTerm<cr>', mode = { 'n', 't' }, desc = 'Toggle term' },
     { '<C-@>', '<cmd>ToggleTerm<cr>', mode = { 'n', 't' }, desc = 'Toggle term' },
     { '<leader>tf', '<cmd>ToggleTerm direction=float<cr>', desc = 'Float term' },
     { '<leader>th', '<cmd>ToggleTerm direction=horizontal<cr>', desc = 'Horizontal term' },
@@ -27,7 +30,7 @@ return {
       end
       return 20
     end,
-    open_mapping = [[<C-@>]],
+    open_mapping = { '<C-`>', '<C-@>' },
     hide_numbers = true,
     shade_terminals = true,
     start_in_insert = true,
