@@ -1,3 +1,4 @@
+-- 将主题高亮导出为经典 Vim 配色；Vim 专用 UI 组也只从主题调色板取色
 local M = {}
 
 local mapping = {
@@ -25,7 +26,33 @@ let g:colors_name = "tokyonight-%s"
   ]]):format(colors._style),
   }
 
-  groups = vim.deepcopy(groups)
+  -- 经典 Vim 的单文件状态栏与文件树没有插件来创建这些组
+  -- 在导出层补齐，避免 .vimrc 再维护一份色值；不影响 Neovim 的运行时高亮
+  groups = vim.tbl_extend("force", vim.deepcopy(groups), {
+    SLModeN = "MiniStatuslineModeNormal",
+    SLModeI = "MiniStatuslineModeInsert",
+    SLModeV = "MiniStatuslineModeVisual",
+    SLModeR = "MiniStatuslineModeReplace",
+    SLModeC = "MiniStatuslineModeCommand",
+    SLGit = { fg = colors.blue, bg = colors.bg },
+    SLFile = { fg = colors.fg, bg = colors.bg },
+    SLMod = { fg = colors.red, bg = colors.bg },
+    SLFill = { fg = colors.comment, bg = colors.bg },
+    SLFt = { fg = colors.cyan, bg = colors.bg },
+    SLPos = { fg = colors.fg, bg = colors.bg_highlight },
+    MiniExplorerIconDefault = "Normal",
+    MiniExplorerIconBlue = "MiniIconsBlue",
+    MiniExplorerIconCyan = { fg = colors.cyan },
+    MiniExplorerIconGreen = "MiniIconsGreen",
+    MiniExplorerIconYellow = "MiniIconsYellow",
+    MiniExplorerIconOrange = "MiniIconsOrange",
+    MiniExplorerIconRed = "MiniIconsRed",
+    MiniExplorerIconPurple = "MiniIconsPurple",
+    MiniExplorerIconMagenta = { fg = colors.magenta },
+    MiniExplorerIconGrey = { fg = colors.comment },
+    MiniExplorerIconGray = "MiniExplorerIconGrey",
+    MiniExplorerIconWhite = "Normal",
+  })
   for name in pairs(groups) do
     if name:sub(1, 1) == "@" then
       groups[name] = nil
@@ -76,8 +103,21 @@ let g:colors_name = "tokyonight-%s"
       end
 
       if #props > 0 then
-        if not hl.bg then
-          props[#props + 1] = "guibg=NONE"
+        -- hi clear 恢复内置默认值，不是清空所有属性：SpellCap / SpellBad
+        -- 仍有 ctermbg，RGB 背景为 NONE 时即使 termguicolors 开启也会露出来
+        -- 样式同步到全部通道；颜色只使用主题的 RGB 值，显式清掉终端色与缺省字段
+        local attrs = #gui > 0 and table.concat(gui, ",") or "NONE"
+        if #gui == 0 then
+          props[#props + 1] = "gui=NONE"
+        end
+        props[#props + 1] = ("term=%s"):format(attrs)
+        props[#props + 1] = ("cterm=%s"):format(attrs)
+        props[#props + 1] = "ctermfg=NONE"
+        props[#props + 1] = "ctermbg=NONE"
+        for field, prop in pairs(mapping) do
+          if not hl[field] then
+            props[#props + 1] = prop .. "=NONE"
+          end
         end
         table.sort(props)
         used[name] = true
