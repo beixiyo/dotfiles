@@ -19,10 +19,23 @@
 # 3. 其余（claude / codex / zsh 空闲 / 任意程序）→ 不是
 # 关键在第 2 步的白名单：claude 之流不在名单里，它们的子进程压根不会被扫到
 
-# nvim 家族的进程名
+# vim / nvim 家族的进程名，即「编辑器」。send-to-pane 据此跳过，不往编辑器里投递
 is_nvim_name() {
   case ${1##*/} in
     nvim|vim|vi|view|vimdiff|nvimdiff|gvim|gview|*nvim*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# nvim 由 vv-splits 处理导航；Vim 只在加载可选 smart-splits 模块后接管
+# 能力声明必须匹配本次找到的 PID，并且该进程确实在前台；崩溃 / 挂起后的
+# 历史 pane 声明不能让按键卡住。未加载模块（含 vim -u NONE）仍由 tmux 导航
+is_nav_editor_name() {
+  case ${1##*/} in
+    nvim|nvimdiff|*nvim*) return 0 ;;
+    vim|vi|view|vimdiff|gvim|gview)
+      [ -n "${2:-}" ] && [ "${2:-}" = "${_vim_smart_splits_pid:-}" ] && is_running_in_foreground "$2"
+      ;;
     *) return 1 ;;
   esac
 }
@@ -77,7 +90,7 @@ descendant_match() {
     _name=$(ps -o comm= -p "$_child" 2>/dev/null || true)
     [ -n "$_name" ] || continue
 
-    if "$1" "$_name"; then
+    if "$1" "$_name" "$_child"; then
       if is_running_in_foreground "$_child" && ! is_headless_nvim "$_child"; then
         return 0
       fi
@@ -87,8 +100,8 @@ descendant_match() {
   return 1
 }
 
-_is_nvim_or_remote() {
-  is_nvim_name "$1" || is_remote "$1"
+_is_nav_editor_or_remote() {
+  is_nav_editor_name "$1" "${2:-}" || is_remote "$1"
 }
 
 # 这个 pane 前台是不是 nvim。用法：pane_runs_nvim <pane_pid> <pane_current_command>
@@ -100,10 +113,18 @@ pane_runs_nvim() {
 }
 
 # 这个 pane 该不该吃掉导航键。用法：pane_wants_nav_keys <pane_pid> <pane_current_command>
-# 比 pane_runs_nvim 多认远端会话：本地不知道对面跑什么，键交给对面自己处理
+# 第三个参数可选：明确指定 pane；缺省使用 TMUX_PANE，兼容已有调用方
+# 除 nvim 外，只接受声明与前台 PID 匹配的 Vim；远端仍由对面自己处理
 pane_wants_nav_keys() {
-  is_nvim_name "$2" && ! is_headless_nvim "$1" && return 0
+  _vim_smart_splits_pid=''
+  _nav_pane=${3:-${TMUX_PANE:-}}
+  if [ -n "$_nav_pane" ]; then
+    _vim_smart_splits_pid=$(tmux display-message -p -t "$_nav_pane" '#{@vim_smart_splits_pid}' 2>/dev/null || true)
+  fi
+  is_nav_editor_name "$2" "$1" && ! is_headless_nvim "$1" && return 0
   is_remote "$2" && return 0
-  opens_editor_as_child "$2" && descendant_match _is_nvim_or_remote "$1" && return 0
+  if is_nvim_name "$2" || opens_editor_as_child "$2"; then
+    descendant_match _is_nav_editor_or_remote "$1" && return 0
+  fi
   return 1
 }

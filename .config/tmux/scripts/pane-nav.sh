@@ -1,6 +1,6 @@
 #!/bin/sh
 # Ctrl+Alt+hjkl / Ctrl+Alt+方向键 的统一入口：决定这次按键是
-#   透传给 pane 里的程序（nvim 的 vv-splits、或远端会话自己处理）
+#   透传给 pane 里的程序（nvim / 已加载 smart-splits 的 Vim、或远端会话自己处理）
 #   还是由 tmux 自己切 pane / 调大小
 #
 # 用法：pane-nav.sh <move|resize> <h|j|k|l> <pane_id>
@@ -29,7 +29,7 @@ read -r pane_pid pane_cmd at_edge <<EOF
 $(tmux display-message -p -t "$pane" "#{pane_pid} #{pane_current_command} #{$edge}")
 EOF
 
-if pane_wants_nav_keys "$pane_pid" "$pane_cmd"; then
+if pane_wants_nav_keys "$pane_pid" "$pane_cmd" "$pane"; then
   [ "$mode" = resize ] && key=$resize_key || key=$move_key
   tmux send-keys -t "$pane" "$key"
   exit 0
