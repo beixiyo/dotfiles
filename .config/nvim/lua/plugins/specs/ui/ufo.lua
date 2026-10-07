@@ -5,7 +5,7 @@
 --   - 虚拟文本：折起首行尾部 "42 lines"
 -- 与其他配置：
 --   treesitter/lsp 的 foldmethod=expr 会被 ufo 覆盖（它会切 manual 并自行重算）
---   折叠列由 vv-statuscol 通过原生 %C 渲染（foldcolumn=auto:1）
+--   折叠列由 vv-statuscol 通过原生 %C 渲染（默认 foldcolumn=1，避免自动列宽反复扫描折叠树）
 -- 键盘开合折叠后显式重绘 statuscolumn，让原生折叠列立即重算宽度
 local function refresh_statuscol()
   pcall(function()

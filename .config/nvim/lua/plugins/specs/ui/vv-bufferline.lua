@@ -1,13 +1,9 @@
 -- 分屏独立 Buffer 栏：使用 window-local winbar 模拟 VSCode split tabs
-local function open_dashboard_later()
+local function open_dashboard_if_tab_empty_later(tabpage)
   vim.schedule(function()
-    pcall(function() require('vv-dashboard').open() end)
-  end)
-end
-
-local function open_dashboard_if_tab_empty_later()
-  vim.schedule(function()
-    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    -- 延迟期间用户可能切 tab；不在新 tab 打开 dashboard，也不强抢焦点
+    if not vim.api.nvim_tabpage_is_valid(tabpage) or vim.api.nvim_get_current_tabpage() ~= tabpage then return end
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
       if vim.api.nvim_win_is_valid(win) then
         local buf = vim.api.nvim_win_get_buf(win)
         if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buflisted and vim.bo[buf].buftype == '' then return end
@@ -69,29 +65,14 @@ return {
 
   config = function(_, opts)
     local bufferline = require('vv-bufferline')
-    local icon = require('vv-icons').buffers .. ' '
+    -- 展示策略：关闭后 tab 空时回到 dashboard；全部关闭时顺手收起 vv-explorer
+    opts.hooks = {
+      after_close = function(ctx)
+        if not ctx.completed then return end
+        if ctx.action == 'close_all' then close_explorer() end
+        open_dashboard_if_tab_empty_later(ctx.tabpage)
+      end,
+    }
     bufferline.setup(opts)
-
-    local map = vim.keymap.set
-
-    local function close_current(close_opts)
-      bufferline.close_current(close_opts)
-      open_dashboard_if_tab_empty_later()
-    end
-
-    -- 按当前 split 的可见标签顺序切换，避免内置 :bnext 遍历全局 listed buffer
-    map('n', '[b', function() bufferline.cycle(-vim.v.count1) end, { desc = icon .. 'Previous buffer', silent = true })
-    map('n', ']b', function() bufferline.cycle(vim.v.count1) end, { desc = icon .. 'Next buffer', silent = true })
-    map('n', '<leader>bd', close_current, { desc = icon .. 'Close buffer', silent = true })
-    map('n', '<leader>bD', function() close_current({ force = true }) end, { desc = icon .. 'Force close buffer', silent = true })
-    map('n', '<leader>bh', '<cmd>VVBufferlineCloseLeft<cr>', { desc = icon .. 'Close buffers left', silent = true })
-    map('n', '<leader>bl', '<cmd>VVBufferlineCloseRight<cr>', { desc = icon .. 'Close buffers right', silent = true })
-    map('n', '<leader>bo', bufferline.close_others, { desc = icon .. 'Close other buffers', silent = true })
-    map('n', '<leader>ba', function()
-      -- 显式 3 步编排：关 vv-explorer → 清理所有分组缓冲区并收起分屏 → 打开 dashboard
-      close_explorer()
-      bufferline.close_all({ close_windows = true })
-      open_dashboard_later()
-    end, { desc = icon .. 'Close all buffers', silent = true })
   end,
 }
