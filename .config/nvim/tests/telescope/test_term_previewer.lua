@@ -1,45 +1,57 @@
--- shared.term_previewer 契约：jobstart 前先显示 Loading… 骨架，输出到达时清屏替换（空输出也清）；
--- 被新 entry 取代的旧 job 即使先结束也不得写回（job_id 守卫与 chanclose 任一生效即可）
--- 只替换 telescope.previewers 取出 define_preview，preview buffer / window 由测试按 Telescope 方式提供
-local this = debug.getinfo(1, 'S').source:sub(2)
-local H = dofile(vim.fs.find('harness.lua', { upward = true, path = vim.fs.dirname(this) })[1])
+-- terminal preview 的骨架替换与过期输出回归；真实 shell job + terminal buffer
+-- 只替换 Telescope 的构造边界，窗口、模块和进程均由逐 case child 回收
+local H = dofile('tests/helpers.lua')
+local T, child = H.new_set()
 
-local define_preview
-package.loaded['telescope.previewers'] = {
-  new_buffer_previewer = function(opts)
-    define_preview = opts.define_preview
-    return opts
-  end,
-}
-local S = require('plugins.specs.ui.telescope.git.shared')
-S.term_previewer('Test', function(entry) return { 'sh', '-c', entry.cmd } end)
+T['Loading 骨架替换与过期 job 守卫'] = function()
+  child.lua_func(function()
+    local define_preview
+    package.loaded['telescope.previewers'] = {
+      new_buffer_previewer = function(opts)
+        define_preview = opts.define_preview
+        return opts
+      end,
+    }
+    require('plugins.specs.ui.telescope.git.shared')
+      .term_previewer('Test', function(entry) return { 'sh', '-c', entry.cmd } end)
 
--- Telescope 每个 entry 新建 preview buffer，state 复用同一个 previewer
-local self = { state = {} }
-local win = vim.api.nvim_get_current_win()
-local function preview(cmd)
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_win_set_buf(win, buf)
-  self.state.bufnr, self.state.winid = buf, win
-  define_preview(self, { cmd = cmd })
-  return buf
+    -- Telescope 每个 entry 新建 preview buffer，state 复用同一个 previewer
+    local self = { state = {} }
+    local win = vim.api.nvim_get_current_win()
+    local function preview(cmd)
+      local buf = vim.api.nvim_create_buf(false, true)
+      vim.api.nvim_win_set_buf(win, buf)
+      self.state.bufnr, self.state.winid = buf, win
+      define_preview(self, { cmd = cmd })
+      return buf
+    end
+
+    local function text(buf)
+      local lines = vim.tbl_filter(function(line) return line ~= '' end,
+        vim.api.nvim_buf_get_lines(buf, 0, -1, false))
+      return table.concat(lines, '\n')
+    end
+
+    -- 用真实文件握手取代 sleep 猜时序：在测试放行前，命令不能输出
+    local old_ready, new_ready = vim.fn.tempname(), vim.fn.tempname()
+    local old_buf = preview('while [ ! -f ' .. vim.fn.shellescape(old_ready)
+      .. ' ]; do sleep 0.01; done; printf OLD')
+    wait(function() return text(old_buf) == 'Loading…' end, 2000, '命令输出前必须显示 Loading…')
+    local old_job = self.state.job_id
+    local new_buf = preview('while [ ! -f ' .. vim.fn.shellescape(new_ready)
+      .. ' ]; do sleep 0.01; done; printf "NEW\\nline2"')
+    wait(function() return text(new_buf) == 'Loading…' end, 2000, '新任务等待期间必须显示骨架')
+    vim.fn.writefile({}, old_ready)
+    wait(function() return vim.fn.jobwait({ old_job }, 0)[1] ~= -1 end,
+      2000, '被替换任务必须终结')
+    check(not text(old_buf):find('OLD', 1, true), '被取代的旧任务不得写回旧 buffer')
+    eq(text(new_buf), 'Loading…', '旧任务终结不能覆盖新 preview 的骨架')
+    vim.fn.writefile({}, new_ready)
+    wait(function() return text(new_buf) == 'NEW\nline2' end, 5000, '新输出必须完整替换骨架')
+
+    local empty_buf = preview('true')
+    wait(function() return text(empty_buf) == '' end, 2000, '空输出也必须清除骨架')
+  end)
 end
 
-local function text(buf)
-  local lines = vim.tbl_filter(function(l) return l ~= '' end, vim.api.nvim_buf_get_lines(buf, 0, -1, false))
-  return table.concat(lines, '\n')
-end
-
--- 旧 job 先结束（0.2s），新 job 后结束（0.5s）：旧输出若写回会出现 OLD
-local old_buf = preview('sleep 0.2; printf OLD')
-H.wait(function() return text(old_buf) == 'Loading…' end, 2000, '命令输出前 preview 应显示 Loading… 骨架')
-local new_buf = preview('sleep 0.5; printf "NEW\\nline2"')
-H.wait(function() return text(new_buf):find('NEW', 1, true) ~= nil end, 5000, '新 job 输出未写入 preview')
-H.eq(text(new_buf), 'NEW\nline2', '输出到达后应清掉 Loading… 骨架，只保留命令输出')
-H.check(text(old_buf):find('OLD', 1, true) == nil, '被取代的旧 job 不得写回 preview')
-
--- 空输出：骨架也必须被清掉，不能一直显示 Loading…
-local empty_buf = preview('true')
-H.wait(function() return text(empty_buf) == '' end, 2000, '空输出时 Loading… 骨架应被清除')
-
-print('PASS: term_previewer skeleton and stale job guard')
+return T

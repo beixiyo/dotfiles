@@ -1,46 +1,33 @@
--- 验证右键契约：普通 buffer 右键不进 visual（不再是 mousemodel=extend）；
--- 焦点在别的窗口时右键点中带 buffer-local <RightMouse> 的窗口，该映射仍被调用且行定位正确
--- 用 --embed 子进程驱动真实鼠标输入（nvim_input_mouse 需经主循环的按键/映射解析，-l 进程内无法驱动）
-local this = debug.getinfo(1, 'S').source:sub(2)
-local H = dofile(vim.fs.find('harness.lua', { upward = true, path = vim.fs.dirname(this) })[1])
-
-local chan = vim.fn.jobstart({ 'nvim', '--embed', '--headless', '--clean', '-n' }, { rpc = true })
-H.check(chan > 0, 'failed to spawn embedded nvim')
+-- 驱动真实鼠标输入验证跨窗口右键分发；逐 case child 隔离 cwd、持久目录及模块状态
+-- popup 打开时只调用 fast API，先关闭菜单再查询 Lua 状态，避免同步 RPC 阻塞
+local H = dofile('tests/helpers.lua')
+local T, child = H.new_set({ 'VV_ICONS' })
 
 local function lua(code, ...)
-  return vim.rpcrequest(chan, 'nvim_exec_lua', code, { ... })
+  return child.api.nvim_exec_lua(code, { ... })
 end
 
--- row / col 相对窗口文本区（跳过行号列等 textoff），与 getmousepos 的 line / column 对齐
+-- row / col 相对窗口文本区，跳过行号等 textoff
 local function right_click(win, row, col)
-  local pos = lua('return vim.api.nvim_win_get_position(...)', win)
+  local pos = child.api.nvim_win_get_position(win)
   col = col + lua('return vim.fn.getwininfo(...)[1].textoff', win)
-  vim.rpcrequest(chan, 'nvim_input_mouse', 'right', 'press', '', 0, pos[1] + row, pos[2] + col)
-  vim.rpcrequest(chan, 'nvim_input_mouse', 'right', 'release', '', 0, pos[1] + row, pos[2] + col)
+  child.api.nvim_input_mouse('right', 'press', '', 0, pos[1] + row, pos[2] + col)
+  child.api.nvim_input_mouse('right', 'release', '', 0, pos[1] + row, pos[2] + col)
 end
 
--- 点击后取模式快照，再用 <Esc> 关掉可能弹出的 PopUp 菜单。菜单打开期间主循环阻塞在
--- 菜单输入上，nvim_exec_lua 会挂起，只有 nvim_get_mode 这类 fast API 可用，故先取快照再查状态
 local function settle()
   vim.wait(200)
-  local mode = vim.rpcrequest(chan, 'nvim_get_mode')
-  vim.rpcrequest(chan, 'nvim_input', '<Esc>')
-  vim.wait(100)
-  return mode
+  local mode = child.api.nvim_get_mode()
+  child.api.nvim_input('<Esc>')
+  H.wait(function() return not child.api.nvim_get_mode().blocking end, 2000, '关闭 popup 后输入循环必须恢复')
+  return mode.mode
 end
 
-local ok, err = pcall(function()
-  lua([[
-    local root = ...
-    vim.opt.runtimepath:prepend(root)
-    vim.opt.runtimepath:prepend(root .. '/vendors/vv-icons.nvim')
+-- 普通窗口 A、带 buffer-local 右键映射的 B，以及 A 上方的普通窗口 C
+local function build_layout()
+  return lua([[
     require('config.options')
     require('config.keymaps.mouse')
-  ]], H.root)
-
-  -- 布局：左 A（普通 buffer），右 B（模拟 vv-git 面板：buffer-local <RightMouse> 读 getmousepos 定位行），
-  -- A 上方再分出普通 buffer C
-  local wins = lua([[
     local lines = {}
     for i = 1, 10 do lines[i] = 'line ' .. i end
     vim.api.nvim_buf_set_lines(0, 0, -1, false, lines)
@@ -59,34 +46,35 @@ local ok, err = pcall(function()
     vim.api.nvim_win_set_cursor(a, { 1, 0 })
     return { a = a, b = b, c = c }
   ]])
+end
 
-  -- 1. 焦点在 A，右键点 B 第 4 行：B 的 buffer-local 映射被调用，且行定位指向 B 的第 4 行
+local function check_normal(mode)
+  H.check(not mode:match('^[vV\22]'), '右键不能进入 visual，实际模式：' .. mode)
+end
+
+T['右键跨窗口分发且普通 buffer 不进 visual'] = function()
+  local wins = build_layout()
   right_click(wins.b, 3, 2)
   settle()
   H.eq(lua('return _G.hit'), { win = wins.b, line = 4 },
-    'right click on an unfocused window must run its buffer-local <RightMouse> in that window, with getmousepos on the clicked line')
+    '点击未聚焦窗口必须在该窗口执行 buffer-local 映射，且定位到点击行')
 
-  -- 2. 普通 buffer 右键不扩展选区（不进 visual），且按 popup_setpos 把光标移到点击处
   lua('vim.api.nvim_set_current_win(...); vim.api.nvim_win_set_cursor(0, { 1, 0 })', wins.a)
   right_click(wins.a, 5, 3)
-  local mode = settle().mode
-  H.check(not mode:match('^[vV\22]'), 'right click in a plain buffer must not start a visual selection, got mode ' .. mode)
-  H.eq(lua('return vim.fn.mode()'), 'n', 'closing the popup must leave normal mode')
-  H.eq(lua('return vim.api.nvim_win_get_cursor(0)'), { 6, 3 }, 'popup_setpos right click must place the cursor at the click')
+  check_normal(settle())
+  H.eq(lua('return vim.fn.mode()'), 'n', '关闭 popup 后必须保持 normal')
+  H.eq(child.api.nvim_win_get_cursor(0), { 6, 3 }, '普通窗口右键必须把光标放到点击位置')
 
-  -- 3. 焦点在 C，右键点无专属映射的 A：退回内置行为（不递归、不卡死），进入 A 且不进 visual
   lua('vim.api.nvim_set_current_win(...); _G.hit = nil', wins.c)
   right_click(wins.a, 2, 1)
-  mode = settle().mode
-  H.check(not mode:match('^[vV\22]'), 'cross-window right click without a buffer mapping must not start visual, got mode ' .. mode)
-  H.eq(lua('return vim.api.nvim_get_current_win()'), wins.a, 'fallback right click must land in the clicked window')
-  H.eq(lua('return _G.hit'), vim.NIL, 'fallback must not trigger another buffer mapping')
+  check_normal(settle())
+  H.eq(child.api.nvim_get_current_win(), wins.a, '无专属映射时内置行为必须落到点击窗口')
+  H.eq(lua('return _G.hit'), vim.NIL, '回退不能触发其他 buffer 的映射')
+end
 
-  -- 4. 反向：焦点在面板 P（buffer-local <RightMouse> 带 vv-utils.mouse.redispatch_outside 守卫），
-  --    右键点普通窗口 A：面板动作不得执行（否则会拿 A 的行号操作面板），事件交还 A 走内置行为
+T['面板守卫不跨窗口执行且镜像窗口不循环'] = function()
+  local wins = build_layout()
   local panel = lua([[
-    local root = ...
-    vim.opt.runtimepath:prepend(root .. '/vendors/vv-utils.nvim')
     local Mouse = require('vv-utils.mouse')
     vim.cmd('botright vnew')
     local p = vim.api.nvim_get_current_win()
@@ -98,22 +86,18 @@ local ok, err = pcall(function()
       _G.panel_hit = vim.fn.getmousepos().line
     end, { buffer = 0 })
     return p
-  ]], H.root)
-  lua('vim.api.nvim_set_current_win(...); _G.panel_hit = nil', panel)
+  ]])
   right_click(wins.a, 3, 2)
-  mode = settle().mode
-  H.check(not mode:match('^[vV\22]'), 'right click from a focused panel into another window must not start visual, got mode ' .. mode)
-  H.eq(lua('return _G.panel_hit'), vim.NIL, 'panel right-click action must not run when the click lands in another window')
-  H.eq(lua('return vim.api.nvim_get_current_win()'), wins.a, 'the click must be handed back to the clicked window')
-  H.eq(lua('return vim.api.nvim_win_get_cursor(0)'), { 4, 2 }, 'the handed-back click must keep its mouse position')
+  check_normal(settle())
+  H.eq(lua('return _G.panel_hit'), vim.NIL, '从面板点击其他窗口不能执行面板动作')
+  H.eq(child.api.nvim_get_current_win(), wins.a, '事件必须交还点击窗口')
+  H.eq(child.api.nvim_win_get_cursor(0), { 4, 2 }, '转发右键必须保留点击位置')
 
-  -- 点在面板内仍执行面板动作
   lua('vim.api.nvim_set_current_win(...)', panel)
   right_click(panel, 6, 1)
   settle()
-  H.eq(lua('return _G.panel_hit'), 7, 'a click inside the panel must still run the panel action on the clicked line')
+  H.eq(lua('return _G.panel_hit'), 7, '面板内部右键仍须在点击行执行动作')
 
-  -- 5. 同一面板 buffer 显示在两个窗口：点另一个窗口不得无限重发（settle 能返回即未卡死），也不执行动作
   local mirror = lua([[
     local p = ...
     vim.api.nvim_set_current_win(p)
@@ -125,9 +109,7 @@ local ok, err = pcall(function()
   ]], panel)
   right_click(mirror, 2, 1)
   settle()
-  H.eq(lua('return _G.panel_hit'), vim.NIL, 'a mirror window of the same panel buffer must not loop or run the action')
-end)
+  H.eq(lua('return _G.panel_hit'), vim.NIL, '同 buffer 的镜像窗口不能循环转发或执行面板动作')
+end
 
-pcall(vim.fn.jobstop, chan)
-if not ok then error(err, 0) end
-print('PASS: mouse right click dispatch')
+return T
