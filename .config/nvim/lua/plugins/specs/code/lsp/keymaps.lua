@@ -114,30 +114,6 @@ function M.setup()
         if diag then vim.api.nvim_win_set_cursor(0, { diag.end_lnum + 1, diag.end_col }) end
       end, bufopts('Previous diagnostic end'))
 
-      -- 诊断列表
-      map(
-        'n',
-        '<leader>xx',
-        function() require('vv-symbols').diagnostics({ buf = 0, toggle = true }) end,
-        bufopts(icons.list .. ' Buffer diagnostics')
-      )
-      map(
-        'n',
-        '<leader>xX',
-        function() require('vv-symbols').diagnostics({ toggle = true }) end,
-        bufopts(icons.list .. ' Workspace diagnostics')
-      )
-      map(
-        'n',
-        '<leader>xq',
-        function() require('vv-symbols').quickfix({ toggle = true }) end,
-        bufopts(icons.list .. ' Quickfix')
-      )
-      map('n', '<leader>xQ', function()
-        vim.fn.setqflist({}, 'r', {})
-        require('vv-symbols').close()
-      end, bufopts(icons.list .. ' Clear quickfix'))
-
       -- 重启 LSP
       map('n', '<leader>cR', function()
         local buf = vim.api.nvim_get_current_buf()

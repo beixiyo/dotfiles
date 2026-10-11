@@ -48,7 +48,7 @@ return {
       {
         '<leader>xQ',
         function()
-          vim.fn.setqflist({}, 'r', {})
+          vim.fn.setqflist({}, 'r')
           require('vv-symbols').close()
         end,
         desc = icons.list .. ' Clear quickfix',
