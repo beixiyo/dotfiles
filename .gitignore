@@ -31,6 +31,7 @@
 !.local/bin/gwt-sync
 !.local/bin/editor
 !.local/bin/remote-session
+!.local/bin/http-server
 
 # !.config/ — 取消忽略 .config 目录本身
 !.config/
@@ -253,6 +254,7 @@
 .claude/skills/lark-*
 # synced/ 由 Claude 自动生成，不纳入版本管理
 .claude/skills/synced/
+.claude/skills/answer-with-html/
 !.claude/agents/
 !.claude/agents/**
 

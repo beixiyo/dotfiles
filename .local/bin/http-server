@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+# http-server — 静态文件服务器启动器，按 python3 -> bunx serve -> npx serve 顺序 fallback
+# 用法: http-server [dir] [-p|--port port]
+# 默认对齐 npm http-server: 端口 8080；未显式指定目录且 ./public 存在时服务 public/
+# 端口被占用时自动 +1，最多尝试 50 个（含起始端口），以 bind 测试判定占用
+
+set -euo pipefail
+
+dir="."
+dir_given=0
+port=8080
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -p|--port)
+      [[ $# -ge 2 ]] || { echo "http-server: missing value for $1" >&2; exit 1; }
+      port="$2"; shift 2 ;;
+    -h|--help)
+      echo "usage: http-server [dir] [-p|--port port]"
+      echo "  default dir: ./public if it exists, else ."
+      echo "  default port: 8080"
+      exit 0 ;;
+    *) dir="$1"; dir_given=1; shift ;;
+  esac
+done
+
+# 校验并规范化端口：10# 强制十进制，避免前导零被按八进制解释
+[[ "$port" =~ ^[0-9]+$ ]] || { echo "http-server: invalid port: $port" >&2; exit 1; }
+port=$((10#$port))
+(( 1 <= port && port <= 65535 )) || { echo "http-server: port out of range (1-65535): $port" >&2; exit 1; }
+
+# 未显式指定目录且 ./public 存在时，默认服务 public/（对齐 npm http-server）
+if (( ! dir_given )) && [[ -d "$dir/public" ]]; then
+  dir="$dir/public"
+fi
+
+[[ -d "$dir" ]] || { echo "http-server: directory not found: $dir" >&2; exit 1; }
+# 转绝对路径：以 - 开头的相对目录会被后端解析为选项
+dir="$(cd -- "$dir" && pwd)"
+
+# 按后端可用性选择探测与启动方式
+# 探测用真实 bind 0.0.0.0（而非连接测试），能发现仅绑定 LAN IP / IPv6 的服务；
+# 已知局限：探测与启动之间有竞态窗口；IPv6-only 监听探测不到
+if command -v python3 >/dev/null 2>&1; then
+  port_free() {
+    python3 -c 'import socket, sys
+try:
+    socket.socket().bind(("", int(sys.argv[1])))
+except OSError:
+    sys.exit(1)' "$1" 2>/dev/null
+  }
+
+  launch() { exec python3 -m http.server "$port" --directory "$dir"; }
+elif command -v bunx >/dev/null 2>&1; then
+  port_free() {
+    PROBE_PORT="$1" bun -e 'const s = require("net").createServer()
+s.once("error", () => process.exit(1))
+s.listen(+process.env.PROBE_PORT, "0.0.0.0", () => s.close(() => process.exit(0)))' 2>/dev/null
+  }
+
+  launch() { exec bunx serve "$dir" --listen "$port"; }
+elif command -v npx >/dev/null 2>&1; then
+  port_free() {
+    PROBE_PORT="$1" node -e 'const s = require("net").createServer()
+s.once("error", () => process.exit(1))
+s.listen(+process.env.PROBE_PORT, "0.0.0.0", () => s.close(() => process.exit(0)))' 2>/dev/null
+  }
+
+  launch() { exec npx -y serve "$dir" --listen "$port"; }
+else
+  echo "http-server: no backend found (need python3, bunx or npx)" >&2
+  exit 1
+fi
+
+orig_port="$port"
+end=$((port + 49))
+(( end > 65535 )) && end=65535
+
+while ! port_free "$port"; do
+  if (( port >= end )); then
+    echo "http-server: no free port in $orig_port-$end" >&2
+    exit 1
+  fi
+  port=$((port + 1))
+done
+
+[[ "$port" != "$orig_port" ]] && echo "http-server: port $orig_port in use, using $port" >&2
+
+launch
