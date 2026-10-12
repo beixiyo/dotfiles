@@ -1,49 +1,143 @@
 #!/bin/bash
-# open-nvim: 供 code-inspector-plugin 调用，自动跳转到正确的 Neovim 实例
+# open-nvim: 在运行中的 Neovim 实例里打开文件并跳转行列
+# 调用方：/open-nvim skill（agent）与 code-inspector-plugin（pathFormat: '{file}:{line}:{column}'）
 #
-# 用法（支持以下三种参数格式）：
-#   open-nvim <file>:<line>:<col>        # code-inspector-plugin 默认格式
-#   open-nvim <file>:<line>              # 无列号
-#   open-nvim <file> [line] [col]        # 分参格式（line/col 省略时默认为 1）
-#   open-nvim "+call cursor(l,c)" <file> # vim +call 格式
+# 用法：
+#   open-nvim <file>[:<line>[:<col>]]                 # 单文件：:edit + 光标跳转
+#   open-nvim <f1>[:<l>[:<c>]] <f2>[:<l>[:<c>]] ...   # 多文件：全部填入 quickfix 并打开面板，光标落在第一项
+#
+# 行号 1 起；列号 1 起、按 UTF-16 码元计（与浏览器 / babel loc 一致），ASCII 行等同字节列
+#
+# 实现要点：
+#   - 通过 --remote-expr + luaeval 把条目作为 Vim list 结构化传入，不走 --remote-send 的 typeahead，
+#     因此没有按键转义问题和 4KB 长度上限
+#   - quickfix 一次 setqflist 整体替换，避免逐条追加让监听方（vv-symbols）反复刷新
 
-# ── 解析参数 ──
-if [[ "$1" == +call* ]]; then
-  # vim +call cursor(line,col) file 格式
-  CURSOR_CALL="$1"
-  FILE="$2"
-  LINE=$(echo "$CURSOR_CALL" | grep -oE '[0-9]+' | head -1)
-  COL=$(echo "$CURSOR_CALL" | grep -oE '[0-9]+' | tail -1)
-elif [[ "$1" =~ ^(.+):([0-9]+):([0-9]+)$ ]]; then
-  # code-inspector-plugin 默认的 file:line:col 单参格式
-  FILE="${BASH_REMATCH[1]}"
-  LINE="${BASH_REMATCH[2]}"
-  COL="${BASH_REMATCH[3]}"
-elif [[ "$1" =~ ^(.+):([0-9]+)$ ]]; then
-  # file:line 格式（无 col）
-  FILE="${BASH_REMATCH[1]}"
-  LINE="${BASH_REMATCH[2]}"
-  COL=1
-else
-  # 分参格式：file line col
-  FILE="$1"
-  LINE="${2:-1}"
-  COL="${3:-1}"
+# ── 解析参数为条目：FILES / LINES / COLS 三个平行数组 ──
+FILES=()
+LINES=()
+COLS=()
+
+add_entry() {
+  FILES+=("$1")
+  LINES+=("${2:-1}")
+  COLS+=("${3:-1}")
+}
+
+for arg in "$@"; do
+  if [[ "$arg" =~ ^(.+):([0-9]+):([0-9]+)$ ]]; then
+    add_entry "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}"
+  elif [[ "$arg" =~ ^(.+):([0-9]+)$ ]]; then
+    add_entry "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+  else
+    add_entry "$arg"
+  fi
+done
+
+if (( ${#FILES[@]} == 0 )) || [ -z "${FILES[0]}" ]; then
+  echo "Usage: open-nvim <file>[:<line>[:<col>]] [<file>[:<line>[:<col>]] ...]"
+  exit 1
 fi
 
-[ -z "$FILE" ] && echo "Usage: open-nvim <file>[:<line>[:<col>]] [line] [col]" && exit 1
-FILE=$(realpath "$FILE" 2>/dev/null || echo "$FILE")
+# 绝对路径化：存在的文件走 realpath；不存在的文件按当前目录拼接，交给 nvim 新建 buffer
+for i in "${!FILES[@]}"; do
+  f="${FILES[$i]}"
+  if resolved=$(realpath "$f" 2>/dev/null); then
+    FILES[$i]="$resolved"
+  elif [[ "$f" != /* ]]; then
+    FILES[$i]="$PWD/$f"
+  fi
+done
+FILE="${FILES[0]}"
+
+# ── 构造 luaeval 表达式 ──
+# Vim 单引号字符串只需把 ' 写成 ''；替换串经变量传入，避免 bash 双引号内 \' 被当字面量
+vim_string() {
+  local q="'"
+  local s="$1"
+  printf "'%s'" "${s//$q/$q$q}"
+}
+
+ITEMS=""
+for i in "${!FILES[@]}"; do
+  ITEMS+="[$(vim_string "${FILES[$i]}"),${LINES[$i]},${COLS[$i]}],"
+done
+
+# Lua 部分：_A 为 { {file, line, col}, ... }；单条只 :edit + 光标，多条额外替换 quickfix 并 :copen
+# 列号按 UTF-16 换算为字节列；未加载的文件按需只读到目标行。整段压成一行，故不能使用 -- 注释
+read -r -d '' LUA <<'EOF'
+(function()
+  local entries = _A
+  local function line_text(file, lnum)
+    local buf = vim.fn.bufnr(file)
+    if buf > 0 and vim.api.nvim_buf_is_loaded(buf) then
+      return vim.api.nvim_buf_get_lines(buf, lnum - 1, lnum, false)[1] or ""
+    end
+    if vim.fn.filereadable(file) == 0 then return "" end
+    return vim.fn.readfile(file, "", lnum)[lnum] or ""
+  end
+  local function byte_col(file, lnum, col)
+    local text = line_text(file, lnum)
+    local ok, idx = pcall(vim.str_byteindex, text, "utf-16", math.max(col - 1, 0), false)
+    if not ok then idx = math.min(math.max(col - 1, 0), #text) end
+    return idx
+  end
+
+  local first = entries[1]
+  local mode = vim.api.nvim_get_mode().mode
+  if mode:sub(1, 1) == "i" or mode:sub(1, 1) == "R" or mode == "t" then vim.cmd.stopinsert() end
+  vim.cmd("edit " .. vim.fn.fnameescape(first[1]))
+  local code_win = vim.api.nvim_get_current_win()
+  local last = vim.api.nvim_buf_line_count(0)
+  local lnum = math.min(math.max(first[2], 1), last)
+  vim.api.nvim_win_set_cursor(code_win, { lnum, byte_col(first[1], lnum, first[3]) })
+  vim.cmd("normal! zz")
+  if #entries == 1 then return "single" end
+
+  local items = {}
+  for _, e in ipairs(entries) do
+    local l = math.max(e[2], 1)
+    items[#items + 1] = { filename = e[1], lnum = l, col = byte_col(e[1], l, e[3]) + 1 }
+  end
+  vim.fn.setqflist({}, " ", { title = "open-nvim", items = items })
+  vim.cmd("botright copen")
+  if vim.api.nvim_win_is_valid(code_win) then vim.api.nvim_set_current_win(code_win) end
+  vim.schedule(function()
+    vim.schedule(function()
+      if vim.api.nvim_win_is_valid(code_win) then vim.api.nvim_set_current_win(code_win) end
+    end)
+  end)
+  return "quickfix"
+end)()
+EOF
+LUA=$(printf '%s' "$LUA" | tr '\n' ' ')
+EXPR="luaeval($(vim_string "$LUA"), [${ITEMS%,}])"
 
 open_in_nvim() {
-  nvim --headless --server "$1" --remote-send "<C-\\><C-n>:e ${FILE}<CR>:call cursor(${LINE:-1}, ${COL:-1})<CR>"
+  nvim --headless --server "$1" --remote-expr "$EXPR"
+}
+
+report() {
+  if (( ${#FILES[@]} == 1 )); then
+    echo "[open-nvim] Opened ${FILE}:${LINES[0]}:${COLS[0]} ($1)"
+  else
+    echo "[open-nvim] Opened ${#FILES[@]} entries in quickfix, jumped to ${FILE}:${LINES[0]}:${COLS[0]} ($1)"
+  fi
+}
+
+# 统一执行：成功打印来源，失败透传 nvim 错误并以非零码退出
+run_on() {
+  local out
+  if out=$(open_in_nvim "$1" 2>&1) && [[ "$out" == single* || "$out" == quickfix* ]]; then
+    report "$2"
+    exit 0
+  fi
+  echo "[open-nvim] Failed on $1: $out" >&2
+  exit 1
 }
 
 # ── 优先级 1: $NVIM（从 nvim 内置终端启动时自动可用） ──
-if [ -n "$NVIM" ]; then
-  open_in_nvim "$NVIM"
-  echo "[open-nvim] Opened ${FILE}:${LINE}:${COL} (embedded terminal)"
-  exit 0
-fi
+[ -n "$NVIM" ] && run_on "$NVIM" "embedded terminal"
 
 # ── 收集存活的 socket 及其 cwd ──
 # macOS 用 getconf DARWIN_USER_TEMP_DIR 获取 per-user 临时目录，不依赖 $TMPDIR 继承
@@ -69,18 +163,10 @@ for sock in "$SOCK_DIR"/*/nvim.*.0; do
 done
 
 # ── 优先级 2: cwd 最匹配的实例 ──
-if [ -n "$BEST_MATCH" ]; then
-  open_in_nvim "$BEST_MATCH"
-  echo "[open-nvim] Opened ${FILE}:${LINE}:${COL} (matched cwd)"
-  exit 0
-fi
+[ -n "$BEST_MATCH" ] && run_on "$BEST_MATCH" "matched cwd"
 
 # ── 优先级 3: 最后一个存活实例 ──
-if [ -n "$LAST_ALIVE" ]; then
-  open_in_nvim "$LAST_ALIVE"
-  echo "[open-nvim] Opened ${FILE}:${LINE}:${COL} (fallback instance)"
-  exit 0
-fi
+[ -n "$LAST_ALIVE" ] && run_on "$LAST_ALIVE" "fallback instance"
 
 echo "[open-nvim] No running Neovim instance found"
 exit 1
