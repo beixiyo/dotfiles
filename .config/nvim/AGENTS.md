@@ -83,8 +83,9 @@ return {
 
 ## 常用命令
 
-- `tests/run.sh [过滤词]`：一键跑全部测试（等价 `nvim -l tests/run.lua`；递归 `tests/**/test_*.lua`，每文件独立子进程，失败隔离；退出码非 0 = 有失败，幂等可重复跑）
-- 新增测试：放 `tests/<分类>/test_*.lua`，样板 `dofile(vim.fs.find('harness.lua', { upward = true, ... })[1])` 取得断言 / git fixture / notify 捕获 / wait；失败消息写被破坏的契约；清理必须包进 `with_git_repo` 或 pcall 保证失败路径也执行
+- dotfiles 配置测试：根目录 `tests/run.sh [过滤词]`，接入 [vv-utils 共享 mini.test 入口](vendors/vv-utils.nvim/dev/test/README.md)
+- 新增 dotfiles 配置测试：放根目录 `tests/<分类>/test_*.lua`，返回 mini.test 具名集合（用例名、断言说明和注释用中文）。需要模块 / 窗口 / 异步状态隔离的用例用 `dofile('tests/helpers.lua').new_set({ 依赖环境变量名 })` 取得逐 case 独立 child Neovim（cwd / HOME / XDG / 临时文件根隔离，child 内提供 `H` / `eq` / `check` / `wait`）；纯数据用例可在父进程用 `H.eq` / `H.check`，涉及异步 job、模块替换、窗口或寄存器的用例必须在 child 内执行。`child.lua_func` 不传递闭包 upvalue，需要共享 fixture 时在函数内写 `local H = _G.H`。外部插件依赖在 `tests/env.sh` 声明；失败消息写被破坏的契约；清理必须包进 `with_git_repo` 或 pcall 保证失败路径也执行
+- vv 插件测试：在对应 vendor 仓库运行 `sh tests/run.sh [过滤词]`
 - headless 测试只覆盖数据与异步逻辑；keymap、preview 滚动、telescope UI 交互仍需完整配置手动验证
 - `:PluginManager` / `<leader>fp`：插件管理 UI
 - `:PackUpdate [name ...]`：更新全部或指定插件

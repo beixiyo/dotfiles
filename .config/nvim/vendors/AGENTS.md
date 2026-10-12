@@ -55,6 +55,7 @@
 
 ## 高亮和 UI
 
+- 快捷键展示统一使用 `vv-utils.keys.display(lhs)`；需要「动作 + 快捷键」文本时使用 `vv-utils.keys.hint(action, lhs)`
 - 共享 Git 状态装饰使用 `vv-utils.git`
 - 批量高亮使用 `vv-utils.hl.register`，由它处理 `default=true` 和 `ColorScheme`
 - 通用树侧栏优先使用 `vv-utils.tree_panel`
@@ -80,6 +81,10 @@
 
 ## 验证
 
-- 在目标 vendor 仓库运行其现有测试
+- vv 插件开发测试统一使用 [vv-utils 共享测试入口](vv-utils.nvim/dev/test/README.md)；各仓 `tests/run.sh [过滤词]` 定位共享入口，`tests/env.sh` 声明已有依赖的自动发现和环境变量覆盖策略
+- `tests/**/test_*.lua` 返回 mini.test 的具名集合，收集阶段只注册用例；用例名称、断言说明和测试注释使用中文
+- 每个场景独立建立必要前置条件；窗口、buffer、模块状态和异步资源优先在独立 Neovim 子进程中验证，失败路径同样清理 fixture 与进程
+- child 启动前、被测模块加载前，将 cwd、HOME、XDG 持久目录和临时文件根设到该 case 独立的 `/tmp` fixture；文件路径前置值必须非空，不能让 nil 被 Neovim 转为 `v:null` 后写入真实仓库
+- 保留真实行为和高信号回归，不为常量、导出、简单 getter 或重复实现分支新增测试
 - 修改共享 API 时同时搜索全部 caller，并分别在受影响仓库验证
 - 注意每个 vendor 可能是独立 Git 仓库，不跨仓混合暂存或提交
