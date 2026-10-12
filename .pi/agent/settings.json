@@ -1,14 +1,16 @@
 {
   "defaultProvider": "zai",
   "defaultModel": "glm-5.3",
-  "lastChangelogVersion": "0.99.2",
+  "lastChangelogVersion": "1.1.0",
   "autocompleteMaxVisible": 8,
   "theme": "pretty-cat",
   "packages": [
-    "npm:pi-subagents",
+    "npm:@jl-org/pi-exts",
     "npm:pi-vim",
+    "npm:pi-btw",
+    "npm:pi-subagents",
     "npm:@ff-labs/pi-fff",
-    "npm:@jl-org/pi-exts"
+    "npm:pi-background-tasks"
   ],
   "autoRename": {
     "model": "zai/glm-5.3-flash",
@@ -22,5 +24,6 @@
       "AI_AGENT_NAME='Pi' bash ~/.config/tmux/scripts/ai-status.sh wait \"$TMUX_PANE\"",
       "NOTIFY_APP_NAME=pi bash ~/.zsh/notify/main.sh 'Pi needs you'"
     ]
-  }
+  },
+  "fullscreenWheelScrollLines": 5
 }
