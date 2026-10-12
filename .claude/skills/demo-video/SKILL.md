@@ -1,6 +1,6 @@
 ---
 name: demo-video
-description: 制作产品演示视频、动画或 GIF 时使用：官网/README 演示动画、前端代码转视频、录制网页或 Web 应用操作、平滑推镜放大、GIF/MP4 压缩与无缝循环。先按目标选路线（DOM 剧本动画 / 代码渲染视频 / 录制真实操作 / 纯后期），再用通用录制脚本产出并抽帧验证
+description: 制作产品演示视频、动画或 GIF 时使用：官网/README 演示动画、前端代码转视频、录制网页或 Web 应用操作、平滑推镜放大、GIF/MP4 压缩与无缝循环；也用于测试取证录屏——录真实界面交互并在画面上显示后端响应耗时、SSE 事件到达时间，给测试报告配视频。先按目标选路线（DOM 剧本动画 / 代码渲染视频 / 录制真实操作 / 纯后期 / 测试取证），再用通用录制脚本产出并抽帧验证
 ---
 
 # demo-video
@@ -19,11 +19,13 @@ description: 制作产品演示视频、动画或 GIF 时使用：官网/README 
 | 宣传片、带字幕转场的成片、逐帧精确 | **B. 代码渲染视频**（Remotion / Motion Canvas） | MP4 | [routes.md](references/routes.md) · B |
 | 展示真实 Web 应用的操作流程 | **C. 录制真实操作**（Playwright 场景脚本）+ 可选后期推镜 | GIF/MP4 | [routes.md](references/routes.md) · C |
 | 已有素材只需剪辑、加速、转 GIF | **D. 纯 ffmpeg 后期** | GIF/MP4 | [recording.md](references/recording.md) · ffmpeg 配方 |
+| 测试过程录屏，可让人看到后端多久响应 | **E. 测试取证录屏**（playwright-cli 会话 + 网络计时提示条） | WebM + 耗时 JSON | [evidence.md](references/evidence.md) |
 
 判断要点：
 - 演示要同时出现在官网（可交互、跟随主题和语言）和 README → A，一份实现两处复用
 - 演示的是**真实产品行为**、UI 会持续迭代 → C，免得维护一份模仿品；需要推镜效果再接 B 做后期
 - 需要配音、字幕、片头片尾、多段素材拼接 → B
+- 录屏是测试证据而不是宣传：要显示等待时长、复用已登录会话、给报告出精确耗时，或接口未上线需要 mock → E
 - 路线 A 的模拟界面必须对照真实产品源码复刻（文案、颜色、状态流转），凭印象做必然失真
 
 ## 通用录制脚本
