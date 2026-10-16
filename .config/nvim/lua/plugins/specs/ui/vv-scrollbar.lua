@@ -14,7 +14,14 @@ return {
   },
   event = { 'BufReadPost', 'BufNewFile', 'User VVGitStatusChanged' },
 
-  ---@type VVScrollbarConfig
+  ---@type VVScrollbarConfigOpts
+  opts = {
+    -- 仅降级滚动条；保留正文 Markdown 渲染。可按实际文件调整门槛
+    lightweight = function(ctx)
+      return ctx.filetype == 'markdown' and ctx.line_count >= 1000
+    end,
+  },
+
   -- opts = function()
   --   local p = require('tools.palette').get()
   --

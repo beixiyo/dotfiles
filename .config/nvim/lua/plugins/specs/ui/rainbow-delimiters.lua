@@ -1,4 +1,8 @@
 -- 彩虹括号 - 多层括号配对着色（基于 treesitter）
+
+-- 超过该行数的 buffer 不启用彩虹括号
+local MAX_LINES = 10000
+
 ---@type PackSpec
 return {
   desc = '彩虹括号',
@@ -17,6 +21,11 @@ return {
 
     ---@type rainbow_delimiters.config
     vim.g.rainbow_delimiters = {
+      -- global strategy 首次 attach 会对全文件逐个括号 vim.hl.range，3 万行级约 1.3s；
+      -- vv-git diff 每次 preview 新建 scratch 都会重付这笔成本，因此大 buffer 不 attach
+      condition = function(buf)
+        return vim.api.nvim_buf_line_count(buf) < MAX_LINES
+      end,
       strategy = {
         [''] = rd.strategy['global'],
         vim = rd.strategy['local'],
