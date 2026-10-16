@@ -54,4 +54,45 @@ T['Loading 骨架替换与过期 job 守卫'] = function()
   end)
 end
 
+T['超过行数上限时截断并提示，恰好等于上限时不误报'] = function()
+  child.lua_func(function()
+    local define_preview
+    package.loaded['telescope.previewers'] = {
+      new_buffer_previewer = function(opts)
+        define_preview = opts.define_preview
+        return opts
+      end,
+    }
+    require('plugins.specs.ui.telescope.git.shared').term_previewer('Test', function(entry)
+      return { 'sh', '-c', entry.cmd }
+    end, { line_cap = 5, truncated_hint = 'press X' })
+
+    local self = { state = {} }
+    local win = vim.api.nvim_get_current_win()
+    local function preview(cmd)
+      local buf = vim.api.nvim_create_buf(false, true)
+      vim.api.nvim_win_set_buf(win, buf)
+      self.state.bufnr, self.state.winid = buf, win
+      define_preview(self, { cmd = cmd })
+      return buf
+    end
+
+    local function text(buf)
+      local lines = vim.tbl_filter(function(line) return line ~= '' end,
+        vim.api.nvim_buf_get_lines(buf, 0, -1, false))
+      return table.concat(lines, '\n')
+    end
+
+    -- 输出与截断提示同一次写入 vterm，buffer 刷新只是整体延后：看到末行即看到提示（若有）
+    local over = preview('seq 100000')
+    wait(function() return text(over):find('truncated', 1, true) ~= nil end, 5000, '超限输出必须出现截断提示')
+    eq(text(over), '1\n2\n3\n4\n5\n… preview truncated to first 5 lines, press X',
+      '超限输出只保留前 line_cap 行并附带调用方提示')
+
+    local exact = preview('seq 5')
+    wait(function() return text(exact):find('5', 1, true) ~= nil end, 5000, '恰好等于上限的输出必须渲染')
+    eq(text(exact), '1\n2\n3\n4\n5', '恰好等于上限的输出不是截断，不得出现提示')
+  end)
+end
+
 return T

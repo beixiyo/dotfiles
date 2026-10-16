@@ -36,4 +36,5 @@ opts.previewer = previewers.new_buffer_previewer({
 - 新请求开始时终止或忽略旧任务，避免过期输出覆盖当前 entry
 - terminal channel 只对应创建它的 buffer
 - stdout/stderr 和退出码策略由具体 picker 决定
+- terminal buffer 的 scrollback（默认 10000）装不下的输出会把头部顶掉、只剩尾部。命令输出预览统一走 `git/shared.lua` 的 `term_previewer`：默认按 `PREVIEW_LINE_CAP` 经 `head` 截断并提示，`truncated_hint` 写查看完整内容的入口；统计头这类必须保住的头部放进同一条命令管道输出，不要另起异步任务先写
 - window、滚动和焦点行为必须在完整 Telescope UI 中手动验证，headless 只能验证 Lua/API 错误

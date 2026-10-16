@@ -7,6 +7,20 @@ local Keys = require('vv-utils.keys')
 
 local log_limits = { 300, 2000, 10000, false }
 
+-- 统计头与 diff 走同一条管道：统计头排在第 1 行并计入 term_previewer 的行数上限，
+-- 超大 commit 截断时只丢 diff 尾部；同一个 job 也让过期守卫一并覆盖统计阶段
+local preview_script = [[
+git -C "$1" show --numstat --format= "$2" | awk -F '\t' '
+  $1 == "-" { binary++; next }
+  NF >= 3 { added += $1; deleted += $2 }
+  END {
+    printf "\033[1mCommit changes\033[0m  \033[32m+%d\033[0m  \033[31m-%d\033[0m  ·  %d lines", added, deleted, added + deleted
+    if (binary) printf "  ·  %d binary", binary
+    printf "\n\n"
+  }'
+git -C "$1" show --color=always "$2" | delta --side-by-side --width="$3"
+]]
+
 local function open_file_tab(context)
   vim.cmd('tabnew ' .. vim.fn.fnameescape(context.abspath))
   local tabpage = vim.api.nvim_get_current_tabpage()
@@ -95,89 +109,18 @@ function M.open(opts)
   vim.list_extend(opts.git_command, { '--', '.' })
 
   if vim.fn.executable('delta') == 1 then
-    local previewers = require('telescope.previewers')
-
-    opts.previewer = previewers.new_buffer_previewer({
-      title = 'Git Log',
-
-      define_preview = function(self, entry)
-        if self.state.job_id then
-          pcall(vim.fn.jobstop, self.state.job_id)
-        end
-        if self.state.stat_job then
-          pcall(self.state.stat_job.kill, self.state.stat_job, 15)
-        end
-
-        local bufnr = self.state.bufnr
-        local winid = self.state.winid
-        local width = vim.api.nvim_win_get_width(winid)
-        local chan = vim.api.nvim_open_term(bufnr, {})
-
-        self.state.stat_job = vim.system({
-          'git',
-          '-C',
-          git_root,
-          'show',
-          '--numstat',
-          '--format=',
-          entry.value,
-        }, { text = true }, function(result)
-          vim.schedule(function()
-            if not vim.api.nvim_buf_is_valid(bufnr) then
-              return
-            end
-
-            local added, deleted, binary_files = 0, 0, 0
-            for line in (result.stdout or ''):gmatch('[^\r\n]+') do
-              local a, d = line:match('^(%d+)\t(%d+)\t')
-              if a then
-                added = added + tonumber(a)
-                deleted = deleted + tonumber(d)
-              elseif line:match('^%-\t%-\t') then
-                binary_files = binary_files + 1
-              end
-            end
-            local binary = binary_files > 0 and string.format('  ·  %d binary', binary_files) or ''
-            vim.api.nvim_chan_send(
-              chan,
-              string.format('\27[1mCommit changes\27[0m  \27[32m+%d\27[0m  \27[31m-%d\27[0m  ·  %d lines%s\r\n\r\n', added, deleted, added + deleted, binary)
-            )
-
-            self.state.job_id = vim.fn.jobstart({
-              'bash',
-              '-c',
-              'git -C "$1" show --color=always "$2" | delta --side-by-side --width="$3"',
-              '_',
-              git_root,
-              entry.value,
-              tostring(width),
-            }, {
-              stdout_buffered = true,
-              on_stdout = function(_, data)
-                if not vim.api.nvim_buf_is_valid(bufnr) then
-                  return
-                end
-                vim.api.nvim_chan_send(chan, table.concat(data, '\r\n'))
-              end,
-              on_exit = function()
-                vim.schedule(function()
-                  if not vim.api.nvim_buf_is_valid(bufnr) then
-                    return
-                  end
-
-                  pcall(function()
-                    vim.bo[bufnr].scrollback = 9999
-                    vim.bo[bufnr].scrollback = 9998
-                  end)
-                  if vim.api.nvim_win_is_valid(winid) then
-                    pcall(vim.api.nvim_win_set_cursor, winid, { 1, 0 })
-                  end
-                end)
-              end,
-            })
-          end)
-        end)
-      end,
+    opts.previewer = Git.term_previewer('Git Log', function(entry, winid)
+      return {
+        'bash',
+        '-c',
+        preview_script,
+        '_',
+        git_root,
+        entry.value,
+        tostring(vim.api.nvim_win_get_width(winid)),
+      }
+    end, {
+      truncated_hint = 'press <CR> for the full commit view',
     })
   end
 
@@ -193,9 +136,9 @@ function M.open(opts)
   }, '  ')
 
   opts.attach_mappings = function(_, map)
-    -- 在普通 buffer 中打开该 commit 的 diff（可 visual 选区复制，q/<Esc> 关闭并回到 telescope）。
+    -- 在普通 buffer 中打开该 commit 的 diff（可 visual 选区复制，q/<Esc> 关闭并回到 telescope）
     -- 同时覆盖 git_commits 默认的 <CR>=git checkout —— 看历史时误回车不再把当前 commit
-    -- checkout 出去导致 HEAD 游离（detached）。
+    -- checkout 出去导致 HEAD 游离（detached）
     local function open_diff(prompt_bufnr)
       local entry = action_state.get_selected_entry(prompt_bufnr)
       if not entry then
@@ -212,7 +155,7 @@ function M.open(opts)
     -- 不可用时回退到基础的 git show scratch buffer。无论哪种都不再 checkout（不会游离 HEAD）
     -- 必须用 select_default:replace 替换 action 对象，而非 map('<CR>', ...)
     -- 后者只是 keymap，telescope.builtin.resume() 重开 picker 后 action 对象会还原为默认的
-    -- git_checkout，再按 <CR> 就 checkout 了 commit hash 导致 HEAD 游离。
+    -- git_checkout，再按 <CR> 就 checkout 了 commit hash 导致 HEAD 游离
     actions.select_default:replace(function(prompt_bufnr)
       local entry = action_state.get_selected_entry(prompt_bufnr)
       if not entry then
@@ -229,7 +172,7 @@ function M.open(opts)
           git_log_limit = log_limit,
         }
         actions.close(prompt_bufnr)
-        -- 显式重建当前 git-log 会话，避免 vv-git 内其它 picker 覆盖 Telescope 的全局缓存。
+        -- 显式重建当前 git-log 会话，避免 vv-git 内其它 picker 覆盖 Telescope 的全局缓存
         local resumed = false
         local function resume()
           if resumed then
@@ -256,8 +199,8 @@ function M.open(opts)
     end)
     map({ 'i', 'n' }, '<C-o>', open_diff)
 
-    -- 分档扩大历史范围，避免大型仓库首次打开时一次性读取完整日志。
-    -- 重开 picker 时保留当前搜索词；到达全部历史后不再重复刷新。
+    -- 分档扩大历史范围，避免大型仓库首次打开时一次性读取完整日志
+    -- 重开 picker 时保留当前搜索词；到达全部历史后不再重复刷新
     map({ 'i', 'n' }, '<C-l>', function(prompt_bufnr)
       local next_limit = next_log_limit(log_limit)
       if next_limit == nil then

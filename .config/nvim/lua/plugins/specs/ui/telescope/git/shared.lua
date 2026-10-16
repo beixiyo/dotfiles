@@ -41,13 +41,35 @@ function M.git_async(args, on_exit_msg, on_success, on_finally)
   })
 end
 
+--- terminal preview 默认行数上限：预览只用于浏览，完整内容由各 picker 的打开动作提供
+M.PREVIEW_LINE_CAP = 3000
+
+--- 实际上限再收紧到 scrollback 的 80%，给终端折行与头尾提示行留余量
+---@param line_cap integer
+---@param scrollback integer
+---@return integer
+local function preview_cap(line_cap, scrollback)
+  if scrollback <= 0 then
+    return line_cap
+  end
+  return math.max(1, math.min(line_cap, math.floor(scrollback * 0.8)))
+end
+
 --- 通用 ANSI terminal previewer：命令输出经 nvim_open_term 渲染到 telescope preview buffer
 --- 旧 job 先 stop，旧 chan 显式 close；回调比对 job_id，被终止的旧任务交付的缓冲输出自弃
 ---（stdout_buffered 下 jobstop 后仍可能交付一次，不比对会污染当前 entry 的 preview）
 --- 骨架：jobstart 前先写一行灰色 Loading…，stdout 到达时先清屏归位再写（空输出也会清掉骨架）
+--- 行数上限：terminal buffer 的 scrollback（默认 10000）装不下的输出会把头部顶掉，只剩尾部
+--- 因此命令输出经 head 截断（SIGPIPE 同时提前终止上游，超大 diff 不再全量计算），
+--- 多取 1 行精确判断是否截断，截断时在末尾追加灰色提示
 ---@param title string
 ---@param make_cmd function fun(entry: table, winid: number): string[] 返回完整 argv
-function M.term_previewer(title, make_cmd)
+---@param opts? TermPreviewerOpts
+function M.term_previewer(title, make_cmd, opts)
+  opts = opts or {}
+  local line_cap = opts.line_cap == nil and M.PREVIEW_LINE_CAP or opts.line_cap
+  local truncated_hint = opts.truncated_hint
+
   local previewers = require('telescope.previewers')
   return previewers.new_buffer_previewer({
     title = title,
@@ -65,13 +87,27 @@ function M.term_previewer(title, make_cmd)
       self.state.chan = chan
       vim.api.nvim_chan_send(chan, '\27[90mLoading…\27[0m')
 
+      local cmd = make_cmd(entry, winid)
+      local cap = line_cap and preview_cap(line_cap, vim.bo[bufnr].scrollback)
+      if cap then
+        cmd = vim.list_extend({ 'bash', '-c', '"${@:2}" | head -n "$1"', '_', tostring(cap + 1) }, cmd)
+      end
+
       local job_id
-      job_id = vim.fn.jobstart(make_cmd(entry, winid), {
+      job_id = vim.fn.jobstart(cmd, {
         stdout_buffered = true,
         on_stdout = function(_, data)
           if self.state.job_id ~= job_id then return end
           if not vim.api.nvim_buf_is_valid(bufnr) then return end
-          vim.api.nvim_chan_send(chan, '\27[2J\27[H' .. table.concat(data, '\r\n'))
+
+          local footer = ''
+          if cap and #data - (data[#data] == '' and 1 or 0) > cap then
+            data = vim.list_slice(data, 1, cap)
+            footer = string.format('\r\n\27[90m… preview truncated to first %d lines%s\27[0m',
+              cap, truncated_hint and ', ' .. truncated_hint or '')
+          end
+
+          vim.api.nvim_chan_send(chan, '\27[2J\27[H' .. table.concat(data, '\r\n') .. footer)
         end,
         on_exit = function()
           vim.schedule(function()
@@ -122,5 +158,10 @@ end
 function M.commit_subject(hash)
   return vim.trim(vim.fn.system('git log -1 --format=%s ' .. hash))
 end
+
+--- term_previewer 选项
+---@class TermPreviewerOpts
+---@field line_cap? integer|false 预览最多渲染的行数，`false` 不截断；实际值不超过 scrollback 的 80% @default M.PREVIEW_LINE_CAP
+---@field truncated_hint? string 截断提示的补充说明，如查看完整内容的按键 @default nil
 
 return M

@@ -5,45 +5,14 @@ local Keys = require('vv-utils.keys')
 
 local function make_delta_previewer()
   if vim.fn.executable('delta') == 0 then return nil end
-  local previewers = require('telescope.previewers')
 
-  return previewers.new_buffer_previewer({
-    title = 'Git Buffer Log',
-
-    define_preview = function(self, entry)
-      if self.state.job_id then
-        pcall(vim.fn.jobstop, self.state.job_id)
-      end
-
-      local bufnr = self.state.bufnr
-      local winid = self.state.winid
-      local width = vim.api.nvim_win_get_width(winid)
-      local chan = vim.api.nvim_open_term(bufnr, {})
-
-      self.state.job_id = vim.fn.jobstart({
-        'bash', '-c',
-        'git show --color=always ' .. entry.value .. ' | delta --side-by-side --width=' .. width,
-      }, {
-        stdout_buffered = true,
-        on_stdout = function(_, data)
-          if not vim.api.nvim_buf_is_valid(bufnr) then return end
-          vim.api.nvim_chan_send(chan, table.concat(data, '\r\n'))
-        end,
-        on_exit = function()
-          vim.schedule(function()
-            if not vim.api.nvim_buf_is_valid(bufnr) then return end
-            pcall(function()
-              vim.bo[bufnr].scrollback = 9999
-              vim.bo[bufnr].scrollback = 9998
-            end)
-            if vim.api.nvim_win_is_valid(winid) then
-              pcall(vim.api.nvim_win_set_cursor, winid, { 1, 0 })
-            end
-          end)
-        end,
-      })
-    end,
-  })
+  return Git.term_previewer('Git Buffer Log', function(entry, winid)
+    return {
+      'bash', '-c',
+      'git show --color=always "$1" | delta --side-by-side --width="$2"',
+      '_', entry.value, tostring(vim.api.nvim_win_get_width(winid)),
+    }
+  end)
 end
 
 function M.open(opts)
