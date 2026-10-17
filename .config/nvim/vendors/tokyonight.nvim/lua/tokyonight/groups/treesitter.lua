@@ -48,24 +48,26 @@ function M.get(c, opts)
     ["@keyword.storage"]              = "@keyword",
     ["@label"]                        = { fg = c.blue }, -- For labels: `label:` in C and `:label:` in Lua.
     ["@markup"]                       = "@none",
-    ["@markup.emphasis"]              = { fg = "#6f9bff", italic = true },
+    ["@markup.emphasis"]              = { italic = true },
     ["@markup.environment"]           = "Macro",
     ["@markup.environment.name"]      = "Type",
     ["@markup.heading"]               = { fg = "#e06c75", bold = true },
-    ["@markup.italic"]                = { fg = "#6f9bff", italic = true },
+    ["@markup.heading.markdown"]      = { fg = c.blue, bold = true }, -- 仅 markdown 里无层级的 heading 捕获（表格表头），与 H3 同色；H1~H6 有各自的 .N.markdown
+    ["@markup.italic"]                = { italic = true },
     ["@markup.link"]                  = { fg = "#61afef" },
     ["@markup.link.label"]            = { fg = "#61afef" },
     ["@markup.link.label.symbol"]     = "Identifier",
     ["@markup.link.url"]              = { fg = "#61afef", underline = true },
     ["@markup.list"]                  = { fg = c.punctuation }, -- For special punctutation that does not fall in the categories before.
     ["@markup.list.checked"]          = { fg = c.green },     -- For brackets and parens.
-    ["@markup.list.markdown"]         = { fg = "#6f9bff", bold = true },
+    ["@markup.list.markdown"]         = { fg = "#6f9bff" },
     ["@markup.list.unchecked"]        = { fg = c.blue },      -- For brackets and parens.
     ["@markup.math"]                  = "Special",
     ["@markup.raw"]                   = { fg = c.green },
-    ["@markup.raw.markdown_inline"]   = { bg = c.bg_highlight, fg = c.teal },
+    ["@markup.raw.block"]             = { fg = c.fg_dark }, -- 无语言围栏块（目录树等）保持中性
+    ["@markup.raw.markdown_inline"]   = { bg = c.bg_highlight, fg = c.fg },
     ["@markup.strikethrough"]         = { strikethrough = true },
-    ["@markup.strong"]                = { fg = c.orange, bold = true },
+    ["@markup.strong"]                = { fg = c.fg, bold = true },
     ["@markup.underline"]             = { underline = true },
     ["@module"]                       = "@keyword",
     ["@module.builtin"]               = { fg = c.variable }, -- Variable names that are defined by the languages, like `this` or `self`.
@@ -103,8 +105,17 @@ function M.get(c, opts)
   }
 
   local heading_color = "#e06c75"
-  for i = 1, #c.rainbow do
-    ret["@markup.heading." .. i .. ".markdown"] = { fg = heading_color, bold = true, bg = Util.blend_bg(heading_color, 0.1) }
+  -- 与 render-markdown.lua 的分级保持一致（光标行 anti-conceal 显示原文时用）
+  local levels = {
+    { fg = heading_color },
+    { fg = heading_color },
+    { fg = c.blue },
+    { fg = c.fg_dark },
+    { fg = c.fg_dark },
+    { fg = c.fg_dark },
+  }
+  for i, h in ipairs(levels) do
+    ret["@markup.heading." .. i .. ".markdown"] = { fg = h.fg, bold = true }
   end
   return ret
 end
