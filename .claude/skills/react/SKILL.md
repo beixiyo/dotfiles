@@ -32,7 +32,7 @@ description: 编写 React 时必须调用
 
 | 分类 | 覆盖需求 | 代表导出 |
 |------|----------|----------|
-| `dom/` | 元素尺寸、位置、视口、焦点 | `useElBounding` `useAutoResize` `useFloatingPosition` `useViewportHeight` `useMediaQuery` `useTextOverflow` `useRestoreFocus` |
+| `dom/` | 元素尺寸、位置、拖拽、视口、焦点 | `useElBounding` `useAutoResize` `useFloatingPosition` `useDragPosition` `useViewportHeight` `useMediaQuery` `useTextOverflow` `useRestoreFocus` |
 | `event/` | 事件监听、快捷键、滚动行为 | `useClickOutside` `useShortCutKey` `useMouse` `useScrollBottom` `useScrollReachBottom` `useScrollRestore` `useScrollIntoView` `useWheelSwipe` `useBindWinEvent` `useOnWinHidden` `useKeyboardLayer` |
 | `state/` | 状态、防抖节流 | `useGetState` `useAutoSave` `useStateWithPromise` `useToggleState` `useDebounceState` `useThrottleState` `useWatchDebounceState` `useWatchThrottleState` `useDebounceFn` `useThrottleFn` `vShow` |
 | `theme/` | 主题 | `useTheme` `useChangeTheme` `useToggleThemeWithTransition` |
