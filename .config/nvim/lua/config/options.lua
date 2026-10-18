@@ -18,6 +18,7 @@ opt.shiftwidth = 2 -- 自动缩进每级空格数（>>, <<, == 等）
 opt.tabstop = 2 -- 一个 Tab 显示为多少空格宽度
 opt.softtabstop = 2 -- 编辑时按 <Tab>/<BS> 视为多少空格
 opt.autoindent = true -- 回车后复制上一行缩进（没有 indentexpr 时的基础兜底）
+vim.g.markdown_recommended_style = 0 -- 禁用 markdown ftplugin 强设的 sw/ts/sts=4，沿用上面的 2 空格
 opt.smartindent = true -- C 风格 { 与 cinwords 的额外缩进；设了 indentexpr 的 filetype 会忽略它
 
 -- 鼠标、确认、编码

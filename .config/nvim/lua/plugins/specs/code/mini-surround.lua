@@ -32,6 +32,13 @@ return {
       find = 'gsf', find_left = 'gsF', highlight = 'gsh',
       suffix_last = 'l', suffix_next = 'n',
     },
+    -- 默认开括号（( [ { <）会在内侧补空格，这里改为与闭括号一致的紧凑输出
+    -- 只覆盖 output；input 沿用默认，gsd( / gsr( 仍会顺带去掉内侧空格
+    custom_surroundings = {
+      ['('] = { output = { left = '(', right = ')' } },
+      ['['] = { output = { left = '[', right = ']' } },
+      ['<'] = { output = { left = '<', right = '>' } },
+    },
     highlight_duration = 800,
     silent = false,
   },
