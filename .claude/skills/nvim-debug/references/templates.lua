@@ -1,4 +1,4 @@
--- vim-debug 模板：dump 快照 + ground truth + arm 抓瞬态事件
+-- nvim-debug 模板：dump 快照 + ground truth + arm 抓瞬态事件
 -- 验证环境：nvim 0.13.0-dev-1617（2026-10-17），dump / arm / disarm / ground_truth 均在 headless 下端到端跑过
 -- API 可能变化，复制后先用 headless 探针跑通再用于排查（注意 `nvim -l` 脚本结束即退出，需 vim.wait 才能等到 defer）
 -- 约定：`myplug` / `MyPlug` 替换为被调试插件名

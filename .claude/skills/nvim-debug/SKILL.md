@@ -1,6 +1,9 @@
 ---
-name: vim-debug
-description: 当调试 Neovim 插件（lua / vimscript）的诡异 bug、窗口/buffer 状态异常、第三方插件交互、autocmd 时序、异步回调乱序、或 bug 只在特定短暂瞬间出现（cmdline 打开、模式切换、WinNew 等）难以常规捕获时使用。强调「不凭肉眼、dump 到文件、对比 ground truth、语义存疑先写探针」的工程化排查法
+name: nvim-debug
+description: >-
+  排查 Neovim 配置或插件（Lua）里需要运行时证据才能定位的问题：窗口、buffer、选项状态异常，画面错乱或高亮异常，键位或 autocmd 不生效或触发顺序不对，第三方插件互相干扰，异步回调乱序，只在瞬间出现的状态（打开 cmdline、切换模式、新建窗口时）；或对某个 API 的实际行为拿不准、需要实测确认时使用
+  方法是 dump 到文件、对比 ground truth、用最小探针验证、对照单一变量
+  不用于有明确报错栈的直接修复、学习概念或普通配置写法
 ---
 
 ## 核心原则
