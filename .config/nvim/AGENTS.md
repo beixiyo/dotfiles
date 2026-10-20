@@ -64,6 +64,7 @@ return {
 - 异步任务优先复用 `vv-utils.async` 管理 latest-wins、物理取消、资源释放和过期回调；资源仍由创建它的模块在切换或关闭时释放
 - 全局快捷键放 spec `keys`；buffer-local 交互由 owning 插件注册
 - UI 配色优先使用 `require('tools.palette')`，不要在多个 spec 散落相同色值
+- 插件写窗口选项只改局部值：`nvim_set_option_value(opt, v, { win = win, scope = 'local' })` 或 `vim.wo[win][0].opt = v`；`vim.wo[win].opt = v` 等同 `:set`，会连该窗口的全局副本一起改，之后别的插件新建的窗口都会继承（vv-i18n 的 `conceallevel=2` 曾让 vv-git diff 卡 6s）。局部值跟随「窗口 + buffer」，同窗口切新 buffer 会回落到全局副本，需要在进入 buffer 时重设。规则表见 nvim-debug skill 的 `references/case-win-option-inherit.md`
 
 ## Loading / 骨架规范
 

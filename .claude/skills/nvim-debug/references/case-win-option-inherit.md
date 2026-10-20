@@ -1,6 +1,6 @@
-# 案例：窗口选项污染（diff / scrollbind 被带到不该有的窗口）
+# 案例：窗口选项污染（diff / scrollbind / conceallevel 被带到不该有的窗口）
 
-**症状**：插件窗口正常，但用户按 `:`、开 fzf、触发通知后画面错乱（全红、滚动失联、折叠乱套）
+**症状**：插件窗口正常，但用户按 `:`、开 fzf、触发通知后画面错乱（全红、滚动失联、折叠乱套）；或新窗口打开大文件卡数秒（继承了 `conceallevel`，见文末案例）
 
 ## 规则表（需随版本重验）
 
@@ -15,6 +15,7 @@
 | 当前窗口 `:set`、`vim.wo.x = v`、不带 scope 的 `nvim_set_option_value` | 同时改局部值和该窗口的全局副本，之后以该窗口为当前窗口开的新窗口会继承 |
 | **非当前**窗口 W 上不带 scope 设置 | 同样污染 **W 自己的全局副本**；只有当 W 成为当前窗口后开的新窗口才被传染 |
 | `vim.wo[win][0].x`、`scope='local'`（当前或非当前窗口） | 只改局部值，全局副本不变 |
+| **同一窗口**切到从未在该窗口显示过的 buffer（`:e other`） | 取该窗口的**全局副本**，之前 `setlocal` 的值不跟过来；切回原 buffer 恢复其局部值 |
 
 依据：`:help local-options`、`:help vim.wo`、`:help nvim_set_option_value()`。表中每一行都由 probe 脚本复现
 
@@ -67,3 +68,11 @@ end
 ```
 
 清扫的时序要点：`WinNew` 触发时新窗口里还是旧 buffer，之后 buffer 才设进去并按副本取值，所以只用 `scope='local'` 的同步清扫会被覆盖（实测）；上面不带 scope 的写法同步那次也生效，`defer 50` 用来拦后续异步开 float 的插件。`diff = false` 不等于 `:diffoff`，`foldmethod` 等残留选项需按需单独恢复
+
+## 案例：conceallevel 污染导致 vv-git diff 卡 6s
+
+- **现象**：从 tsx 出发按 `<leader>gd`，右侧大 markdown diff 卡 4s + 2s；从 md 出发不复现
+- **根因**：vv-i18n 用 `vim.wo[win].conceallevel = 2` 给 tsx 窗口开 conceal，连全局副本一起改；vv-git 新建的 diff 窗口继承 2，markdown `conceal_lines` 在 wrap 窗口里逐行触发 treesitter 解析
+- **证据**：所有新窗口（panel、noice）都是 `cl=2`；对照 `:set conceallevel=0` 后不卡，`set conceallevel=0 | setl conceallevel=2`（修复后的状态）也不卡
+- **修复**：`set_conceal` 改为 `scope='local'`。随后出现回归：同窗口 `:e` 另一个 tsx 回落到全局副本 0，原 key 不再隐藏。按上表「同一窗口切新 buffer」一行，原值只保存一次，但每次进入匹配 buffer 都重设局部值
+- **教训**：按窗口只做一次（`touched[win]`）的设置，改成局部 scope 后必须改成按 buffer 进入时重设

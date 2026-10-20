@@ -73,6 +73,16 @@ vim.api.nvim_set_option_value(OPT, true, { scope = 'local', win = W })
 row("scope='local' 设 W -> W 局部值", vim.wo[W][OPT])
 row("scope='local' 设 W -> W 的全局副本", copy_of(W))
 
+-- 5. 同一窗口切换 buffer
+reset()
+local orig = vim.api.nvim_get_current_buf()
+vim.cmd('setlocal ' .. OPT)
+local other = newbuf()
+vim.api.nvim_win_set_buf(0, other)
+row('setlocal(cur)      -> 同窗口切到未显示过的 buffer', vim.wo[OPT])
+vim.api.nvim_win_set_buf(0, orig)
+row('setlocal(cur)      -> 同窗口切回原 buffer', vim.wo[OPT])
+
 print(table.concat(rows, '\n'))
 
 --[[ 预期输出（0.13.0-dev-1617）：
@@ -92,4 +102,6 @@ vim.wo[0][0].x(cur)-> 新 buffer 浮窗                                  false
 不带 scope 设 W    -> cur=W 开新 buffer 浮窗                          true
 scope='local' 设 W -> W 局部值                                        true
 scope='local' 设 W -> W 的全局副本                                    false
+setlocal(cur)      -> 同窗口切到未显示过的 buffer                     false
+setlocal(cur)      -> 同窗口切回原 buffer                             true
 ]]

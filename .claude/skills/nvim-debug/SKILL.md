@@ -1,7 +1,7 @@
 ---
 name: nvim-debug
 description: >-
-  排查 Neovim 配置或插件（Lua）里需要运行时证据才能定位的问题：窗口、buffer、选项状态异常，画面错乱或高亮异常，键位或 autocmd 不生效或触发顺序不对，第三方插件互相干扰，异步回调乱序，只在瞬间出现的状态（打开 cmdline、切换模式、新建窗口时）；或对某个 API 的实际行为拿不准、需要实测确认时使用
+  排查 Neovim 配置或插件（Lua）里需要运行时证据才能定位的问题：窗口、buffer、选项状态异常，画面错乱或高亮异常，打开 / 切换 / 滚动时卡顿，键位或 autocmd 不生效或触发顺序不对，第三方插件互相干扰，异步回调乱序，只在瞬间出现的状态（打开 cmdline、切换模式、新建窗口时）；或对某个 API 的实际行为拿不准、需要实测确认时使用
   方法是 dump 到文件、对比 ground truth、用最小探针验证、对照单一变量
   不用于有明确报错栈的直接修复、学习概念或普通配置写法
 ---
@@ -139,9 +139,31 @@ end)
 - **待验证假设**：同一事件的 autocmd 按每条的**定义顺序**执行，与 augroup 无关；插件重新 source（`clear=true` 重建）会让它的 handler 排到队尾
 - **常见修法**：同步做一次 + `defer_fn` 再做一次。defer 是竞态窗口，不是同步原语
 
-### 窗口选项污染（diff / scrollbind 被带到不该有的窗口）
+### 主线程卡顿（打开 / 切换 / 滚动时卡几秒）
 
-症状是用户按 `:`、开 fzf、触发通知后画面错乱。根因与「不带 scope 设置窗口选项会同时改该窗口的全局副本，新窗口再从当前窗口取值」有关，规则表、排查和修法见 [references/case-win-option-inherit.md](references/case-win-option-inherit.md)，规则表可用 [references/probe-win-option.lua](references/probe-win-option.lua) 重验。排查先逐窗口读全局副本（`scope='global', win=w`），不要先写清扫代码
+- **先拿完整操作路径**：从哪个文件出发、按了什么、卡在哪一步。同一操作从不同起点出发，已加载的插件和窗口选项可能完全不同（实例：从 tsx 出发 vv-i18n 先污染了 `conceallevel`，从 md 出发则不复现）
+- **真实 UI 复现**：行高计算、wrap、conceal、重绘的开销在 headless 下测不到；`normal!` 也不触发 `CursorMoved`。用 tmux 起完整配置的 nvim，`send-keys` 发真实按键。起会话前先 `tmux kill-session -t <name>`，残留同名会话会吞掉按键、混入旧数据
+- **卡顿检测**：uv timer 每 5ms 记录间隔，超过阈值即主线程被阻塞，配合 `__mark('label')` 打时间点
+
+```lua
+local start, last, log = vim.uv.hrtime(), vim.uv.hrtime(), {}
+vim.uv.new_timer():start(5, 5, function()
+  local now = vim.uv.hrtime()
+  local gap = (now - last) / 1e6
+  if gap > 50 then log[#log + 1] = ('stall %5.0fms at %6.0fms'):format(gap, (now - start) / 1e6) end
+  last = now
+end)
+```
+
+- **定位调用方**：`require('jit.p').start('pF25m10', file)` 带调用栈（数字 = 栈深，`m` = 最低占比），扁平模式只能看到热点在 treesitter，看不到是谁触发的；结束 `require('jit.p').stop()`
+- **计数 hook 的坑**：decoration provider（treesitter highlighter 的 `_on_*` 等）注册时已拿到函数引用，事后替换模块字段不生效，计数为 0 不代表没调用
+- **对照单一变量确认根因**，再改代码；修完按原路径重跑，同时检查修复是否改变了别的场景（局部选项见下节规则表）
+
+已知案例：wrap 窗口 + `conceallevel > 0` + markdown 的 `conceal_lines`，`gg` / `]c` / `zz` / `zv` 等需要算行高的命令会对每行调用 `_on_conceal_line` → `tree:parse({row, row+1})`，43 万字节的 md 卡 4s（0.13.0-dev-1617）
+
+### 窗口选项污染（diff / scrollbind / conceallevel 被带到不该有的窗口）
+
+症状是用户按 `:`、开 fzf、触发通知后画面错乱，或新窗口莫名卡顿（继承了 `conceallevel`）。根因与「不带 scope 设置窗口选项会同时改该窗口的全局副本，新窗口再从当前窗口取值」有关，规则表、排查和修法见 [references/case-win-option-inherit.md](references/case-win-option-inherit.md)，规则表可用 [references/probe-win-option.lua](references/probe-win-option.lua) 重验。排查先逐窗口读全局副本（`scope='global', win=w`），不要先写清扫代码
 
 ---
 
