@@ -56,12 +56,12 @@ M.defaults = {
 ---@type tokyonight.Config
 M.options = nil
 
----@param options? tokyonight.Config
+---@param options? tokyonight.ConfigOptions
 function M.setup(options)
   M.options = vim.tbl_deep_extend("force", {}, M.defaults, options or {})
 end
 
----@param opts? tokyonight.Config
+---@param opts? tokyonight.ConfigOptions
 function M.extend(opts)
   return opts and vim.tbl_deep_extend("force", {}, M.options, opts) or M.options
 end

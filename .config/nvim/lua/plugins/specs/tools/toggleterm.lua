@@ -1,5 +1,14 @@
 -- toggleterm.nvim 终端切换
 -- 多终端管理（float / horizontal / vertical / tab）
+
+-- ToggleTermConfig 是合并后的完整配置；config.set 用 tbl_deep_extend 合并用户子集
+-- size 上游只标 number，ui._resolve_size 实际也接受 fun(term): number（README 同样示例）
+---@class (partial) UserToggleTermConfig: ToggleTermConfig
+---@field size? number|fun(term: Terminal): number
+---@field winbar? UserToggleTermWinbarOpts
+
+---@class (partial) UserToggleTermWinbarOpts: WinbarOpts
+
 ---@type PackSpec
 return {
   desc = '终端切换（float/horizontal/vertical/tab）',
@@ -19,7 +28,7 @@ return {
     { '<leader>tv', '<cmd>ToggleTerm direction=vertical<cr>', desc = 'Vertical term' },
   },
 
-  ---@type ToggleTermConfig
+  ---@type UserToggleTermConfig
   opts = {
     size = function(term)
       if term.direction == 'horizontal' then
@@ -47,7 +56,7 @@ return {
   },
 
   ---@param _ PackSpec
-  ---@param opts ToggleTermConfig
+  ---@param opts UserToggleTermConfig
   config = function(_, opts)
     require('toggleterm').setup(opts)
 

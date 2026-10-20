@@ -69,7 +69,7 @@ return {
     }
   end,
 
-  --- @type agentic.PartialUserConfig
+  --- @return agentic.PartialUserConfig
   opts = function()
     local icons = require('vv-icons')
     local claude = icons.get('directory', '.claude')

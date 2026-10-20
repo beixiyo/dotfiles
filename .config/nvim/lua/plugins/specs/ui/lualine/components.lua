@@ -108,7 +108,7 @@ vim.api.nvim_create_autocmd('ColorScheme', {
 function M.mode() return 'mode' end
 
 -- lualine 内置 "branch" 走 expand('%:p:h')，在 nofile/URL-scheme buffer（vv-explorer、dashboard）
--- 上解析不到 .git → globalstatus 下分支会消失。
+-- 上解析不到 .git → globalstatus 下分支会消失
 -- 统一用 lualine 的 find_git_dir：真实文件用所在目录，虚拟 buffer 退回 cwd
 function M.branch()
   local git_branch = require('lualine.components.branch.git_branch')
@@ -137,7 +137,7 @@ end
 
 -- 项目根缓存：get_root 是未缓存的向上 vim.fs.find 文件系统遍历，而 lualine
 -- 在每次重绘都会调用 cond/render。某个 buffer 的项目根在编辑期间是稳定的，
--- 故按 bufnr 缓存，仅在 cwd 变化（DirChanged）或 buffer 改名（BufFilePost）时失效。
+-- 故按 bufnr 缓存，仅在 cwd 变化（DirChanged）或 buffer 改名（BufFilePost）时失效
 local root_cache = {}
 vim.api.nvim_create_autocmd({ 'DirChanged', 'BufFilePost' }, {
   group = vim.api.nvim_create_augroup('LualineRootDirCacheClear', { clear = true }),
@@ -198,8 +198,8 @@ function M.pretty_path()
   }
 
   -- 按 bufname 缓存昂贵的 get_root（未缓存的向上 fs.find），避免每次重绘都遍历文件系统；
-  -- get_cwd 极廉价（仅 uv.cwd），每次刷新以反映 :cd 后的相对路径截断。
-  local cache = { name = nil, root = nil }
+  -- get_cwd 极廉价（仅 uv.cwd），每次刷新以反映 :cd 后的相对路径截断
+  local cache = { name = nil, root = '' } ---@type { name: string?, root: string }
   local render = function(self)
     local file = vim.fn.expand('%:p') --[[@as string]]
     if file == '' then return '' end

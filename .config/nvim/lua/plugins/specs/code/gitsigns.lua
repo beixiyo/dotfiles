@@ -1,4 +1,13 @@
 -- Git 行内标记 & hunk 操作
+
+-- Gitsigns.Config 是合并默认值后的完整配置（exact 且多数字段必填）
+-- setup(cfg) 实际接受任意子集：按 schema 补默认值，signs / signs_staged 走 deep_extend
+---@class (partial) UserGitsignsConfig: Gitsigns.Config
+---@field signs? table<Gitsigns.SignType, UserGitsignsSignConfig>
+---@field signs_staged? table<Gitsigns.SignType, UserGitsignsSignConfig>
+
+---@class (partial) UserGitsignsSignConfig: Gitsigns.SignConfig
+
 ---@type PackSpec
 return {
   desc = 'Git 行内标记与 hunk 操作',
@@ -9,7 +18,7 @@ return {
     'beixiyo/vv-icons.nvim',
   },
 
-  ---@type Gitsigns.Config
+  ---@type UserGitsignsConfig
   opts = {
     signs = {
       add = { text = '▎' },
@@ -112,7 +121,7 @@ return {
     require('gitsigns').setup(opts)
 
     -- packadd 会先触发 gitsigns 的默认 setup，启动 buffer 可能在自定义 on_attach
-    -- 生效前已经完成 attach。等异步 attach 收尾后，为这些 buffer 补装一次键位。
+    -- 生效前已经完成 attach。等异步 attach 收尾后，为这些 buffer 补装一次键位
     vim.defer_fn(function()
       for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
         if vim.api.nvim_buf_is_loaded(bufnr) and vim.b[bufnr].gitsigns_status_dict then

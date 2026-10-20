@@ -8,6 +8,6 @@ return {
 
   config = function()
     -- 风格: pretty_dark (自定义) | storm | night | moon | day
-    require('tokyonight').load(--[[@as tokyonight.Config]] { style = 'pretty_cat' })
+    require('tokyonight').load({ style = 'pretty_cat' })
   end,
 }

@@ -21,6 +21,6 @@ return {
     }
   end,
 
-  ---@type VVReplaceConfig
+  ---@type VVReplaceConfigOpts
   opts = {},
 }

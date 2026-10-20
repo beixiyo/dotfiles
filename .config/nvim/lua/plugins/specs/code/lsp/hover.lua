@@ -33,9 +33,8 @@ function M.toggle()
   vim.lsp.buf.hover({ silent = true })
 end
 
----@class UserLspRevisionHoverContext
----@field winid integer revision diff 窗口
----@field source_path string 对应 worktree 文件的绝对路径
+-- winid：revision diff 窗口；source_path：对应 worktree 文件的绝对路径
+---@alias UserLspRevisionHoverContext { winid: integer, source_path: string }
 
 ---用 revision 窗口的光标位置，请求对应 worktree buffer 的 LSP hover
 ---LSP 只认识当前工作区文档，因此历史版本内容只能按相同行列映射到 worktree

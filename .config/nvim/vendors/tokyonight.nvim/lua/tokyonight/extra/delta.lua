@@ -2,6 +2,9 @@ local util = require("tokyonight.util")
 
 local M = {}
 
+---@class ColorScheme
+---@field delta? { add: string, delete: string }
+
 --- @param colors ColorScheme
 function M.generate(colors)
   colors.delta = {

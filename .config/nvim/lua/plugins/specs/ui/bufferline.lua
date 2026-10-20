@@ -1,4 +1,10 @@
 -- 顶部 Buffer 标签页
+
+-- bufferline.lua 在模块加载时定义 _G.nvim_bufferline，作为 tabline 的 v:lua 渲染入口（返回 tabline 字符串）
+-- 插件未加载前该全局不存在，故为可选字段
+---@class _G
+---@field nvim_bufferline? fun(): string
+
 ---@type PackSpec
 return {
   desc = '标签式 Buffer 栏',

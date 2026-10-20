@@ -5,6 +5,20 @@
 -- 辅助模块：query.lua（query 分词 / 路径→glob）、filter_input.lua（<M-p> 筛选弹窗）、scope.lua（按路径限定搜索）、
 --          grep_renderer.lua（grep 列表裁掉前导缩进）
 -- 迁移状态与后续计划见同目录 MIGRATION.md
+
+-- FffConfig 是 conf.get() 合并默认值后的完整配置；setup 只把用户表存进 vim.g.fff，
+-- 再由 tbl_deep_extend 与默认值合并，因此任意子集都合法
+---@class (partial) UserFffConfig: FffConfig
+---@field layout? UserFffLayoutConfig
+---@field keymaps? UserFffKeymapsConfig
+
+---@class (partial) UserFffLayoutConfig: FffLayoutConfig
+
+-- ui_creator 的 set_keymap 对所有键位统一接受 string|string[]，上游只给部分字段标了数组
+---@class (partial) UserFffKeymapsConfig: FffKeymapsConfig
+---@field preview_scroll_up? string|string[]
+---@field preview_scroll_down? string|string[]
+
 -- 不能 lazy：plugin/fff.lua 会在 UIEnter 预先调用 conf.get() 把配置锁死
 -- 必须在 UIEnter 之前执行 setup，否则 vim.g.fff 无法生效
 ---@type PackSpec
@@ -16,7 +30,7 @@ return {
   dependencies = { 'beixiyo/vv-icons.nvim', 'beixiyo/vv-utils.nvim' },
   build = ":lua require('fff.download').download_or_build_binary()",
 
-  ---@type FffConfig
+  ---@type UserFffConfig
   opts = {
     prompt = '  ',
     title = 'FFF Files',
@@ -50,7 +64,7 @@ return {
   },
 
   ---@param _ PackSpec
-  ---@param opts FffConfig
+  ---@param opts UserFffConfig
   config = function(_, opts)
     -- fff 配置里 mappings 与 keymaps 平级（顶层字段，仅作用于输入框）
     opts.mappings = { i = { ['<M-p>'] = require('plugins.specs.tools.fff.filter_input').open } }

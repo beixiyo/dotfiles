@@ -4,7 +4,7 @@ local M = {}
 ---@type {light?: string, dark?: string}
 M.styles = {}
 
----@param opts? tokyonight.Config
+---@param opts? tokyonight.ConfigOptions
 function M.load(opts)
   opts = require("tokyonight.config").extend(opts)
   local bg = vim.o.background

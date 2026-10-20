@@ -1,4 +1,5 @@
 -- vv-explorer.nvim — 自实现 VSCode 风文件树
+
 ---@type PackSpec
 return {
   desc = '自实现 VSCode 风文件树（无 nui/plenary 依赖）',
@@ -16,7 +17,7 @@ return {
     }
   end,
 
-  ---@type VVExplorerConfig
+  ---@type VVExplorerSetupOpts
   opts = {
     -- 图标规则：glob 用 vim.glob.to_lpeg，pattern 用 Lua pattern
     -- 例：

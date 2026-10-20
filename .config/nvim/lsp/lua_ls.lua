@@ -19,9 +19,9 @@ return {
       -- 关闭 inlay hints（行内参数名/类型标注），非诊断，减少计算
       hint = { enable = false },
       diagnostics = {
-        -- 不扫描 library 文件（主要性能瓶颈），只诊断自己的代码
+        -- 不诊断 library 文件（仍会加载和索引以提供类型），只诊断自己的代码
         libraryFiles = 'Disable',
-        -- 不扫描未打开的工作区文件
+        -- 关闭工作区诊断（不影响索引），只诊断已打开的文件
         workspaceEvent = 'None',
         disable = { 'trailing-space' },
       },

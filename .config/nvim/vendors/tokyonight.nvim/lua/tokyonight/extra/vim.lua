@@ -7,6 +7,9 @@ local mapping = {
   sp = "guisp",
 }
 
+---@class ColorScheme
+---@field _style? string
+
 --- @param colors ColorScheme
 --- @param groups tokyonight.Highlights
 --- @param opts tokyonight.Config

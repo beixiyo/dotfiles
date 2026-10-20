@@ -2,6 +2,10 @@ local util = require("tokyonight.util")
 
 local M = {}
 
+---@class ColorScheme
+---@field search_bg? string
+---@field pmenusel? string
+
 --- @param colors ColorScheme
 function M.generate(colors)
   colors.search_bg = util.blend_bg(colors.info, 0.1)

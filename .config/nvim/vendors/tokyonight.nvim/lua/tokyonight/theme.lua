@@ -1,6 +1,6 @@
 local M = {}
 
----@param opts? tokyonight.Config
+---@param opts? tokyonight.ConfigOptions
 function M.setup(opts)
   opts = require("tokyonight.config").extend(opts)
 

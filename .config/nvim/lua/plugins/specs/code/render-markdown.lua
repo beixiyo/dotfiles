@@ -10,7 +10,7 @@ return {
   },
   ft = { 'markdown', 'AgenticChat' },
 
-  ---@type render.md.Config
+  ---@type render.md.UserConfig
   opts = {
     enabled = true,
     file_types = { 'markdown', 'AgenticChat' },
