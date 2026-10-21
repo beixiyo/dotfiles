@@ -54,7 +54,9 @@ mise use -g bun
 ./setup-user.sh alice bob
 ```
 
-系统提供 `useradd` 时可以自动创建缺失用户；macOS 需要先在“系统设置”中创建账户。部署配置文件本身不需要 root；配置 sudo 组、修改登录 Shell、创建其他用户和链接 `/root` 时会单独请求管理员权限。只想复制配置且不配置系统权限时，请使用根 README 中的“只复制配置文件”方式
+macOS 仅部署当前账户，请直接运行 `./setup-user.sh`，无需 sudo；脚本会跳过创建用户、配置 sudo 和链接 `/root`
+
+其他账户请登录对应账户后运行。Linux 在系统提供 `useradd` 时可以自动创建缺失用户；部署配置文件本身不需要 root，配置 sudo 组、创建其他用户和链接 `/root` 时会单独请求管理员权限。只想复制配置且不修改登录 Shell 时，请使用根 README 中的“只复制配置文件”方式
 
 ### 覆盖与备份
 

@@ -213,6 +213,22 @@ configure_user_sudo() {
 main() {
   init_colors
 
+  # macOS 仅部署当前账户，不修改 sudoers、创建其他账户或共享 /root 配置
+  if [ "$(uname -s)" = 'Darwin' ]; then
+    local macos_user="${SUDO_USER:-$(id -un)}"
+    if [ "$macos_user" = 'root' ]; then
+      log_err 'Run this script as your regular macOS user'
+      return 1
+    fi
+    local macos_target
+    for macos_target in "$@"; do
+      if [ "$macos_target" != "$macos_user" ]; then
+        log_err 'macOS only supports deploying to the current user; run without sudo and without other user names'
+        return 1
+      fi
+    done
+  fi
+
   if [ "${1:-}" = '--privileged-users' ]; then
     shift
     if [ "$(id -u)" -ne 0 ]; then
@@ -280,6 +296,12 @@ main() {
   ensure_cmd_installed zsh 0
   ensure_cmd_installed git 1
   ensure_starship_installed 0
+
+  if [ "$(uname -s)" = 'Darwin' ]; then
+    setup_current_user "$macos_user"
+    log 'macOS: skipped sudo configuration, user creation and /root links'
+    return 0
+  fi
 
   local target_users=()
 
