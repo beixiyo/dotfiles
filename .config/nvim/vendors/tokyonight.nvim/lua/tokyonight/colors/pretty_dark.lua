@@ -63,6 +63,7 @@ local ret = {
   string_escape = "#56b6c2", -- 字符串转义
   operator      = "#c2c2c2", -- 运算符
   punctuation   = "#c2c2c2", -- 标点
+  code_inline   = "#363229", -- 行内代码底色：暖灰不与蓝色选区混淆
   search_match  = "#ff79c6", -- 搜索匹配（picker 匹配段 fg / 淡底色相）：取语法色未占用的玫红段，避免与代码撞色
 }
 return ret

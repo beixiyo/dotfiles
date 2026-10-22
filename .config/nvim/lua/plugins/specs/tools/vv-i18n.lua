@@ -41,7 +41,7 @@ return {
     }
   end,
 
-  ---@type VVI18nSetupOpts
+  ---@type VVI18nOpts
   opts = {
     -- root 自动探测（pnpm-workspace.yaml > package.json > .git）
     sources = {

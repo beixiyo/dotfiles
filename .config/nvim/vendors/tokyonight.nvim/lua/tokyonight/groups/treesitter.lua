@@ -65,7 +65,8 @@ function M.get(c, opts)
     ["@markup.math"]                  = "Special",
     ["@markup.raw"]                   = { fg = c.green },
     ["@markup.raw.block"]             = { fg = c.fg_dark }, -- 无语言围栏块（目录树等）保持中性
-    ["@markup.raw.markdown_inline"]   = { bg = c.bg_highlight, fg = c.fg },
+    -- 行内代码使用独立底色；render-markdown 同样链接到此组
+    ["@markup.raw.markdown_inline"]   = { bg = c.code_inline or c.bg_highlight, fg = c.fg },
     ["@markup.strikethrough"]         = { strikethrough = true },
     ["@markup.strong"]                = { fg = c.fg, bold = true },
     ["@markup.underline"]             = { underline = true },
