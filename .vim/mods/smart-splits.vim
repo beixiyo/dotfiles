@@ -5,14 +5,14 @@
 scriptencoding utf-8
 let s:opts = extend({'amount': 3, 'tmux': 1}, get(g:, 'vim_smart_splits', {}))
 
-" tmux 下启用扩展键；保留主配置设置的光标启动码与 RGB 转义码
+" tmux 下启用扩展键；重设 &term 会按 termcap 重置终端码，需保留主配置设置的光标形状码、启动码与 RGB 转义码
 if exists('+keyprotocol') && $TMUX !=# '' && &term =~# 'tmux\|screen'
   if &keyprotocol !~# 'tmux:mok2'
     let &keyprotocol .= ',tmux:mok2,screen:mok2'
   endif
-  let s:term_codes = [&t_ti, &t_8f, &t_8b]
+  let s:term_codes = [&t_ti, &t_8f, &t_8b, &t_SI, &t_EI, &t_SR]
   let &term = &term
-  let [&t_ti, &t_8f, &t_8b] = s:term_codes
+  let [&t_ti, &t_8f, &t_8b, &t_SI, &t_EI, &t_SR] = s:term_codes
   unlet s:term_codes
 endif
 

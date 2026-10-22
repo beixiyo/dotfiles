@@ -9,6 +9,7 @@
 "   git：状态栏分支查询依赖 git；查询失败时不显示分支
 "   主题 / 图标 / 日志语法：借用本机 nvim vendor 数据，不运行 Lua；缺失时回退内置主题 / 文本图标 / 默认语法
 "   smart-splits：可选 ~/.vim/mods/smart-splits.vim；缺失时使用原生 <C-w> 分栏操作
+"   bufferline：可选 ~/.vim/mods/bufferline.vim；缺失时使用原生 tabline
 "   ts：tmux 内依赖 ~/.config/tmux/scripts/send-to-pane.sh 及 lib/nvim-detect.sh，缺失时提示错误；
 "       不在 tmux 时改为复制路径；只复制 .vimrc 不会附带这些脚本
 "   tt：tmux popup 依赖 ~/.config/tmux/scripts/popup-term.sh 及 cleanup-popup-sessions.sh；
@@ -217,6 +218,11 @@ nnoremap <silent> [b <Cmd>bprevious<CR>
 nnoremap <silent> ]b <Cmd>bnext<CR>
 nnoremap <silent> [B <Cmd>bfirst<CR>
 nnoremap <silent> ]B <Cmd>blast<CR>
+
+" 可选增强：tabline 显示 buffer 列表；模块缺失时保持原生 tabline
+if filereadable(expand('~/.vim/mods/bufferline.vim'))
+  source ~/.vim/mods/bufferline.vim
+endif
 
 " C-e / C-y 无计数时滚动 5 行，带计数时按计数滚动（与 Neovim 一致，仅 normal）
 nnoremap <expr> <C-e> v:count ? '<C-e>' : '5<C-e>'
@@ -1300,6 +1306,8 @@ function! s:MESetupBuffer() abort
   nnoremap <buffer> <silent> h <Cmd>call <SID>MECollapse()<CR>
   nnoremap <buffer> <silent> l <Cmd>call <SID>MEOpenNode()<CR>
   nnoremap <buffer> <silent> <CR> <Cmd>call <SID>MEOpenNode()<CR>
+  " 双击前的第一次单击已把光标移到目标行
+  nnoremap <buffer> <silent> <2-LeftMouse> <Cmd>call <SID>METoggleNode()<CR>
 
   syntax clear
   syntax match MiniExplorerDir /^\s*[].*$/
@@ -1491,6 +1499,16 @@ function! s:MEOpenNode() abort
   if l:node.kind ==# 'file'
     call s:MEFocusTargetWindow()
     execute 'edit ' . fnameescape(l:node.path)
+  endif
+endfunction
+
+" 鼠标双击：已展开目录折叠，其余（未展开目录 / 文件）同 l / <CR>
+function! s:METoggleNode() abort
+  let l:node = s:MECurrentNode()
+  if !empty(l:node) && l:node.kind ==# 'dir' && get(s:me_expanded, l:node.path, 0)
+    call s:MECollapse()
+  else
+    call s:MEOpenNode()
   endif
 endfunction
 
