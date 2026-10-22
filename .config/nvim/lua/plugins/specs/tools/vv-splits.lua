@@ -59,7 +59,7 @@ return {
   event = 'VimEnter',
   keys = keymaps,
 
-  ---@return VVSplitsSetupOpts
+  ---@return VVSplitsOpts
   opts = function()
     return {
       amount = 3,

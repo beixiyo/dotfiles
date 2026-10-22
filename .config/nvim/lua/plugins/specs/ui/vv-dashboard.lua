@@ -8,7 +8,7 @@ return {
   dependencies = { 'beixiyo/vv-utils.nvim', 'beixiyo/vv-icons.nvim' },
   -- 不加 cmd/keys/event：此插件必须 eager load，VimEnter 前 setup 才能挂 auto_open
 
-  ---@return VVDashboardConfig
+  ---@return VVDashboardOpts
   opts = function()
     local icons = require('vv-icons')
     return {

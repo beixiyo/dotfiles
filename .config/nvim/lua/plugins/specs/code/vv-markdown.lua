@@ -9,6 +9,6 @@ return {
     'VVMarkdownEnable', 'VVMarkdownDisable', 'VVMarkdownToggle',
     'VVMarkdownRenumber', 'VVMarkdownToggleCheckbox',
   },
-  ---@type VVMarkdown.ConfigOptions
+  ---@type VVMarkdown.Opts
   opts = {},
 }

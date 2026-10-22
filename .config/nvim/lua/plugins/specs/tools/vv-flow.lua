@@ -15,6 +15,6 @@ return {
     }
   end,
 
-  ---@type VVFlowConfigOptions
+  ---@type VVFlowOpts
   opts = {},
 }

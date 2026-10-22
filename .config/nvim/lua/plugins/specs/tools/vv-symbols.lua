@@ -22,11 +22,7 @@ return {
     'VVSymbolsQuickfix',
     'VVSymbolsLoclist',
   },
-  opts = function()
-    return {
-      panel = { state = require('vv-utils.state').register('vv-symbols', 'panel') },
-    }
-  end,
+  opts = {},
   keys = function()
     local icons = require('vv-icons')
     return {

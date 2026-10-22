@@ -9,7 +9,7 @@ return {
   cmd = { 'VVExpandInit', 'VVExpandExpand', 'VVExpandShrink' },
   event = { 'BufReadPost', 'BufNewFile' },
   loadInVSCode = true,
-  ---@type VVExpandSetupOpts
+  ---@type VVExpandOpts
   opts = {
     -- 覆盖默认即可，留空使用默认
     -- pairs = { same = {...}, nested = {...} },

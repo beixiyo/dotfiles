@@ -17,7 +17,7 @@ return {
     }
   end,
 
-  ---@type VVExplorerSetupOpts
+  ---@type VVExplorerOpts
   opts = {
     -- 图标规则：glob 用 vim.glob.to_lpeg，pattern 用 Lua pattern
     -- 例：

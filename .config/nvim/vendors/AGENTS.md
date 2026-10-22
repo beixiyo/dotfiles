@@ -30,18 +30,20 @@
 
 ## 配置与类型
 
-- 公共配置使用 `VVXxxConfig`，同类子类型使用 `VVXxxTimingConfig` 等明确名称
-- 公共字段说明默认值；复杂默认对象可在 class 说明或 README 集中记录，避免虚假的逐字段默认值
+- 解析后的配置类型为 `VVXxxConfig`，字段必填，读取处不写 `or DEFAULT`
+- 默认值只放在模块私有 `local defaults` 中，并在字段上用 `@default` 说明；不得在读取处或其他模块重复默认值
+- 输入类型为 `VVXxxOpts`，由 `VVXxxConfig` 派生：顶层写 `---@class (partial)`，每个嵌套表各写一行 `(partial)` 声明，禁止复制叶子字段
+- `setup(opts)` 入参标 `VVXxxOpts?`，用 `vim.tbl_deep_extend('force', vim.deepcopy(defaults), opts or {})` 合并，无返回值，调用方读取配置用 `get_config()`
+- 禁用语义统一用 `false`，类型写成 `Foo|false`；nil 表示未配置、取默认值；文档中禁止写"nil 则禁用"
+- 运行时派生值（如 state、provider、handle）在 `defaults` 中保持 nil，合并之后再赋值，不进入 `Opts`
+- 运行时依赖（如 state 句柄）通过 `setup(opts, deps)` 的第二参数注入，类型为 `VVXxxDeps`，不进入 `VVXxxOpts`。lazy 与 pack 的默认调用只传 `setup(opts)`，第二参数为 nil，此时插件使用内置默认
+- 跨仓库子配置：调用方传用户原始子表，由被调用方自己归一化默认值；不得把已解析的默认值转交给其他仓库
 - 配置存为模块私有 `local config`
-- `setup(opts)` 在 API 边界归一化默认值
 - `get_config()` 返回 deepcopy，避免调用方修改内部状态
 - 生命周期 API 成对且幂等
-
 - 可见 UI 使用 `open/close/toggle`
 - 原子编辑能力可以暴露语义明确的业务动作
 - 纯数据或一次性动作不伪造无意义生命周期
-
-公共 facade 只暴露调用方真正需要且可稳定维护的 API。内部实现保持 local；只有测试或明确扩展点需要时才使用 `_` 前缀导出
 
 ## User command 与 keymap
 

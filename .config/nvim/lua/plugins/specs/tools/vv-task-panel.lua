@@ -20,7 +20,7 @@ return {
     { '<leader>tl', '<cmd>VVTaskPanelTasks<cr>', desc = 'Task list' },
   },
 
-  ---@type VVTaskPanelConfig
+  ---@type VVTaskPanelOpts
   opts = {
     width = 44,
     position = 'right',

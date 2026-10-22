@@ -1,8 +1,5 @@
 -- vv-git.nvim — git 多功能 TUI（当前含 diff 双栏视图，后续扩展 log/branch/blame 等）
 
--- VVGitConfig 是合并默认值后的完整配置；setup 用 tbl_deep_extend 合并用户子集
----@class (partial) UserVVGitConfig: VVGitConfig
-
 ---@type PackSpec
 return {
   desc = 'VSCode 风格 Git 面板',
@@ -37,7 +34,7 @@ return {
     }
   end,
 
-  ---@type UserVVGitConfig
+  ---@type VVGitOpts
   opts = {
     before_open = function()
       local explorer = package.loaded['vv-explorer']
