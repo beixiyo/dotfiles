@@ -7,6 +7,10 @@
 local M = {}
 
 function M.setup()
+  -- dprint 仅提供格式化，实测 shutdown 后未及时退出；结束编辑器时直接终止，
+  -- 保留其他 server 的优雅关闭与超时兜底，避免每次 :qa 固定等待 500ms
+  vim.lsp.config('dprint', { exit_timeout = true })
+
   require('mason').setup({})
   require('mason-lspconfig').setup({
     ensure_installed = { 'dprint' },

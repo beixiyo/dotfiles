@@ -14,12 +14,19 @@ return {
   },
   event = { 'BufReadPost', 'BufNewFile', 'User VVGitStatusChanged' },
 
-  ---@type VVScrollbarConfigOpts
+  ---@type VVScrollbarOpts
   opts = {
     -- 仅降级滚动条；保留正文 Markdown 渲染。可按实际文件调整门槛
+    -- markdown 高亮 query 带 conceal_lines，conceallevel > 0 时全文 nvim_win_text_height
+    -- 会对每行触发 treesitter 的 _on_conceal_line → parse（含注入），240 行约 40ms/次，
+    -- 每次滚动算两次，C-e / C-y 每步卡 80ms 左右
     lightweight = function(ctx)
-      return ctx.filetype == 'markdown' and ctx.line_count >= 1000
+      if ctx.filetype ~= 'markdown' then return false end
+      return ctx.line_count >= 1000 or vim.wo[ctx.win].conceallevel > 0
     end,
+    map_view = {
+      enabled = false
+    }
   },
 
   -- opts = function()

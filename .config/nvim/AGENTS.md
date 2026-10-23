@@ -66,6 +66,18 @@ return {
 - UI 配色优先使用 `require('tools.palette')`，不要在多个 spec 散落相同色值
 - 插件写窗口选项只改局部值：`nvim_set_option_value(opt, v, { win = win, scope = 'local' })` 或 `vim.wo[win][0].opt = v`；`vim.wo[win].opt = v` 等同 `:set`，会连该窗口的全局副本一起改，之后别的插件新建的窗口都会继承（vv-i18n 的 `conceallevel=2` 曾让 vv-git diff 卡 6s）。局部值跟随「窗口 + buffer」，同窗口切新 buffer 会回落到全局副本，需要在进入 buffer 时重设。规则表见 nvim-debug skill 的 `references/case-win-option-inherit.md`
 
+## 性能边界
+
+启动、`:qa` 退出和高频 autocmd（`CursorMoved`、`BufEnter`、`FocusGained`、`LspAttach` 等）是热路径，每次都会执行，不能放同步阻塞操作。基线（2026-10-22，macOS）：headless 空启动约 95ms、md 约 145ms、ts 约 230ms，退出 handler 合计约 8ms
+
+- **`vim.loader.enable()` 必须保持在 `init.lua` 首行**（关掉启动慢约 40ms）。会话中途新建顶层模块（新的 `lua/<name>.lua`）需重启或 `vim.loader.reset()` 才能 require 到
+- **热路径不同步调用外部进程**：`vim.fn.system`、`vim.system():wait()` 每次 fork 约 6ms。改用 `vim.system` 异步；同一状态的多次写入要串行，防止乱序。退出路径必须同步时，合并成一次调用（如 tmux 用 `;` 命令链，可能失败的命令放最后，失败会中止后续命令）
+- **只有用户数据才 fsync**：macOS 上 `uv.fs_fsync` 是 `F_FULLSYNC`，每次数毫秒。按 pid 的注册表、缓存、UI 状态等可重建文件写入时传 `fsync = false`，rename 已保证原子可见（`vv-utils.fs.write_all` 默认是 `true`）
+- **eager `setup` 只做注册**：命令、autocmd、keymap。扫描、IO、首次刷新放到懒加载触发器或首次使用时；能用 `event` / `ft` / `cmd` / `keys` 懒加载的插件不写成 eager
+- **LSP 退出**：全局 `exit_timeout = 500`（见 `lua/plugins/specs/code/lsp/lifecycle.lua`）。不持久化状态的 server（formatter、lua_ls）设 `exit_timeout = true` 直接终止；自写的 Lua 内置 LSP 收到 `exit` 后必须让 `rpc.is_closing()` 返回 true，否则每次退出都要等满超时
+- **退出清理防止被写回**：`VimLeavePre` 删除文件、清理状态后，后续 handler 的 `vim.wait` / `vim.fn.system` 会转动事件循环，LSP 停止触发的 `LspDetach` 等排入的回调会在这时执行。进入退出流程时置 `leaving` 标记，让刷新回调直接返回（vv-mcp 注册表曾因此每次退出残留文件）
+- TS 等大语法的 treesitter query 编译（约 80ms）是固有开销，不要为它在配置里做 hack
+
 ## Loading / 骨架规范
 
 统一基于 `vv-utils.loading`，API 与边界见 [loading README](vendors/vv-utils.nvim/lua/vv-utils/loading/README.md)，落点决策案例见 [LOADING_AUDIT](vendors/LOADING_AUDIT.md)

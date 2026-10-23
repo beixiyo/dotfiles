@@ -84,6 +84,8 @@ function M.setup()
     root_dir = root_dir,
     single_file_support = false,
     before_init = inject_project_libraries,
+    -- 实测优雅退出需 60~70ms；lua_ls 不持久化状态，编辑结果都在 nvim buffer 侧，停止时直接终止
+    exit_timeout = true,
   })
 end
 

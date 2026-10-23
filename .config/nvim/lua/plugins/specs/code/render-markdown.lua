@@ -24,7 +24,8 @@ return {
     },
     completions = {
       coq = { enabled = false },
-      lsp = { enabled = true },
+      -- 直接走 Blink provider；内置 LSP 的 exit 未更新 closing 状态，会等满退出超时
+      lsp = { enabled = false },
       blink = { enabled = true },
     },
     heading = {

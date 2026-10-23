@@ -9,24 +9,27 @@ local term_dir ---@type string? 当前 cwd
 local run_term ---@type table?  一次性命令的浮窗终端（与交互 shell 分开）
 local tmux_cwd_sync_ready = false
 local tmux_popup_id
+local tmux_job ---@type vim.SystemObj? 最近一次异步 tmux 写入
 
-local function set_tmux_pane_option(name, value)
-  local pane = vim.env.TMUX_PANE
-  if not pane or pane == '' then return end
+-- 每次 fork tmux 约 6ms，启动和退出路径上逐条同步调用会叠加成可感知延迟
+-- 写入改为异步，并在下一次写入前等待上一条完成，保证同一 option 的写入顺序
+---@param args string[]
+local function tmux_async(args)
+  if tmux_job then tmux_job:wait() end
 
-  vim.fn.system({
-    'tmux',
-    'set-option',
-    '-p',
-    '-t',
-    pane,
-    name,
-    value,
-  })
+  local ok, job = pcall(vim.system, vim.list_extend({ 'tmux' }, args))
+  tmux_job = ok and job or nil
+end
+
+---@param name string
+---@param value string
+---@return string[]
+local function pane_option_args(name, value)
+  return { 'set-option', '-p', '-t', vim.env.TMUX_PANE, name, value }
 end
 
 local function sync_tmux_cwd()
-  set_tmux_pane_option('@nvim_cwd', vim.fn.getcwd())
+  tmux_async(pane_option_args('@nvim_cwd', vim.fn.getcwd()))
 end
 
 -- tmux 的 pane_current_path 只能看到 nvim 进程 cwd，看不到 :lcd / :tcd
@@ -39,9 +42,13 @@ function M.setup_tmux_cwd_sync()
     vim.fn.getpid()
   )
 
-  sync_tmux_cwd()
-  set_tmux_pane_option('@nvim_popup_id', tmux_popup_id)
-  set_tmux_pane_option('@nvim_pid', tostring(vim.fn.getpid()))
+  -- 用 tmux 的 `;` 命令链一次写完三项，只 fork 一次
+  local init_args = pane_option_args('@nvim_cwd', vim.fn.getcwd())
+  vim.list_extend(init_args, { ';' })
+  vim.list_extend(init_args, pane_option_args('@nvim_popup_id', tmux_popup_id))
+  vim.list_extend(init_args, { ';' })
+  vim.list_extend(init_args, pane_option_args('@nvim_pid', tostring(vim.fn.getpid())))
+  tmux_async(init_args)
 
   local group = vim.api.nvim_create_augroup('NvimTmuxCwd', { clear = true })
   vim.api.nvim_create_autocmd('DirChanged', {
@@ -51,38 +58,17 @@ function M.setup_tmux_cwd_sync()
   vim.api.nvim_create_autocmd('VimLeavePre', {
     group = group,
     callback = function()
+      if tmux_job then tmux_job:wait() end
+
+      -- 退出前必须同步完成；合并成一次调用
+      -- tmux 命令链遇到失败会中止后续命令，popup 会话常不存在，kill-session 必须放最后
+      local pane = vim.env.TMUX_PANE
       vim.fn.system({
         'tmux',
-        'kill-session',
-        '-t',
-        '=popup-' .. tmux_popup_id,
-      })
-      vim.fn.system({
-        'tmux',
-        'set-option',
-        '-p',
-        '-u',
-        '-t',
-        vim.env.TMUX_PANE,
-        '@nvim_cwd',
-      })
-      vim.fn.system({
-        'tmux',
-        'set-option',
-        '-p',
-        '-u',
-        '-t',
-        vim.env.TMUX_PANE,
-        '@nvim_popup_id',
-      })
-      vim.fn.system({
-        'tmux',
-        'set-option',
-        '-p',
-        '-u',
-        '-t',
-        vim.env.TMUX_PANE,
-        '@nvim_pid',
+        'set-option', '-p', '-u', '-t', pane, '@nvim_cwd', ';',
+        'set-option', '-p', '-u', '-t', pane, '@nvim_popup_id', ';',
+        'set-option', '-p', '-u', '-t', pane, '@nvim_pid', ';',
+        'kill-session', '-t', '=popup-' .. tmux_popup_id,
       })
     end,
   })

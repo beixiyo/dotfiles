@@ -1,7 +1,7 @@
 ---
 name: nvim-debug
 description: >-
-  排查 Neovim 配置或插件（Lua）里需要运行时证据才能定位的问题：窗口、buffer、选项状态异常，画面错乱或高亮异常，打开 / 切换 / 滚动时卡顿，键位或 autocmd 不生效或触发顺序不对，第三方插件互相干扰，异步回调乱序，只在瞬间出现的状态（打开 cmdline、切换模式、新建窗口时）；或对某个 API 的实际行为拿不准、需要实测确认时使用
+  排查 Neovim 配置或插件（Lua）里需要运行时证据才能定位的问题：窗口、buffer、选项状态异常，画面错乱或高亮异常，打开 / 切换 / 滚动时卡顿，启动或 :qa 退出慢，键位或 autocmd 不生效或触发顺序不对，第三方插件互相干扰，异步回调乱序，只在瞬间出现的状态（打开 cmdline、切换模式、新建窗口时）；或对某个 API 的实际行为拿不准、需要实测确认时使用
   方法是 dump 到文件、对比 ground truth、用最小探针验证、对照单一变量
   不用于有明确报错栈的直接修复、学习概念或普通配置写法
 ---
@@ -160,6 +160,15 @@ end)
 - **对照单一变量确认根因**，再改代码；修完按原路径重跑，同时检查修复是否改变了别的场景（局部选项见下节规则表）
 
 已知案例：wrap 窗口 + `conceallevel > 0` + markdown 的 `conceal_lines`，`gg` / `]c` / `zz` / `zv` 等需要算行高的命令会对每行调用 `_on_conceal_line` → `tree:parse({row, row+1})`，43 万字节的 md 卡 4s（0.13.0-dev-1617）
+
+### 启动 / 退出慢（比 Vim 明显迟钝）
+
+- **先拿基线**：`--startuptime` 多跑几次取稳定值，按文件类型分开测，差值即 FileType 链路成本；用 `vim -es +qa` 做参照
+- **缩小范围的工具**（按症状选用，不是固定顺序）：startuptime 的 self 排序和时间戳空白（无 require 的纯计算）、`jit.p` 带栈热点、包函数 / 包 autocmd 单点计时；最后用对照变量（如只加 `--cmd 'lua vim.loader.enable()'`）确认根因
+- **退出**：几乎都在 `VimLeavePre`，逐个 handler 计时；LSP 分别测每个 client 到 `rpc.is_closing()` 的时间，结束后用 `pgrep -P` / `kill -0` 确认子进程回收、在磁盘上确认清理结果
+- 流程、命令、已知开销表与坑见 [references/perf-startup-exit.md](references/perf-startup-exit.md)，探针 [references/probe-startup-exit.lua](references/probe-startup-exit.lua)（`PERF_MODE=exit|query|lsp`）
+
+已知案例（0.13-dev，macOS，用于估算量级，先测再对照）：未开 `vim.loader` 约 40ms，同步 `vim.fn.system` 调 tmux 每次约 6ms，macOS `fsync` 走 `F_FULLSYNC` 每次数 ms，lua_ls 优雅退出 60ms，TS query 编译约 80ms（固有开销，无单点可删）
 
 ### 窗口选项污染（diff / scrollbind / conceallevel 被带到不该有的窗口）
 
