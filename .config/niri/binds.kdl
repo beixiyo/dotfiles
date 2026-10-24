@@ -26,16 +26,6 @@ binds {
   XF86MonBrightnessUp   allow-when-locked=true { spawn "noctalia" "msg" "brightness-up" "5"; }
   XF86MonBrightnessDown allow-when-locked=true { spawn "noctalia" "msg" "brightness-down" "5"; }
 
-  // 旧桌面组件快捷键（已由 Noctalia 替代，保留作回退）
-  // Mod+D { spawn "fuzzel"; }
-  // Alt+V { spawn-sh "qs-popup clipboard"; }
-  // XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "swayosd-client --output-volume +5 || wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05+"; }
-  // XF86AudioLowerVolume allow-when-locked=true { spawn-sh "swayosd-client --output-volume -5 || wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05-"; }
-  // XF86AudioMute        allow-when-locked=true { spawn-sh "swayosd-client --output-volume mute-toggle || wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"; }
-  // XF86AudioMicMute     allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"; }
-  // XF86MonBrightnessUp   allow-when-locked=true { spawn-sh "swayosd-client --brightness +5 || brightnessctl --class=backlight set +5%"; }
-  // XF86MonBrightnessDown allow-when-locked=true { spawn-sh "swayosd-client --brightness -5 || brightnessctl --class=backlight set 5%-"; }
-
   // 总览
   Mod+Tab repeat=false { toggle-overview; }
 
@@ -149,6 +139,6 @@ binds {
   Mod+Shift+E { quit; }
   Ctrl+Alt+Delete { quit; }
   Mod+Shift+P { power-off-monitors; }
-  // 锁屏（类 Win+L，息屏由 swayidle 120s 计时器接管）
+  // 锁屏（类 Win+L，空闲关屏由 Noctalia 管理）
   Mod+Alt+L { spawn-sh "loginctl lock-session"; }
 }

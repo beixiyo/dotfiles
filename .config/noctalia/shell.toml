@@ -1,7 +1,7 @@
 # Noctalia Shell 基础行为
 #
 # Noctalia 负责状态栏、Dock、通知、OSD、剪贴板、壁纸与主题取色
-# Hyprlock、Swayidle 和 polkit-gnome 暂时保留，作为尚未迁移功能与回退方案
+# Noctalia 同时负责空闲管理与 Polkit；Hyprlock 仅供登录锁屏失败回退
 
 [shell]
 # 不上传匿名遥测数据

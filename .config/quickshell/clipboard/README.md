@@ -90,3 +90,17 @@ cliphist list ──> 分块解析(首屏 15 条立即渲染,其余分帧)
 ## 外部依赖
 
 `cliphist`、`wl-copy`(wl-clipboard)、`xclip`(可选,X11 兜底)、`file`、`ffmpeg` 或 `ffmpegthumbnailer`(视频缩略图)、`ffprobe`(视频元数据)、`xdg-open`、`xdg-user-dir`、`Symbols Nerd Font`(图标字体)
+
+## 持久化与回归验证
+
+清单读取或解析失败时，禁止写回与快照回收，并在日志中报告错误。清单和图片快照通过同目录临时文件原子替换；快照解码成功且确认为图片后才新增置顶。取消置顶后仅在清单成功保存后回收快照，避免写入失败时破坏旧清单的图片引用
+
+回收同时保护当前列表和最近一次成功持久化的图片引用；保存失败后再清空历史，也不会删除磁盘清单仍引用的快照
+
+置顶图片另存使用持久快照，原 cliphist 历史清空后仍可保存
+
+```bash
+bun test ~/.config/quickshell/clipboard/tests/persistence.test.ts
+```
+
+测试在临时 XDG 目录中，以 offscreen 模式实例化真实控制器，验证损坏清单保护、失败/成功快照、置顶图片另存、清单写入失败与连续保存。仅替换外部命令和测试数据，不访问实际剪贴板

@@ -66,33 +66,6 @@ SCREENSHOT_PACKAGES=(
   mark-shot
 )
 
-# ── 旧桌面方案（仅作回退参考，不再默认安装）───────────────
-#
-# Noctalia 已统一接管状态栏、启动器、通知、Polkit、壁纸、动态配色、
-# 锁屏、空闲管理、OSD 和剪贴板。下列软件的配置仍保留在 dotfiles 中，
-# 但 setup-niri.sh 不会安装它们
-# shellcheck disable=SC2034 # 仅保留旧方案清单，便于人工回退
-LEGACY_DESKTOP_PACKAGES=(
-  waybar
-  fuzzel
-  mako
-  polkit-gnome
-  awww
-  imagemagick
-  swayosd
-  hyprlock
-  swayidle
-  cliphist
-  quickshell
-  ffmpeg
-  cava
-  matugen
-  gnome-clocks
-  gnome-calendar
-  bluetui
-  pavucontrol
-)
-
 # ── 函数 ──────────────────────────────────────────────────────
 
 install_packages() {
@@ -204,7 +177,6 @@ show_summary() {
   log "    - 显示管理器：装 greetd / SDDM 等，选 Niri 会话"
   log ""
   log "  Noctalia 会随图形会话启动，并从 ~/Pictures 选择壁纸和生成主题。"
-  log "  Waybar、Mako、Awww、Matugen、Hyprlock 等旧配置仅保留作回退。"
   log ""
 }
 

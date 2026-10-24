@@ -4,12 +4,6 @@ layer-rule {
   place-within-backdrop true
 }
 
-// 旧 awww overview 壁纸规则（Noctalia 已接管，保留作回退）
-layer-rule {
-  match namespace="awww-daemonoverview"
-  place-within-backdrop true
-}
-
 // 全局窗口规则
 window-rule {
   geometry-corner-radius 12
@@ -40,7 +34,6 @@ window-rule {
   match app-id="pavucontrol"
   match app-id="blueman-manager"
   match app-id="nm-connection-editor"
-  match app-id="clipse-gui"
   match app-id="org.gnome.Calculator"
   open-floating true
 }

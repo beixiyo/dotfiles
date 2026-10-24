@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# 统一锁屏入口：Swayidle 的 lock、timeout 和 before-sleep 都调用 Noctalia
+# Linux 桌面锁屏入口：优先请求 Noctalia，失败时回退 Hyprlock
 #
 # 用法：
 #   lock.sh          请求锁屏后立即返回
@@ -46,15 +46,10 @@ if ! session_is_locked; then
   request_noctalia_lock || start_hyprlock_fallback
 fi
 
-# 普通 lock/timeout 回调不阻塞 Swayidle 的事件循环
+# 普通请求立即返回，只有 --wait 检查实际锁定状态
 [ "${1:-}" = "--wait" ] || exit 0
 
 # Noctalia 正常情况下几十毫秒即可锁定；3 秒后仍失败则启动 Hyprlock 回退
 wait_until_locked 30 && exit 0
 start_hyprlock_fallback
 wait_until_locked 15
-
-# 旧 Hyprlock-only 实现（保留作人工回退）：
-#   pidof hyprlock >/dev/null 2>&1 || setsid -f hyprlock
-#   [ "${1:-}" = "--wait" ] || exit 0
-#   等待 LockedHint=yes，最多 1.5 秒

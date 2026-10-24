@@ -170,10 +170,6 @@ sudo ./setup-nvidia.sh
 `~/.config/noctalia/shell.toml` 中的 `lang = "zh-Hans"` 独立控制
 部署当前 dotfiles 后 Noctalia 默认使用简体中文，修改该字段后可热重载
 
-Waybar、Fuzzel、Mako、Polkit-GNOME、Awww、SwayOSD、Hyprlock、Swayidle、
-Cliphist、Quickshell、Cava 和 Matugen 已归入脚本中的旧方案回退清单，
-不会在新机器上默认安装。仓库中的旧配置暂时保留，便于迁移故障时人工恢复
-
 `setup-sudoers.sh` 中部分候选命令可以间接获得 root Shell。启用前必须阅读脚本输出的安全提示，不要把不信任的本地用户加入对应 sudo 组
 
 ## 权限边界

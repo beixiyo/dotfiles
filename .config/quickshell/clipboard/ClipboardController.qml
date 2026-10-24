@@ -3,10 +3,10 @@
 // 把原先塞在 shell.qml 里的全部「数据 + 进程 + 调度」逻辑集中到这里：cliphist 列表加载、
 // 分块解析、异步解码、mime 探测、图片/视频缩略图生成、视频元数据、过滤排序、二次激活复制、
 // 删除等。纯函数都下沉到 ClipboardLogic.js；本文件只保留依赖运行时状态（mime 缓存、缓存目录、
-// Process）或 Theme 的逻辑。UI（Clipboard.qml）实例化本控制器并绑定其属性。
+// Process）或 Theme 的逻辑。UI（Clipboard.qml）实例化本控制器并绑定其属性
 //
 // 设计要点：根对象 id 仍为 root，使内部大量 root.xxx 状态引用保持不变；对外通过属性暴露状态、
-// 通过 closeRequested 信号请求 UI 关闭窗口。
+// 通过 closeRequested 信号请求 UI 关闭窗口
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -41,9 +41,12 @@ Scope {
 
   // ============ 置顶（收藏）============
   // cliphist 无原生收藏概念，这里自建持久化收藏：内容快照存到独立目录，即使
-  // cliphist 清空 / 历史轮换也不丢失。置顶项独立于 clipboardItems，仅在 filterItems 合并到最前。
+  // cliphist 清空 / 历史轮换也不丢失。置顶项独立于 clipboardItems，仅在 filterItems 合并到最前
   readonly property string pinDir: (Quickshell.env("XDG_DATA_HOME") || (Quickshell.env("HOME") + "/.local/share")) + "/qs-clipboard/pins"
   readonly property string pinFile: pinDir + "/pins.json"
+  property bool pinsLoaded: false      // 只有成功读取清单后才允许修改和回收
+  property bool pinSavePending: false
+  property var persistedPinImageNames: [] // 最近一次成功读取或保存的磁盘图片引用
   property var pinnedItems: []          // 置顶项数组（最新置顶在前）
   property var pinnedIdSet: ({})         // id -> true，用于在活动列表里去重
 
@@ -188,7 +191,7 @@ Scope {
   }
 
   /**
-   * 把异步解码回来的内容回填到对应条目（搜索索引、HTML 图片 / 纯文本、文件路径等）。
+   * 把异步解码回来的内容回填到对应条目（搜索索引、HTML 图片 / 纯文本、文件路径等）
    * @param {string} data 解码进程输出
    */
   function updateDecodedEntries(data) {
@@ -622,7 +625,7 @@ Scope {
   // ============ 类型徽标（依赖 Theme 配色，故留在控制器） ============
 
   /**
-   * 返回条目的类型徽标信息。
+   * 返回条目的类型徽标信息
    * @param {object} item 条目
    * @returns {{ label: string, icon: string, color: color }} 徽标
    */
@@ -1406,7 +1409,10 @@ Scope {
     saveImageProcess.targetPath = "Pictures/Clipboard/" + targetName
     saveImageStatus = "保存中..."
     saveImageRunning = true
-    saveImageProcess.command = ["bash", "-c", 'PIC_DIR="$(xdg-user-dir PICTURES 2>/dev/null || true)"; ' + '[ -n "$PIC_DIR" ] || PIC_DIR="$HOME/Pictures"; ' + 'OUT="$PIC_DIR/Clipboard/' + targetName + '"; ' + 'mkdir -p "$(dirname "$OUT")" && ' + 'cliphist decode ' + Logic.shellQuote(previewItem.id) + ' > "$OUT" && ' + 'test -s "$OUT"']
+    var imageSource = previewItem.pinned
+      ? 'test -s ' + Logic.shellQuote(previewItem.imageFile || "") + ' && cp -- ' + Logic.shellQuote(previewItem.imageFile || "") + ' "$OUT"'
+      : 'cliphist decode ' + Logic.shellQuote(previewItem.id) + ' > "$OUT"'
+    saveImageProcess.command = ["bash", "-c", 'PIC_DIR="$(xdg-user-dir PICTURES 2>/dev/null || true)"; ' + '[ -n "$PIC_DIR" ] || PIC_DIR="$HOME/Pictures"; ' + 'OUT="$PIC_DIR/Clipboard/' + targetName + '"; ' + 'mkdir -p "$(dirname "$OUT")" && ' + imageSource + ' && test -s "$OUT"']
     saveImageProcess.running = true
   }
 
@@ -1563,7 +1569,7 @@ Scope {
   // 读取磁盘上的置顶清单
   Process {
     id: loadPinsProc
-    command: ["bash", "-c", "cat " + Logic.shellQuote(root.pinFile) + " 2>/dev/null || true"]
+    command: ["bash", "-c", 'p=' + Logic.shellQuote(root.pinFile) + '; if [ ! -e "$p" ]; then printf "[]"; else cat -- "$p"; fi']
     stdout: SplitParser {
       splitMarker: ""
       onRead: data => {
@@ -1571,7 +1577,10 @@ Scope {
       }
     }
     onExited: code => {
-      root.applyLoadedPins(root.pinBuffer)
+      if (code === 0)
+        root.applyLoadedPins(root.pinBuffer)
+      else
+        console.error("读取置顶清单失败，保留磁盘数据，exit code:", code)
       root.pinBuffer = ""
     }
   }
@@ -1579,7 +1588,20 @@ Scope {
   // 写回置顶清单
   Process {
     id: savePinsProc
+    property var imageNames: []
     command: ["echo"]
+    onExited: code => {
+      if (code !== 0)
+        console.error("保存置顶清单失败，旧清单保持不变，exit code:", code)
+      else
+        root.persistedPinImageNames = savePinsProc.imageNames
+      if (root.pinSavePending) {
+        root.pinSavePending = false
+        Qt.callLater(root.savePins)
+      } else if (code === 0) {
+        root.gcOrphanPins()
+      }
+    }
   }
 
   // 回收孤儿快照（pins 目录里 pins.json 已不再引用的图片文件）
@@ -1590,7 +1612,11 @@ Scope {
 
   /** 清理 pins 目录下未被任何置顶项引用的快照文件 */
   function gcOrphanPins() {
-    var keep = []
+    // 未知磁盘状态或写入尚未结束时，不能把快照当成孤儿删除
+    if (!pinsLoaded || savePinsProc.running || pinSnapshotProc.running || gcPinsProc.running)
+      return
+    // 保存失败后，磁盘清单仍可能引用已从 UI 移除的图片，必须继续保护
+    var keep = root.persistedPinImageNames.slice()
     for (var i = 0; i < pinnedItems.length; i++) {
       var it = pinnedItems[i]
       if (it.isImage && it.imageFile)
@@ -1635,13 +1661,19 @@ Scope {
 
   /** 解析载入的置顶 JSON，重建条目派生字段并刷新列表 */
   function applyLoadedPins(jsonText) {
+    root.pinsLoaded = false
     var arr = []
     try {
-      var parsed = JSON.parse(String(jsonText || "").trim() || "[]")
-      if (Array.isArray(parsed))
-        arr = parsed
+      var parsed = JSON.parse(String(jsonText || "").trim())
+      if (!Array.isArray(parsed) || parsed.some(function (it) {
+        return !it || typeof it !== "object" || !/^\d+$/.test(String(it.id))
+          || (it.isImage && (typeof it.imageFile !== "string" || !it.imageFile))
+      }))
+        throw new Error("置顶清单格式无效")
+      arr = parsed
     } catch (e) {
-      arr = []
+      console.error("解析置顶清单失败，保留清单和图片快照:", e)
+      return false
     }
     var set = {}
     var imgPaths = Object.assign({}, root.imagePaths)
@@ -1658,13 +1690,22 @@ Scope {
     root.pinnedItems = arr
     root.pinnedIdSet = set
     root.imagePaths = imgPaths
+    root.persistedPinImageNames = pinImageNames(arr)
+    root.pinsLoaded = true
     gcOrphanPins()  // 顺便清理历史遗留的孤儿快照
     if (!root.closing)
       root.filterItems()
+    return true
   }
 
-  /** 持久化置顶项到磁盘 */
+  /** 原子写入置顶清单；已有写入时合并为下一次保存 */
   function savePins() {
+    if (!pinsLoaded)
+      return
+    if (savePinsProc.running) {
+      root.pinSavePending = true
+      return
+    }
     var json = JSON.stringify(root.pinnedItems.map(function (it) {
       return {
         id: it.id, isImage: it.isImage, imageExt: it.imageExt,
@@ -1677,13 +1718,27 @@ Scope {
         imageFile: it.imageFile || "", imageMime: it.imageMime || ""
       }
     }))
-    savePinsProc.command = ["bash", "-c", "mkdir -p " + Logic.shellQuote(pinDir) + "; printf '%s' " + Logic.shellQuote(json) + " > " + Logic.shellQuote(pinFile)]
+    savePinsProc.imageNames = pinImageNames(root.pinnedItems)
+    // 同目录临时文件 + rename：写入失败或进程中断时不破坏原清单
+    savePinsProc.command = ["bash", "-c", 'umask 077; mkdir -p ' + Logic.shellQuote(pinDir) + ' || exit 1; ' +
+      'tmp=$(mktemp ' + Logic.shellQuote(pinDir + "/.pins.XXXXXX") + ') || exit 1; ' +
+      'trap \'rm -f -- "$tmp"\' EXIT; printf \'%s\' ' + Logic.shellQuote(json) +
+      ' > "$tmp" && mv -f -- "$tmp" ' + Logic.shellQuote(pinFile)]
     savePinsProc.running = true
+  }
+
+  /** 收集清单引用的图片文件名，用于保护成功持久化的数据 */
+  function pinImageNames(items) {
+    return items.filter(function (it) {
+      return it.isImage && it.imageFile
+    }).map(function (it) {
+      return it.imageFile.split("/").pop()
+    })
   }
 
   /** 置顶一个条目（异步抓取快照后入库） */
   function pinItem(item) {
-    if (!item || isPinned(item) || pinSnapshotProc.running)
+    if (!pinsLoaded || !item || isPinned(item) || pinSnapshotProc.running || gcPinsProc.running)
       return
     pinSnapshotProc.pendingItem = item
     pinSnapshotProc.buffer = ""
@@ -1691,13 +1746,18 @@ Scope {
       var ext = String(item.imageExt || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png"
       var snap = pinDir + "/" + item.id + "." + ext
       pinSnapshotProc.snapshotFile = snap
-      pinSnapshotProc.command = ["bash", "-c", "mkdir -p " + Logic.shellQuote(pinDir) + "; cliphist decode " + Logic.shellQuote(String(item.id)) + " > " + Logic.shellQuote(snap) + " 2>/dev/null && file -Lb --mime-type -- " + Logic.shellQuote(snap) + " 2>/dev/null || true"]
+      pinSnapshotProc.command = ["bash", "-c", 'umask 077; mkdir -p ' + Logic.shellQuote(pinDir) + ' || exit 1; ' +
+        'tmp=$(mktemp ' + Logic.shellQuote(pinDir + "/.snapshot.XXXXXX") + ') || exit 1; ' +
+        'trap \'rm -f -- "$tmp"\' EXIT; cliphist decode ' + Logic.shellQuote(String(item.id)) + ' > "$tmp" || exit 1; ' +
+        'test -s "$tmp" || exit 1; mime=$(file -Lb --mime-type -- "$tmp") || exit 1; ' +
+        'case "$mime" in image/*) ;; *) exit 1 ;; esac; ' +
+        'mv -f -- "$tmp" ' + Logic.shellQuote(snap) + ' && printf \'%s\' "$mime"']
     } else if (item.isFile) {
       pinSnapshotProc.snapshotFile = ""
       pinSnapshotProc.command = ["bash", "-c", "true"]
     } else {
       pinSnapshotProc.snapshotFile = ""
-      pinSnapshotProc.command = ["bash", "-c", "cliphist decode " + Logic.shellQuote(String(item.id)) + " 2>/dev/null || true"]
+      pinSnapshotProc.command = ["bash", "-c", "cliphist decode " + Logic.shellQuote(String(item.id))]
     }
     pinSnapshotProc.running = true
   }
@@ -1706,11 +1766,16 @@ Scope {
   function finishPin(item, code, output, snapshotFile) {
     if (!item || root.closing)
       return
+    var imageMime = String(output || "").trim()
+    if (code !== 0 || (item.isImage && (!snapshotFile || !/^image\/[^\s]+$/.test(imageMime)))) {
+      console.error("抓取置顶快照失败，未新增置顶，exit code:", code)
+      return
+    }
     var rec = JSON.parse(JSON.stringify(item))
     rec.pinned = true
     if (item.isImage) {
       rec.imageFile = snapshotFile
-      rec.imageMime = String(output || "").trim().split(/\s+/)[0] || ("image/" + (item.imageExt || "png"))
+      rec.imageMime = imageMime
       rec.copyText = ""
       rec.copyMime = ""
     } else if (item.isFile) {
@@ -1742,7 +1807,7 @@ Scope {
 
   /** 取消置顶 */
   function unpinItem(item) {
-    if (!item)
+    if (!pinsLoaded || !item)
       return
     var id = String(item.id)
     root.pinnedItems = root.pinnedItems.filter(function (p) {
@@ -1752,7 +1817,6 @@ Scope {
     delete set[id]
     root.pinnedIdSet = set
     savePins()
-    gcOrphanPins()
     filterItems()
   }
 
