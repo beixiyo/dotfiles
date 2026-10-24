@@ -27,6 +27,7 @@ input {
     tap
     natural-scroll
     scroll-factor 0.3
+    pinch-sensitivity 1.8
   }
 
   mouse {
@@ -128,7 +129,7 @@ spawn-at-startup "systemctl" "--user" "start" "plasma-xembedsniproxy.service"
 // 旧音量/亮度 OSD（已由 Noctalia 替代，保留作回退）
 // spawn-at-startup "swayosd-server"
 
-// 空闲管理已由 Noctalia 接管：15 分钟锁屏、17 分钟关显示器，不自动休眠。
+// 空闲管理已由 Noctalia 接管：15 分钟锁屏、17 分钟关显示器，不自动休眠
 // 旧 Swayidle 参数完整保留作回退：
 //   lock         → loginctl lock-session 信号 → lock.sh 请求 Noctalia 锁屏
 //   timeout 120  → 2 分钟无操作：若 LockedHint=yes 则关屏，否则跳过
@@ -136,7 +137,7 @@ spawn-at-startup "systemctl" "--user" "start" "plasma-xembedsniproxy.service"
 //   timeout 1020 → 17 分钟无操作：强制关屏（兜底走开场景）
 //   before-sleep → 休眠前请求 Noctalia 锁屏并等待 LockedHint=yes
 //
-//   lock.sh 保持幂等且普通回调不阻塞 Swayidle；Noctalia 不可用时回退 Hyprlock。
+//   lock.sh 保持幂等且普通回调不阻塞 Swayidle；Noctalia 不可用时回退 Hyprlock
 //   无 unlock 回调：SIGUSR1 的真实语义是「立刻进入 idle」（man swayidle），会当场
 //                   重锁 + 黑屏；且 niri 解锁时自己 notify_activity 已重置计时
 //   无 resume 回调：niri 收到输入自动亮屏，且避免 swayidle #193 竞态死锁

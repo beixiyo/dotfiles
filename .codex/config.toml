@@ -37,6 +37,9 @@ status_line = [
   "context-window-size",
 ]
 status_line_use_colors = true
+vim_mode_default = true
+mouse_scroll_speed = 6.0
+
 [features]
 memories = true
 # 允许 Default mode 使用结构化选择提问
