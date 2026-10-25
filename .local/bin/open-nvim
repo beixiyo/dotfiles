@@ -141,14 +141,15 @@ run_on() {
 
 # ── 收集存活的 socket 及其 cwd ──
 # macOS 用 getconf DARWIN_USER_TEMP_DIR 获取 per-user 临时目录，不依赖 $TMPDIR 继承
-# Linux / 其他系统 getconf 会返回空，自动 fallback 到 $TMPDIR 或 /tmp/
+# Linux 同时扫描 XDG_RUNTIME_DIR 中的 socket；保留临时目录布局兼容 macOS
 _TMPDIR=$(getconf DARWIN_USER_TEMP_DIR 2>/dev/null || echo "${TMPDIR:-/tmp/}")
 SOCK_DIR="${_TMPDIR%/}/nvim.$(whoami)"
+RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 BEST_MATCH=""
 BEST_LEN=0
 LAST_ALIVE=""
 
-for sock in "$SOCK_DIR"/*/nvim.*.0; do
+for sock in "$RUNTIME_DIR"/nvim.* "$SOCK_DIR"/*/nvim.* "${_TMPDIR%/}"/nvim.*; do
   [ -S "$sock" ] || continue
   CWD=$(nvim --headless --server "$sock" --remote-expr "getcwd()" 2>/dev/null) || continue
   LAST_ALIVE="$sock"
