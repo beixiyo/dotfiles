@@ -25,7 +25,7 @@ lang = "zh-Hans"
 # 浮动面板的统一视觉与定位
 [shell.panel]
 # 面板透明模式：solid 不透明 | soft 轻透 | glass 明显透底
-transparency_mode = "soft"
+transparency_mode = "glass"
 
 # 为浮动面板保留细描边和投影，使其与壁纸保持边界
 borders = true

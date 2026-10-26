@@ -1,14 +1,25 @@
 blur {
-  passes 1
-  offset 2.0
+  passes 2
+  offset 0.8
   noise 0.02
   saturation 1.5
 }
 
-// 所有窗口毛玻璃（xray 穿透到壁纸，零性能消耗）
+// 普通窗口沿用 xray，使用壁纸背景模糊
 window-rule {
   background-effect {
     blur true
     xray true
+  }
+}
+
+// Noctalia 面板和通知模糊下方真实窗口，而非穿透到桌面壁纸
+// Noctalia 发布实际面板的模糊区域，避免影响透明边缘和点击遮罩
+layer-rule {
+  match namespace="^noctalia-(panel|notification)$"
+
+  background-effect {
+    blur true
+    xray false
   }
 }

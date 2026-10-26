@@ -34,7 +34,7 @@ return {
       search = { enabled = true },
       char = {
         jump_labels = true,
-        multi_line = true,
+        multi_line = false,
         keys = { 'f', 'F' },
         highlight = { backdrop = false, matches = true },
       },

@@ -40,7 +40,7 @@ opt.completeopt = "menu,menuone,noselect" -- 补全菜单行为（配合 nvim-cm
 
 -- 外观
 opt.termguicolors = true -- 启用 24-bit 真彩
--- 左侧栏完全交给 vv-statuscol 自绘（mark/sign/git/fold 都在 statuscolumn 内渲染）。
+-- 左侧栏完全交给 vv-statuscol 自绘（mark/sign/git/fold 都在 statuscolumn 内渲染）
 -- 原生 signcolumn 不走 %s，置 'yes' 只会白占 2 列；设 'no' 让插件按内容动态决定宽度
 opt.signcolumn = "no"
 opt.wrap = true -- 长行自动换行显示
@@ -48,7 +48,7 @@ opt.splitright = true -- 垂直分屏默认向右打开
 opt.splitbelow = true -- 水平分屏默认向下打开
 opt.scrolloff = 5 -- 光标距屏边 5 行
 opt.list = true -- 显示不可见字符
-opt.listchars = "tab:» ,nbsp:␣"
+opt.listchars = { tab = "  ", nbsp = "␣" } -- Tab 显示为空白，保留不换行空格提示
 
 -- 光标形状与闪烁 (匹配终端呼吸效果)
 opt.guicursor = "n-v-c:block,i-ci-ve:ver25,r-cr:hor20,o:hor50,a:blinkwait700-blinkoff400-blinkon250-Cursor/lCursor,sm:block-blinkwait175-blinkoff150-blinkon175"
