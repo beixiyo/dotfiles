@@ -8,6 +8,25 @@
       "complex_modifications": {
         "rules": [
           {
+            "description": "Rex: Ctrl+Shift+V 粘贴（保留 Cmd+V）",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": ["^com\\.superlogical\\.rex$"],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "from": {
+                  "key_code": "v",
+                  "modifiers": { "mandatory": ["control", "shift"] }
+                },
+                "to": [{ "key_code": "v", "modifiers": ["command"] }],
+                "type": "basic"
+              }
+            ]
+          },
+          {
             "description": "全局互换 Ctrl 和 Cmd (用于复制粘贴等)，终端 / RDP 远程 Windows 客户端除外",
             "manipulators": [
               {
@@ -17,6 +36,7 @@
                       "^net\\.kovidgoyal\\.kitty$",
                       "^com\\.github\\.wez\\.wezterm$",
                       "^com\\.mitchellh\\.ghostty$",
+                      "^com\\.superlogical\\.rex$",
                       "^com\\.neovide\\.neovide$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -47,6 +67,7 @@
                       "^net\\.kovidgoyal\\.kitty$",
                       "^com\\.github\\.wez\\.wezterm$",
                       "^com\\.mitchellh\\.ghostty$",
+                      "^com\\.superlogical\\.rex$",
                       "^com\\.neovide\\.neovide$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -119,6 +140,7 @@
                       "^net\\.kovidgoyal\\.kitty$",
                       "^com\\.github\\.wez\\.wezterm$",
                       "^com\\.mitchellh\\.ghostty$",
+                      "^com\\.superlogical\\.rex$",
                       "^com\\.neovide\\.neovide$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -149,6 +171,7 @@
                       "^net\\.kovidgoyal\\.kitty$",
                       "^com\\.github\\.wez\\.wezterm$",
                       "^com\\.mitchellh\\.ghostty$",
+                      "^com\\.superlogical\\.rex$",
                       "^com\\.neovide\\.neovide$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -174,6 +197,7 @@
                       "^net\\.kovidgoyal\\.kitty$",
                       "^com\\.github\\.wez\\.wezterm$",
                       "^com\\.mitchellh\\.ghostty$",
+                      "^com\\.superlogical\\.rex$",
                       "^com\\.neovide\\.neovide$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
