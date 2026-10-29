@@ -1,6 +1,6 @@
-# 路线 E：测试取证录屏（带接口耗时）
+# 测试取证录屏
 
-录真实应用的测试过程，画面上实时显示「已等待 Ns · 最新事件 X」，同时从真实网络响应里取精确耗时，给产品、后端或 QA 看「界面怎么反应、后端多久回来」
+录真实应用的过程，画面上实时显示「已等待 Ns · 最新事件 X · 步骤说明等」，同时从真实网络响应里取精确耗时
 
 和路线 C 的区别：
 
@@ -35,10 +35,37 @@ scripts/evidence/
 | `hideSelectors(page, selectors)` | 隐藏调试浮层，不进录屏 |
 | `timings(page, match)` | 精确耗时表：`headersMs`、`firstMs[事件名]`、`endMs`，相对请求发出时刻 |
 
+## 录制尺寸与成片验收
+
+`resize` 只设置页面视口，不保证录制尺寸相同。UI 证据必须显式传入输出尺寸，默认与视口的 CSS 像素尺寸一致；移动端按其实际视口
+
+使用本路线 `record(page, name, fn, size)` 时显式传 `size`，并先设置同尺寸视口；辅助函数会检查一致性。直接用 CLI 时先查看当前版本 `playwright-cli video-start --help`，支持 `--size` 的版本用：
+
+```bash
+playwright-cli -s=ev resize 1440 900
+playwright-cli -s=ev video-start evidence.webm --size=1440x900
+# 执行真实交互，留出观看操作前后状态的时间
+playwright-cli -s=ev video-stop
+```
+
+CLI 若不支持尺寸参数，改用可显式传尺寸的 `record()`，不要退回不带尺寸的录制。录制期间不改变视口或窗口大小，避免中途重新缩放；需要变化时分段录制
+
+成片（包括转码后的最终文件）必须检查：
+
+```bash
+ffprobe -v error -select_streams v:0 \
+  -show_entries stream=codec_name,width,height,r_frame_rate,avg_frame_rate:format=duration,size,bit_rate \
+  -of json evidence.webm
+# 示例取第2秒；实际选择含小字和关键结果的一帧，不加 scale
+ffmpeg -v error -ss 2 -i evidence.webm -frames:v 1 keyframe.png
+```
+
+对照录制目标核对实际宽高；帧率、编码、码率、时长和字节数记录实测值
+
 ## 步骤
 
-1. 在**产物目录**下执行所有 `playwright-cli` 命令：会话与当前目录绑定，换目录就找不到会话
-2. 打开会话并登录，**先存一份登录态**：会话崩溃后 `--persistent` 也可能丢登录
+1. 同一 CLI 会话保持一致的工作目录；部分版本会按当前目录定位会话。产物用明确路径，避免依赖切换目录
+2. 需要登录时先完成登录；只有需要恢复会话时才保存认证状态，含token的文件不进报告或版本库
    ```bash
    cd "$OUT"
    playwright-cli -s=ev open http://localhost:5173 --persistent
@@ -48,11 +75,12 @@ scripts/evidence/
    ```
 3. 写场景主体 `s01.body.js`（模板见下），拼接并执行，返回值存成 JSON
    ```bash
-   B=~/.claude/skills/demo-video/scripts/evidence/build.sh
+   # SKILL_DIR 为本 skill 的实际目录
+   B="$SKILL_DIR/scripts/evidence/build.sh"
    $B s01.body.js s01.js "$OUT"
    playwright-cli -s=ev --raw run-code --filename=s01.js > runs-01.json
    ```
-4. 抽帧验证（recording.md 的「抽帧拼图」），确认提示条、章节卡、关键画面都在
+4. 按上方「录制尺寸与成片验收」用 ffprobe 核对实际参数，查看原始分辨率关键帧；再做抽帧拼图，确认提示条、章节卡、关键画面都在
 5. 报告里的数字取 `runs-*.json` 的 `timings`，不取提示条上的秒数
 
 ## 场景模板
@@ -74,7 +102,7 @@ const result = await record(page, 's01-send', async () => {
   await page.waitForTimeout(2500)                         // 给观众看结果的时间
   await page.screenshot({ path: `${OUT}/shots/s01-done.png` })
   return { ms }
-})
+}, { width: 1440, height: 900 })
 return JSON.stringify({ result, timings: await timings(page, M) })
 ```
 

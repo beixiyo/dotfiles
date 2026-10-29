@@ -1,8 +1,8 @@
 # 录制、编码与验证
 
-## 抓帧原理
+## 自行实现 CDP 截帧时
 
-- **用 CDP `Page.startScreencast`，不用 Playwright `recordVideo`**：后者码率低、帧率不稳、画面糊。screencast 配合 `deviceScaleFactor: 2` 输出高清 JPEG，每帧带 `metadata.timestamp`
+- `scripts/record.ts` 使用 CDP `Page.startScreencast`，可控制帧质量并取得 `metadata.timestamp`。使用现成录制器时无需重写此流程；质量取决于实际尺寸与编码参数，不能仅按工具名称判断。DPR和最终编码宽度分别控制，需核验成片
 - screencast **只在画面变化时出帧**，间隔不均匀。不能按固定帧率拼接，要把每帧真实停留时长写进 ffmpeg concat 清单：
 
   ```
@@ -27,12 +27,12 @@
 
 ## GIF 取舍
 
-体积主因是**整幅运动**（镜头推拉、滚动）：每帧所有像素都变，`diff_mode=rectangle` 失效。实测（720px，18s 含 6 次推镜）：
+体积主因是**整幅运动**（镜头推拉、滚动）：每帧所有像素都变，`diff_mode=rectangle` 失效。以下是一次720px、18s、含6次推镜的样例测量，用于说明取舍方向，不是其他素材的体积保证：
 
 | 调整 | 体积变化 | 代价 |
 |---|---|---|
 | fps 25 → 15 → 12 | 12.7 → 7.8 → 6.4 MB（800px/256 色） | 12fps 下 1s 缓动仍连贯；更低会顿 |
-| 宽度 800 → 720 | 约 -17% | 640 时小字明显糊 |
+| 宽度 800 → 720 | 约 -17% | 该样例640px时小字明显糊 |
 | 颜色 256 → 128 → 64 | 6.4 → 4.4 → 3.6 MB | 64 色在大面积阴影、光晕上出现明显色带；128 平滑 |
 | 抖动 none / bayer / sierra2_4a | none 最小 | 抖动反而更大且文字变软（平涂 UI 不需要抖动） |
 | `mpdecimate` 去重帧 | 约 -1% | 几乎无效，静止段本来就只有一帧 |
@@ -52,16 +52,16 @@ ffprobe -v error -count_frames -select_streams v:0 -show_entries stream=nb_read_
 # 已有视频转 GIF（两段式调色板）
 ffmpeg -i in.mp4 -filter_complex "fps=12,scale=720:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff:max_colors=128[p];[b][p]paletteuse=dither=none:diff_mode=rectangle" -loop 0 out.gif
 
-# 剪切 3s–10s 并 1.5 倍速
-ffmpeg -ss 3 -to 10 -i in.mp4 -vf "setpts=PTS/1.5" -an out.mp4
+# 正常速度裁剪：从第3秒取7秒，保留音频（如有）
+ffmpeg -ss 3 -t 7 -i in.mp4 -c:v libx264 -crf 20 -c:a aac -movflags +faststart out.mp4
+
+# 只有明确需要加速并静音时使用
+ffmpeg -ss 3 -to 10 -i in.mp4 -vf "setpts=PTS/1.5" -an fast-silent.mp4
 
 # 网页友好 MP4
-ffmpeg -i in.mov -c:v libx264 -crf 20 -preset slow -pix_fmt yuv420p -movflags +faststart -an out.mp4
+ffmpeg -i in.mov -c:v libx264 -crf 20 -preset slow -pix_fmt yuv420p -c:a aac -movflags +faststart out.mp4
 ```
 
-## 验证清单
+## 成片核验
 
-- 开场、关键动作、运动中段、结尾各抽一帧；明暗主题、每种语言各一份
-- 首尾帧并排对比（循环素材）
-- 报告时长、尺寸、体积；体积超目标时说明取舍而不是直接交付
-- 结束后确认自动启动的服务已关闭：`lsof -nP -iTCP:<port> -sTCP:LISTEN`
+检查此次交付中的关键动作与结果；无法直接查看视频时抽关键帧，循环素材另比较首尾。UI 小字清晰度及 ffprobe 命令见 [evidence.md](evidence.md#录制尺寸与成片验收)。先保留原片，仅在有体积或格式目标时转码；上面的GIF参数用于体积取舍，不是测试证据的默认规格

@@ -1,6 +1,6 @@
 # 路线 B / C
 
-路线 A 见 [dom-demo.md](dom-demo.md)，录制与编码见 [recording.md](recording.md)。B、C 涉及的库 API 以项目实际版本为准，动手前用 search skill 查当前文档，不凭记忆写
+路线 A 见 [dom-demo.md](dom-demo.md)，录制器与编码见 [recording.md](recording.md)。下面的工具是可选路线，复用项目已有工具即可
 
 ## B. 代码渲染视频
 
@@ -20,7 +20,7 @@
 
 ## C. 录制真实 Web 操作
 
-用 Playwright 场景脚本驱动真实应用，`record.ts --scenario` 边跑边录
+Web 可用 Playwright 场景脚本驱动真实应用，`record.ts --scenario` 边跑边录
 
 场景脚本：
 
