@@ -20,3 +20,31 @@ description: 用 open-nvim 在运行中的 Neovim 实例打开文件并精确跳
 
 - 文件路径若为相对路径，保持原样传入，脚本内部会用 `realpath` 解析
 - 列号按 UTF-16 码元计（含中文等多字节字符的行与浏览器/编辑器字符列一致），不是字节列；不确定时省略列号
+
+## 网页调用
+
+手动启动本机服务：
+
+```bash
+node ~/.claude/skills/open-nvim/scripts/server.mjs
+```
+
+服务监听所有网卡（IPv4 和 IPv6），依次尝试端口 `43123` 到 `43132`，启动时打印实际端口。下面示例使用默认端口；若端口冲突，请替换成启动输出中的实际端口
+
+也可以指定固定端口（被占用时直接报错）：
+
+```bash
+OPEN_NVIM_PORT=43200 node ~/.claude/skills/open-nvim/scripts/server.mjs
+```
+
+```bash
+curl -G 'http://127.0.0.1:43123/open-nvim' \
+  --data-urlencode 'file=/绝对路径/文件' \
+  --data-urlencode 'line=42' --data-urlencode 'column=1'
+
+# 也支持 POST，字段与 GET 一致
+curl -X POST 'http://127.0.0.1:43123/open-nvim' \
+  -H 'Content-Type: application/json' \
+  --data '{"file":"/绝对路径/文件","line":42,"column":1}'
+```
+
