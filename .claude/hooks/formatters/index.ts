@@ -7,6 +7,7 @@ import { runEslint } from './eslint'
 import { isLintableFile } from './file-types'
 import { runOxlint } from './oxlint'
 import { runPrettier } from './prettier'
+import { runRustywind } from './rustywind'
 // import { runVvMcp } from './vv-mcp'
 import { runNvimCleanTrailing } from './vv-utils'
 
@@ -44,8 +45,8 @@ const CODE_EXTENSIONS = new Set([
  * 按固定优先级处理单个写入文件
  *
  * 1. Oxlint 或 ESLint 二选一
- * 2. Oxfmt 负责 JSX / TSX 中的 Tailwind 排序(暂时关闭，格式化得太丑了)
- * 3. dprint 优先，Prettier 兜底
+ * 2. RustyWind 排序 Tailwind
+ * 3. dprint 优先，Prettier 兜底，负责最后的格式化美化
  * 4. vv-utils :VVCleanTrailing，等价于 Neovim 的 <leader>c.
  * 5. vv-mcp 最后通过 Neovim LSP 修复最终文件
  */
@@ -66,6 +67,7 @@ export function formatFile(filePath: string, cwd: string): void {
   }
 
   // runOxfmt(filePath, cwd)
+  runRustywind(filePath, cwd)
   runDprint(filePath, cwd) || runPrettier(filePath, cwd)
 
   // vv-mcp 停用：fix_document 兜底套用 diagnostic quick fixes，改到一半出现 transient
