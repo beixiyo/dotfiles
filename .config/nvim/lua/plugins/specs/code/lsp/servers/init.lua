@@ -6,10 +6,10 @@ local M = {}
 function M.setup()
   require('plugins.specs.code.lsp.servers.lua_ls').setup()
   require('plugins.specs.code.lsp.servers.mason').setup()
-  require('plugins.specs.code.lsp.servers.tsc').setup()
+  local typescript_server = require('plugins.specs.code.lsp.servers.tsc').setup()
   require('plugins.specs.code.lsp.servers.tailwindcss').setup()
 
-  vim.lsp.enable({ 'tsc', 'tailwindcss' })
+  vim.lsp.enable({ typescript_server, 'tailwindcss' })
 end
 
 return M

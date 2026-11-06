@@ -25,9 +25,13 @@ rust = "stable"
 # ── LSP server（供 Neovim 使用，见 ~/.config/nvim/lua/plugins/specs/code/lsp/）──
 # 走 npm: 后端而非 npm i -g：后者装进 node 的版本目录，换 node 就得全部重装
 #
-# typescript 钉 major 而非 latest：nvim 靠 `tsc --lsp` 起 language server，
+# typescript 钉 major 而非 latest：nvim 靠 `tsc --lsp` 起 language server
 # 这个 flag 是 TS7 才有的，将来 TS8 若有破坏性变更，latest 会直接让 LSP 起不来
-"npm:typescript" = "7"
-# tailwind LSP 无此顾虑，跟最新即可（Mason 那边的 registry 长期钉在 0.14.29 不更新，
+# "npm:typescript" = "7"
+
+# tailwind LSP 无此顾虑，跟最新即可（Mason 那边的 registry 长期钉在 0.14.29 不更新
 # 所以才不用 Mason 装）
 "npm:@tailwindcss/language-server" = "latest"
+
+# 默认 TypeScript LSP：mise upgrade npm:tsrs 更新
+"npm:tsrs" = "latest"
