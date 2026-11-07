@@ -1,5 +1,5 @@
-; inherits: ecma
-; 与 typescript 一致：继承 ecma 并自定义常量/变量规则
+; extends
+; 与 typescript 一致：扩展上游查询并自定义常量/变量规则
 ; 常量仅按关键字 const 高亮，不再按全大写命名
 ; 全大写标识符改为 @variable，不再当作常量（覆盖 ecma 默认的 @constant）
 

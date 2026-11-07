@@ -8,6 +8,9 @@ vim.filetype.add({
   extension = {
     jsonl = "json",
     ndjson = "json",
+    -- 无扩展名 shebang 兜底
+    bun = "typescript",
+    deno = "typescript",
   },
 })
 
