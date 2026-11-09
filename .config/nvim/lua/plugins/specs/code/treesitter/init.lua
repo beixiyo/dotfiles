@@ -10,7 +10,8 @@ local auto_install_allowlist = {
   'markdown',
   'toml', 'xml', 'yaml', 'json',
   'lua', 'python',
-  'go', 'rust',
+  'go', 'gomod', 'gosum', 'gowork',
+  'rust',
   'bash', 'css',
 }
 

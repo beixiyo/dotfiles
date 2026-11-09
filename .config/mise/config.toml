@@ -34,4 +34,6 @@ rust = "stable"
 "npm:@tailwindcss/language-server" = "latest"
 
 # 默认 TypeScript LSP：mise upgrade npm:tsrs 更新
-"npm:tsrs" = "latest"
+# minimum_release_age = "0s"：tsrs 所有可用版都是 -beta/-dev 预发布，默认 `latest`
+# 只认正式版（会解析到 0.0.0 占位版），放开后才会追到最新预发布
+"npm:tsrs" = { version = "latest", minimum_release_age = "0s", trust_policy_excludes = ["tsrs"] }
