@@ -94,6 +94,10 @@
 !.config/kitty/
 !.config/kitty/**
 
+# ── Rex ──
+!.config/rex/
+!.config/rex/**
+
 # ── Ghostty ──
 !.config/ghostty/
 !.config/ghostty/**
@@ -176,6 +180,14 @@
 .config/ghostty/modules/matugen-colors.config
 .config/tmux/conf/matugen-colors.conf
 
+# -- 音乐播放器（只跟踪配置，不跟踪曲库、缓存、Cookie 和日志）--
+!.config/mpd/
+!.config/mpd/mpd.conf
+!.config/rmpc/
+!.config/rmpc/config.ron
+!.config/pigma/
+!.config/pigma/config.toml
+
 # -- systemd user units（Linux）--
 # 只放行手写的 drop-in；systemctl enable 生成的 *.wants/ 符号链接是本机状态，不跟踪
 !.config/systemd/
@@ -190,6 +202,8 @@
 !.config/systemd/user/cliphist.service.d/10-user-config.conf
 !.config/systemd/user/dbus-broker.service.d/
 !.config/systemd/user/dbus-broker.service.d/override.conf
+!.config/systemd/user/mpd-mpris.service.d/
+!.config/systemd/user/mpd-mpris.service.d/mpd-socket.conf
 !.config/systemd/user/noctalia.service
 
 # -- dprint --

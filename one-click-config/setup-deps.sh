@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 安装 zsh 配置所需的全部依赖
+# 安装 dotfiles 的通用依赖；音乐环境由 setup-music.sh 独立管理
 #
 # 用法：
 #   ./setup-deps.sh

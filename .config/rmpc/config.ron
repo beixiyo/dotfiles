@@ -1,0 +1,29 @@
+#![enable(implicit_some)]
+#![enable(unwrap_newtypes)]
+#![enable(unwrap_variant_newtypes)]
+(
+    address: "~/.config/mpd/socket",
+    select_current_song_on_change: true,
+    center_current_song_on_change: true,
+    scrolloff: 5,
+    wrap_navigation: true,
+    keybinds: (
+        global: {
+            "<Space>": TogglePause,
+            "<C-p>": PreviousTrack,
+            "<C-n>": NextTrack,
+            "+": VolumeUp,
+            "=": VolumeUp,
+            "-": VolumeDown,
+        },
+        navigation: {
+            "y": Confirm,
+            "v": Select,
+            "<CR>": AddOptions(kind: Action(autoplay: First, position: Replace, all: false)),
+            "A": AddOptions(kind: Action(autoplay: First, position: Replace, all: true)),
+        },
+        queue: {
+            "<CR>": Play,
+        },
+    ),
+)

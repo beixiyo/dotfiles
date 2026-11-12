@@ -21,6 +21,9 @@ trap cleanup EXIT
 cleanup
 mkdir -p "$STATE_DIR" "$BIN_DIR"
 
+TEST_HOME="$FIXTURE_DIR/home"
+mkdir -p "$TEST_HOME"
+
 cat > "$BIN_DIR/pacman" <<'EOF'
 #!/usr/bin/env bash
 state_dir="${NIRI_TEST_STATE_DIR:?}"
@@ -58,6 +61,8 @@ chmod +x "$BIN_DIR/pacman" "$BIN_DIR/locale"
 export NIRI_TEST_STATE_DIR="$STATE_DIR"
 export NIRI_TEST_PACKAGE_LOG="$PACKAGE_LOG"
 export PATH="$BIN_DIR:/usr/local/sbin:/usr/local/bin:/usr/bin"
+export HOME="$TEST_HOME"
+unset XDG_CONFIG_HOME XDG_STATE_HOME
 
 printf 'n\n' | bash "$SOURCE_DIR/setup-niri.sh" --deps >/tmp/niri-deps.out 2>&1
 
@@ -72,6 +77,11 @@ plasma_line="$(grep -nFx 'plasma-workspace' "$PACKAGE_LOG" | cut -d: -f1)"
 [ "$jack_line" -lt "$gnome_line" ]
 [ "$qt_backend_line" -lt "$plasma_line" ]
 printf 'PASS: explicit Portal, JACK and Qt providers are installed before consumers\n'
+
+if grep -Fxq 'mpd' "$PACKAGE_LOG" || grep -Fxq 'mpd-mpris' "$PACKAGE_LOG"; then
+  printf 'FAIL: Niri must not install music packages\n' >&2
+  exit 1
+fi
 
 : > "$PACKAGE_LOG"
 bash "$SOURCE_DIR/setup-niri.sh" --locale >/tmp/niri-locale.out 2>&1

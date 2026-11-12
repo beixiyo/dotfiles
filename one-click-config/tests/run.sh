@@ -25,6 +25,7 @@ SHELL_FILES=(
   "$PROJECT_DIR/setup-tmux.sh"
   "$PROJECT_DIR/setup-sudoers.sh"
   "$PROJECT_DIR/setup-niri.sh"
+  "$PROJECT_DIR/setup-music.sh"
   "$PROJECT_DIR/lib/common.sh"
   "$PROJECT_DIR/lib/packages.sh"
   "$PROJECT_DIR/lib/sudoers.sh"
@@ -35,6 +36,7 @@ SHELL_FILES=(
   "$TEST_DIR/system-integration.sh"
   "$TEST_DIR/tmux-integration.sh"
   "$TEST_DIR/niri-integration.sh"
+  "$TEST_DIR/music-integration.sh"
 )
 
 if ! command -v docker >/dev/null 2>&1; then
@@ -43,7 +45,9 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 printf '%s\n' '==> bash -n'
-bash -n "${SHELL_FILES[@]}"
+for shell_file in "${SHELL_FILES[@]}"; do
+  bash -n "$shell_file"
+done
 
 printf '%s\n' '==> shellcheck'
 docker run --rm \
@@ -55,6 +59,7 @@ docker run --rm \
   /workspace/setup-tmux.sh \
   /workspace/setup-sudoers.sh \
   /workspace/setup-niri.sh \
+  /workspace/setup-music.sh \
   /workspace/lib/common.sh \
   /workspace/lib/packages.sh \
   /workspace/lib/sudoers.sh \
@@ -64,7 +69,8 @@ docker run --rm \
   /workspace/tests/integration.sh \
   /workspace/tests/system-integration.sh \
   /workspace/tests/tmux-integration.sh \
-  /workspace/tests/niri-integration.sh
+  /workspace/tests/niri-integration.sh \
+  /workspace/tests/music-integration.sh
 
 printf '%s\n' '==> Debian system integration tests'
 docker build --quiet \
@@ -88,8 +94,10 @@ docker run --rm \
   bash:4.3 \
   bash /workspace/tests/tmux-integration.sh
 
-printf '%s\n' '==> Niri installation integration tests'
+printf '%s\n' '==> Niri and music integration tests'
 docker run --rm \
   -v "$PROJECT_DIR:/workspace:ro" \
+  -v "$PROJECT_DIR/../.config/mpd/mpd.conf:/.config/mpd/mpd.conf:ro" \
+  -v "$PROJECT_DIR/../.config/systemd/user/mpd-mpris.service.d/mpd-socket.conf:/.config/systemd/user/mpd-mpris.service.d/mpd-socket.conf:ro" \
   archlinux:latest \
-  bash /workspace/tests/niri-integration.sh
+  bash -c 'pacman-key --init && pacman -Syu --needed --noconfirm diffutils && bash /workspace/tests/niri-integration.sh && bash /workspace/tests/music-integration.sh'

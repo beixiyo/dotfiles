@@ -1,0 +1,11 @@
+default_theme = "pretty-cat"
+
+[[themes]]
+name = "pretty-cat"
+bg = "#1e1e2e"
+surface = "#313244"
+text = "#c2c2c2"
+accent = "#c678dd"
+muted = "#a8a8a8"
+border = "#7f848e"
+error = "#e05561"

@@ -149,6 +149,7 @@ tmux 插件目录不会提交到 Git，新机器部署后需要执行：
 | `setup-sudoers.sh` | Linux / macOS | 查看并交互管理 NOPASSWD 命令白名单 |
 | `setup-kde.sh` | Arch + KDE Plasma 6 | 安装 MacTahoe 主题、图标和桌面特效 |
 | `setup-niri.sh` | Arch | 安装 Niri、Wayland 桌面组件和中文 locale |
+| `setup-music.sh` | Linux / macOS | 安装音乐依赖；Linux 下初始化用户服务 |
 | `setup-nvidia.sh` | Arch + NVIDIA | 检测显卡并安装驱动、配置 initramfs 和 Wayland |
 
 示例：
@@ -164,11 +165,20 @@ sudo ./setup-nvidia.sh
 
 由 Noctalia 统一提供状态栏、托盘、启动器、通知历史、OSD、剪贴板、壁纸与动态配色、锁屏、空闲管理和 Polkit
 
-并启用 `noctalia.service`。脚本仍安装 Niri、Portal、XWayland、通知/剪贴板命令、媒体控制、GNOME Keyring 和 XEmbed 托盘兼容桥
+### 音乐
 
-脚本生成的 `zh_CN.UTF-8` 是系统 locale；Noctalia 的界面语言由
-`~/.config/noctalia/shell.toml` 中的 `lang = "zh-Hans"` 独立控制
-部署当前 dotfiles 后 Noctalia 默认使用简体中文，修改该字段后可热重载
+部署音乐配置后运行：
+
+```bash
+./setup-music.sh              # 安装 MPD/rmpc；Linux 同时安装桥接并初始化服务
+./setup-music.sh --deps-only  # 仅安装依赖
+```
+
+曲库为 `~/Music`，MPD 自动检测音频输出；检测失败时需手动配置本机输出
+配置缺失、与仓库不同或已有运行实例时，跳过服务初始化，不覆盖、不重启
+
+Arch 支持整套依赖自动安装；Homebrew 支持 MPD/rmpc，其他包管理器缺项时提示手动安装
+自动服务管理仅支持 Linux/systemd，macOS 需自行管理 MPD 服务
 
 `setup-sudoers.sh` 中部分候选命令可以间接获得 root Shell。启用前必须阅读脚本输出的安全提示，不要把不信任的本地用户加入对应 sudo 组
 
@@ -190,8 +200,7 @@ sudo ./setup-nvidia.sh
 ./tests/run.sh
 ```
 
-测试覆盖普通用户部署、覆盖与备份、sudoers 权限边界、`/root` 链接、多发行版
-系统行为，以及 Niri 安装时的 Portal/JACK provider 顺序和中文 locale 安装契约
+覆盖用户部署、权限边界、tmux、Niri 和音乐安装。音乐服务使用命令替身测试，不验证真实播放
 
 ## 文件结构
 
@@ -203,6 +212,7 @@ one-click-config/
 ├── setup-sudoers.sh       # 管理 NOPASSWD 命令白名单
 ├── setup-kde.sh           # KDE 主题与桌面环境
 ├── setup-niri.sh          # Niri + Noctalia 桌面环境
+├── setup-music.sh         # 音乐依赖安装与用户服务初始化
 ├── setup-nvidia.sh        # NVIDIA 驱动与 Wayland 配置
 ├── lib/
 │   ├── common.sh          # 日志、颜色与权限辅助
@@ -216,5 +226,6 @@ one-click-config/
     ├── integration.sh
     ├── system-integration.sh
     ├── niri-integration.sh
+    ├── music-integration.sh
     └── tmux-integration.sh
 ```

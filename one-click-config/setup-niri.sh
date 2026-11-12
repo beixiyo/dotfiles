@@ -8,7 +8,7 @@
 #
 # 前提：
 #   - Arch Linux + paru/yay
-#   - dotfiles 仓库已 clone 到 ~（配置文件自动就位）
+#   - 已通过 setup-user.sh 部署 dotfiles 配置（或直接将仓库 clone 到 ~）
 
 set -euo pipefail
 

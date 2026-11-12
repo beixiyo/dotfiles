@@ -22,6 +22,13 @@ binds {
   XF86AudioPrev allow-when-locked=true { spawn-sh "playerctl previous"; }
   XF86AudioNext allow-when-locked=true { spawn-sh "playerctl next"; }
 
+  // 控制 Noctalia 当前媒体播放器；音量沿用系统音量及 OSD
+  Ctrl+Alt+Shift+P     repeat=false allow-when-locked=true { spawn "noctalia" "msg" "media" "toggle"; }
+  Ctrl+Alt+Shift+Left  repeat=false allow-when-locked=true { spawn "noctalia" "msg" "media" "previous"; }
+  Ctrl+Alt+Shift+Right repeat=false allow-when-locked=true { spawn "noctalia" "msg" "media" "next"; }
+  Ctrl+Alt+Shift+Up    allow-when-locked=true { spawn "noctalia" "msg" "volume-up" "5"; }
+  Ctrl+Alt+Shift+Down  allow-when-locked=true { spawn "noctalia" "msg" "volume-down" "5"; }
+
   // 亮度（Noctalia 负责控制和 OSD）
   XF86MonBrightnessUp   allow-when-locked=true { spawn "noctalia" "msg" "brightness-up" "5"; }
   XF86MonBrightnessDown allow-when-locked=true { spawn "noctalia" "msg" "brightness-down" "5"; }
