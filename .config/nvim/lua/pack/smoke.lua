@@ -16,17 +16,17 @@ function M.run()
   local out = {}
   local function p(s) table.insert(out, s) end
 
-  p(head('1) 模块加载'))
+  p(head('1) module load'))
   local mods = { 'pack.spec', 'pack.sync', 'pack.build', 'pack.loader', 'pack.lazy', 'pack.scan', 'pack.stats' }
   for _, m in ipairs(mods) do
     local ok, err = pcall(require, m)
     p(('  %s %s'):format(ok and '✓' or '✗', m) .. (ok and '' or (' — ' .. tostring(err))))
   end
 
-  p(head('2) 扫描 plugins/specs'))
+  p(head('2) scan plugins/specs'))
   local scan = require('pack.scan')
   local specs = scan.collect()
-  p(('  扫到 %d 个 spec'):format(#specs))
+  p(('  found %d spec(s)'):format(#specs))
   for _, s in ipairs(specs) do
     local flags = {}
     if s.url then table.insert(flags, 'url') end
@@ -37,21 +37,21 @@ function M.run()
     p(('  [%s/%s] %s  {%s}'):format(s.category or '?', s.id or '?', s.desc or '', table.concat(flags, ', ')))
   end
 
-  p(head('3) spec 结构校验'))
+  p(head('3) spec structure check'))
   local errors = 0
   for _, s in ipairs(specs) do
-    if not s.id then p('  ✗ 缺 id: ' .. (s._mod or '?')); errors = errors + 1 end
-    if s.url and s.dir then p('  ✗ url/dir 互斥: ' .. s.id); errors = errors + 1 end
-    if not s.url and not s.dir then p('  ✗ 缺 url/dir: ' .. s.id); errors = errors + 1 end
+    if not s.id then p('  ✗ missing id: ' .. (s._mod or '?')); errors = errors + 1 end
+    if s.url and s.dir then p('  ✗ url/dir are mutually exclusive: ' .. s.id); errors = errors + 1 end
+    if not s.url and not s.dir then p('  ✗ missing url/dir: ' .. s.id); errors = errors + 1 end
     if type(s.keys) == 'table' then
       for i, k in ipairs(s.keys) do
         if type(k) == 'table' and type(k[1]) ~= 'string' then
-          p(('  ✗ %s.keys[%d] 首元素需为 string lhs'):format(s.id, i)); errors = errors + 1
+          p(('  ✗ %s.keys[%d] first element must be a string lhs'):format(s.id, i)); errors = errors + 1
         end
       end
     end
   end
-  p(('  错误: %d'):format(errors))
+  p(('  errors: %d'):format(errors))
 
   p(head('4) user-picks'))
   package.loaded['plugins.manager.user-picks'] = nil

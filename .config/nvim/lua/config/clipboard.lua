@@ -43,16 +43,18 @@ vim.opt.clipboard = "unnamedplus"
 -- 谁最近活跃左右、不稳定。改判「只要有一个本地客户端在线就认为人在本地」，正好覆盖
 -- 「kitty + SSH 并存」=本地；只有「全是 SSH 客户端」才算远程
 -- 粘贴时才调用（vv-utils 由插件系统加载，晚于本文件），不可用时按「非本地」回退内部寄存器
+local function any_local_client(clients)
+  for _, c in ipairs(clients or {}) do
+    if not c.remote then return true end
+  end
+  return false
+end
+
 local function has_local_tmux_client()
   if not vim.env.TMUX then return false end
   local ok, sys = pcall(require, "vv-utils.sys")
   if not ok then return false end
-  local clients = sys.tmux_clients({ target = vim.env.TMUX_PANE })
-  if not clients then return false end
-  for _, c in ipairs(clients) do
-    if not c.remote then return true end
-  end
-  return false
+  return any_local_client(sys.tmux_clients({ target = vim.env.TMUX_PANE }))
 end
 
 -- 实际判定「本地 / 远程」：会同步执行外部命令（tmux list-clients / ps -A，约数十 ms）
@@ -66,17 +68,44 @@ local function detect_local()
   return not (vim.env.SSH_CONNECTION or vim.env.SSH_TTY or vim.env.SSH_CLIENT)
 end
 
--- 判定结果缓存 1 秒：每次粘贴都同步跑外部命令（非 tmux 时 ps -A 约 25ms），
--- 宏 / 连续 p 会被逐次拖慢；attach / detach 是人为操作，1 秒内的滞后可以接受，仍不会被启动时判定冻结
-local LOCAL_CACHE_TTL_NS = 1e9
-local local_cache = { value = false, at = nil }
+-- detect_local 的异步版本：不阻塞主循环，结果经 callback 在主循环交付
+-- vv-utils 不可用时不回调（保持旧缓存，由 STALE 上限触发同步重判）
+local function detect_local_async(callback)
+  local ok, sys = pcall(require, "vv-utils.sys")
+  if not ok then return end
+  if vim.env.TMUX then
+    sys.tmux_clients_async({ target = vim.env.TMUX_PANE }, function(clients) callback(any_local_client(clients)) end)
+  else
+    sys.is_remote_async(function(remote) callback(not remote) end)
+  end
+end
+
+-- 判定结果的两级缓存（实测一次同步判定约 40–50ms，会卡在每次冷 p 上）：
+--   1 秒内        直接复用
+--   1–30 秒       先用旧值粘贴，同时后台异步重判，供下一次粘贴使用
+--   超过 30 秒    同步重判，保证长时间离开后（attach / detach 多发生在这时）第一次粘贴就是对的
+-- attach / detach 是人为操作，重判之前最多有一次粘贴沿用旧判定；仍不会被启动时判定冻结
+local LOCAL_FRESH_NS = 1e9
+local LOCAL_STALE_NS = 30e9
+local local_cache = { value = false, at = nil, refreshing = false }
 
 -- 此刻是否「本地」（仅 paste 方向需要：决定读宿主机系统剪贴板还是回退内部寄存器）
--- 每次粘贴调用，判定结果最多复用 1 秒；逃生舱环境变量不经缓存，始终优先生效
+-- 每次粘贴调用，缓存策略见上；逃生舱环境变量不经缓存，始终优先生效
 local function is_local_now()
   if vim.env.NVIM_FORCE_OSC52 then return false end
   if vim.env.NVIM_FORCE_WL then return true end
-  if local_cache.at and vim.uv.hrtime() - local_cache.at < LOCAL_CACHE_TTL_NS then return local_cache.value end
+  local age = local_cache.at and (vim.uv.hrtime() - local_cache.at)
+  if age and age < LOCAL_FRESH_NS then return local_cache.value end
+  if age and age < LOCAL_STALE_NS then
+    if not local_cache.refreshing then
+      local_cache.refreshing = true
+      local started = pcall(detect_local_async, function(value)
+        local_cache.value, local_cache.at, local_cache.refreshing = value, vim.uv.hrtime(), false
+      end)
+      if not started then local_cache.refreshing = false end
+    end
+    return local_cache.value
+  end
   local_cache.value = detect_local()
   -- 时间戳取判定结束时刻：退化时判定本身可能 ≥1s（命令超时），取开始时刻会写入即过期
   local_cache.at = vim.uv.hrtime()
@@ -93,19 +122,56 @@ local function should_copy_osc52()
   return has_attached_ui()
 end
 
--- 本地系统剪贴板命令（macOS / Wayland / X11）
+-- 本地系统剪贴板命令（macOS / Wayland / X11）；首次使用时解析一次，PATH 在会话内不变
+local resolved_cmds = {}
+
+---@param kind 'copy'|'paste'
+---@param candidates string[][]
+---@return string[]|nil
+local function resolve_cmd(kind, candidates)
+  if resolved_cmds[kind] == nil then
+    resolved_cmds[kind] = false
+    for _, cmd in ipairs(candidates) do
+      if vim.fn.executable(cmd[1]) == 1 then
+        resolved_cmds[kind] = cmd
+        break
+      end
+    end
+  end
+  return resolved_cmds[kind] or nil
+end
+
 local function local_copy_cmd()
-  if vim.fn.executable("pbcopy") == 1 then return { "pbcopy" } end
-  if vim.fn.executable("wl-copy") == 1 then return { "wl-copy" } end
-  if vim.fn.executable("xclip") == 1 then return { "xclip", "-selection", "clipboard" } end
-  return nil
+  return resolve_cmd('copy', { { "pbcopy" }, { "wl-copy" }, { "xclip", "-selection", "clipboard" } })
 end
 
 local function local_paste_cmd()
-  if vim.fn.executable("pbpaste") == 1 then return { "pbpaste" } end
-  if vim.fn.executable("wl-paste") == 1 then return { "wl-paste", "--no-newline" } end
-  if vim.fn.executable("xclip") == 1 then return { "xclip", "-selection", "clipboard", "-o" } end
-  return nil
+  return resolve_cmd('paste', { { "pbpaste" }, { "wl-paste", "--no-newline" }, { "xclip", "-selection", "clipboard", "-o" } })
+end
+
+-- 最近一次由本会话写出的内容，用途有二：
+--   1. 还原寄存器类型：系统剪贴板只存文本，块选（<C-v>）与「含行尾的字符选」读回来只能靠末尾换行猜；
+--      读回的文本与上次写出的一致时，直接用当时的 lines / regtype
+--   2. 写入改为异步后，写入完成前的粘贴读到的是旧剪贴板，此时以它为准
+---@type { text: string, lines: string[], regtype: string }|nil
+local last_copy = nil
+
+-- 异步写本地系统剪贴板：同一时刻只跑一个进程，期间的新内容只保留最后一份，保证最终落盘的是最新一次复制
+local copy_job = { running = false, queued = nil }
+
+local function flush_copy(cmd, text)
+  if copy_job.running then
+    copy_job.queued = text
+    return
+  end
+  copy_job.running = true
+  local ok = pcall(vim.system, cmd, { stdin = text }, vim.schedule_wrap(function()
+    copy_job.running = false
+    local queued = copy_job.queued
+    copy_job.queued = nil
+    if queued then flush_copy(cmd, queued) end
+  end))
+  if not ok then copy_job.running = false end
 end
 
 -- WSL 特殊处理换行
@@ -122,7 +188,7 @@ if vim.fn.has('wsl') == 1 then
     },
     cache_enabled = 0,
   }
-elseif vim.fn.has("nvim-0.10") == 1 then
+else
   local ok, osc52 = pcall(require, "vim.ui.clipboard.osc52")
   if ok then
     local osc52_copy = {
@@ -144,7 +210,9 @@ elseif vim.fn.has("nvim-0.10") == 1 then
         if not vim.env.NVIM_FORCE_OSC52 then
           local cmd = local_copy_cmd()
           if cmd then
-            vim.fn.system(cmd, table.concat(lines, "\n"))
+            local text = table.concat(lines, "\n")
+            last_copy = { text = text, lines = lines, regtype = regtype }
+            flush_copy(cmd, text)
           end
         end
       end
@@ -162,10 +230,18 @@ elseif vim.fn.has("nvim-0.10") == 1 then
     local function make_paste()
       return function()
         if is_local_now() then
+          -- 自己的写入还没落盘：系统剪贴板里是旧内容，直接用刚复制的那份
+          if last_copy and (copy_job.running or copy_job.queued) then
+            return { last_copy.lines, last_copy.regtype }
+          end
           local cmd = local_paste_cmd()
           if cmd then
             local out = vim.fn.system(cmd)
             if vim.v.shell_error == 0 then
+              -- 剪贴板内容仍是本会话上次写出的：还原当时的寄存器类型（块选、含行尾的字符选）
+              if last_copy and out == last_copy.text then
+                return { last_copy.lines, last_copy.regtype }
+              end
               -- 末尾换行：源自「整行复制」→ 按行型(V)粘贴，更符合直觉
               local has_final_nl = out:sub(-1) == "\n"
               local body = out:gsub("\n$", "")

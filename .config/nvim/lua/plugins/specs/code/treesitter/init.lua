@@ -64,8 +64,8 @@ local function set_ts_indent(buf, lang)
     return
   end
 
-  local ok, query = pcall(vim.treesitter.query.get, lang, 'indents')
-  if ok and query then
+  -- 只判断有没有 indents query 文件：query.get 会完整编译（ts/tsx 约 12ms），而编译可以留到首次缩进时
+  if #vim.treesitter.query.get_files(lang, 'indents') > 0 then
     vim.bo[buf].indentexpr = "v:lua.require'nvim-treesitter.indent'.get_indent(v:lnum)"
   end
 end

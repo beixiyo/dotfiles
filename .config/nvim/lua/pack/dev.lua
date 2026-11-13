@@ -87,8 +87,8 @@ local function resolve(spec)
   local name = spec_mod.resolve_name(spec) or '?'
   if force == true then
     vim.notify(
-      ('[pack.dev] %s: dev=true 但 %s 不存在'):format(name, dir)
-        .. (M.config.fallback and '，回退远程 clone' or '，已跳过'),
+      ('[pack.dev] %s: dev=true but %s does not exist'):format(name, dir)
+        .. (M.config.fallback and ', falling back to remote clone' or ', skipped'),
       vim.log.levels.WARN
     )
   end

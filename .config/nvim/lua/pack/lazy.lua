@@ -119,14 +119,30 @@ function M.register(spec, do_load)
       vim.api.nvim_create_user_command(c, function(opts)
         pcall(vim.api.nvim_del_user_command, c)
         do_load()
-        vim.api.nvim_cmd({
-          cmd = c,
-          args = opts.fargs,
-          bang = opts.bang,
-          mods = opts.smods,
-          range = opts.range > 0 and { opts.line1, opts.line2 } or nil,
-        }, {})
-      end, { nargs = '*', range = true, bang = true })
+        -- 按真实命令的定义重新解析：占位命令是 nargs='*'，fargs 已按空白拆开，
+        -- 直接传给 nargs=1 / '?' 的命令会报 Wrong number of arguments
+        local line = c .. (opts.bang and '!' or '') .. (opts.args ~= '' and (' ' .. opts.args) or '')
+        local ok, parsed = pcall(vim.api.nvim_parse_cmd, line, {})
+        if not ok then
+          vim.notify('[pack] ' .. tostring(parsed), vim.log.levels.ERROR)
+          return
+        end
+        parsed.mods = opts.smods
+        if opts.range > 0 then
+          parsed.range = opts.range == 1 and { opts.line1 } or { opts.line1, opts.line2 }
+        end
+        vim.api.nvim_cmd(parsed, {})
+      end, {
+        nargs = '*',
+        range = true,
+        bang = true,
+        -- 加载后交给真实命令的补全；加载会删掉占位命令，之后不再经过这里
+        complete = function(_, cmdline)
+          pcall(vim.api.nvim_del_user_command, c)
+          do_load()
+          return vim.fn.getcompletion(cmdline, 'cmdline')
+        end,
+      })
     end
   end
 
@@ -137,7 +153,7 @@ function M.register(spec, do_load)
     local ok, ret = pcall(keys, spec)
 
     if not ok then
-      vim.notify('[pack] ' .. (spec.id or '?') .. ' keys() 求值失败: ' .. tostring(ret), vim.log.levels.ERROR)
+      vim.notify('[pack] ' .. (spec.id or '?') .. ' keys() evaluation failed: ' .. tostring(ret), vim.log.levels.ERROR)
       keys = nil
     else
       keys = ret

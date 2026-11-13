@@ -43,7 +43,7 @@ end
 
 function M.generate()
   if vim.fn.executable('bun') == 0 then
-    vim.notify('[pack] bun 未安装，跳过 .luarc.json 生成。请安装后运行 :PackGenTypes', vim.log.levels.WARN)
+    vim.notify('[pack] bun is not installed, skipping .luarc.json generation. Install it and run :PackGenTypes', vim.log.levels.WARN)
     return
   end
 
@@ -55,7 +55,7 @@ function M.generate()
       if out.code == 0 then
         vim.notify('[pack] ' .. (out.stdout or ''):gsub('%s+$', ''), vim.log.levels.INFO)
       else
-        vim.notify('[pack] .luarc.json 生成失败: ' .. (out.stderr or ''), vim.log.levels.ERROR)
+        vim.notify('[pack] .luarc.json generation failed: ' .. (out.stderr or ''), vim.log.levels.ERROR)
       end
     end)
   end)

@@ -7,7 +7,9 @@ local function smart_close_floats(fallback)
     local closed = false
     for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
       local ok, cfg = pcall(vim.api.nvim_win_get_config, win)
-      if ok and cfg and cfg.relative ~= "" then
+      -- 只关可交互的浮窗：treesitter-context、滚动条等不可聚焦的装饰浮窗常驻
+      -- 把它们算进来会让 q 永远录不了宏、<Esc> 永远清不掉搜索高亮
+      if ok and cfg and cfg.relative ~= "" and cfg.focusable ~= false and not cfg.hide then
         pcall(vim.api.nvim_win_close, win, true)
         closed = true
       end

@@ -31,19 +31,19 @@ vim.api.nvim_create_user_command('PackUpdate', function(opts)
 end, {
   nargs = '*',
   complete = complete_names,
-  desc = '更新插件（无参更新全部；可指定一个或多个 pack 管理名）',
+  desc = 'Update plugins (no args: update all; or pass one or more pack-managed names)',
 })
 
 vim.api.nvim_create_user_command('PackStats', function()
   require('plugins.manager.stats').open()
-end, { desc = '打开插件加载性能分析浮窗' })
+end, { desc = 'Open the plugin load performance float' })
 
 vim.api.nvim_create_user_command('PackDev', function(opts)
   local dev = require('pack.dev')
   if #opts.fargs == 0 then
     local list = dev.list()
     if #list == 0 then
-      vim.notify('[pack.dev] 当前无插件走本地 (path=' .. dev.config.path
+      vim.notify('[pack.dev] no plugins use local source (path=' .. dev.config.path
         .. ', patterns=' .. table.concat(dev.config.patterns, ',') .. ')', vim.log.levels.INFO)
       return
     end
@@ -55,7 +55,7 @@ vim.api.nvim_create_user_command('PackDev', function(opts)
   else
     local info = dev.inspect(opts.fargs[1])
     if not info then
-      vim.notify('[pack.dev] spec 不存在: ' .. opts.fargs[1], vim.log.levels.WARN)
+      vim.notify('[pack.dev] spec not found: ' .. opts.fargs[1], vim.log.levels.WARN)
       return
     end
     vim.notify(vim.inspect(info), vim.log.levels.INFO)
@@ -63,17 +63,17 @@ vim.api.nvim_create_user_command('PackDev', function(opts)
 end, {
   nargs = '?',
   complete = function() return _G.Pack and vim.tbl_map(function(s) return s.id end, _G.Pack.specs) or {} end,
-  desc = '查看本地 dev 模式生效的插件（无参列全部；带 name 看判定细节）',
+  desc = 'Show plugins using local dev mode (no args: list all; with name: show resolution details)',
 })
 
 vim.api.nvim_create_user_command('PackGenTypes', function()
   require('pack.luarc').generate()
-end, { desc = '重新生成 .luarc.json（扫描插件目录更新 lua_ls 类型库）' })
+end, { desc = 'Regenerate .luarc.json (rescan plugin dirs and update lua_ls type libraries)' })
 
 vim.api.nvim_create_user_command('PackStatsEcho', function()
   local s = _G.PackStats
   if not s then
-    vim.notify('[pack] _G.PackStats 不存在（stats 未初始化）', vim.log.levels.WARN)
+    vim.notify('[pack] _G.PackStats is missing (stats not initialized)', vim.log.levels.WARN)
     return
   end
 
@@ -111,4 +111,4 @@ vim.api.nvim_create_user_command('PackStatsEcho', function()
   local chunks = {}
   for _, l in ipairs(lines) do chunks[#chunks + 1] = { l .. '\n' } end
   vim.api.nvim_echo(chunks, false, {})
-end, { desc = '在 :messages 打印插件加载统计（无浮窗）' })
+end, { desc = 'Print plugin load stats to :messages (no float)' })

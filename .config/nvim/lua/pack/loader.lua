@@ -34,7 +34,7 @@ end
 function M.load(spec, disabled_set)
   local name = spec_mod.resolve_name(spec)
   if not name then
-    vim.notify('[pack] spec 缺少 id/url/dir/name，无法加载: ' .. vim.inspect(spec), vim.log.levels.ERROR)
+    vim.notify('[pack] spec is missing id/url/dir/name, cannot load: ' .. vim.inspect(spec), vim.log.levels.ERROR)
     return
   end
   if disabled_set and disabled_set[name] then return end
@@ -45,11 +45,8 @@ function M.load(spec, disabled_set)
     vim.opt.rtp:prepend(spec.dir)
   end
 
-  -- 构建健康检查 & 更新监听
+  -- 构建健康检查；更新监听由 pack/init.lua 在启动期统一注册
   build.check_health(name, spec.build, disabled_set)
-  if spec.build then
-    build.setup_listener(name, spec.build, disabled_set)
-  end
 
   -- spec.init：packadd 前执行，可用来设 vim.g.xxx 等预配置
   if type(spec.init) == 'function' then
@@ -99,10 +96,10 @@ function M.load(spec, disabled_set)
       local root = spec_mod.get_root(name)
       if root and is_corrupt_clone(root, true) then
         vim.fn.delete(root, 'rf')
-        vim.notify('[pack] ' .. name .. ' 克隆不完整，已自动删除，请重启 Neovim', vim.log.levels.WARN)
+        vim.notify('[pack] ' .. name .. ' clone is incomplete and was removed automatically, please restart Neovim', vim.log.levels.WARN)
         return
       elseif root then
-        vim.notify('[pack] ' .. name .. ' main[' .. main .. '] require 失败: ' .. tostring(req_err), vim.log.levels.ERROR)
+        vim.notify('[pack] ' .. name .. ' main[' .. main .. '] require failed: ' .. tostring(req_err), vim.log.levels.ERROR)
         return
       end
     end

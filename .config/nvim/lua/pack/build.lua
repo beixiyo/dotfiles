@@ -61,16 +61,28 @@ end
 
 function M.is_building(name) return is_building[name] == true end
 
--- 监听 PackChanged：更新/安装后清除构建标记并重新构建
-function M.setup_listener(name, build_cmd, disabled_set)
+-- 监听 PackChanged：更新/安装后清除构建标记
+-- 由 pack/init.lua 在 vim.pack.add 之前为所有带 build 的 spec 注册一次，不能等到插件加载时才注册：
+-- 懒加载插件在加载前被更新时没人监听，.build_done 留着，之后 check_health 会误以为已构建
+-- 已加载的插件立即重建；未加载的只清标记，留给加载时的 check_health 补跑（避免为了构建提前 packadd）
+local listening = {}
+local group = vim.api.nvim_create_augroup('PackBuild', { clear = true })
+
+---@param name string
+---@param build_cmd string|string[]
+---@param disabled_set table<string, boolean>?
+---@param is_loaded fun(name: string): boolean
+function M.setup_listener(name, build_cmd, disabled_set, is_loaded)
   if disabled_set and disabled_set[name] then return end
-  if not build_cmd then return end
+  if not build_cmd or listening[name] then return end
+  listening[name] = true
   vim.api.nvim_create_autocmd('PackChanged', {
+    group = group,
     pattern = '*',
     callback = function(ev)
       if ev.data.spec.name == name and (ev.data.kind == 'update' or ev.data.kind == 'install') then
         os.remove(ev.data.path .. '/.build_done')
-        M.run(name, build_cmd, disabled_set)
+        if is_loaded(name) then M.run(name, build_cmd, disabled_set) end
       end
     end,
   })

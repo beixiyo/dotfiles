@@ -2,7 +2,7 @@
 -- 替代 pack/init.lua；与 registry.lua 解耦（spec 自己声明元数据）
 if not vim.pack then
   vim.notify(
-    '[pack] vim.pack API 不存在，请升级 Neovim 到 0.12+。当前: ' .. tostring(vim.version()),
+    '[pack] vim.pack API is unavailable, please upgrade Neovim to 0.12+. Current: ' .. tostring(vim.version()),
     vim.log.levels.ERROR
   )
   return
@@ -35,7 +35,13 @@ local function should_load(spec)
   if vim.g.vscode and not spec.loadInVSCode then return false end
 
   if type(spec.cond) == 'function' then
-    if not spec.cond() then return false end
+    -- cond 抛错按禁用处理：不能让单个 spec 中断整个 pack 初始化
+    local ok, enabled = pcall(spec.cond)
+    if not ok then
+      vim.notify('[pack] ' .. (spec.id or '?') .. ' cond() evaluation failed: ' .. tostring(enabled), vim.log.levels.ERROR)
+      return false
+    end
+    if not enabled then return false end
   elseif spec.cond == false then
     return false
   end
@@ -57,7 +63,7 @@ local function to_pack_url(spec)
 end
 
 -- 收集所有 spec
-local all_specs = scan.collect()
+local all_specs, scan_had_errors = scan.collect()
 
 -- 本地 dev 覆盖：命中规则的 spec.url → spec.dir
 -- 必须在 should_load / vim.pack.add 之前执行，否则远程 clone 抢先
@@ -118,7 +124,22 @@ end
 
 -- 同步：卸载孤儿，标记禁用集合
 local disabled_set = {}
-sync.sync(active_urls, disabled_urls, disabled_set)
+-- spec 加载失败时列表不完整：失败的那个插件及其独有依赖会被误判为孤儿并删除，本次不清理
+if scan_had_errors then
+  vim.notify('[pack] some specs failed to load, skipping orphan plugin cleanup this time', vim.log.levels.WARN)
+else
+  sync.sync(active_urls, disabled_urls, disabled_set)
+end
+
+-- build 的更新监听必须先于 vim.pack.add 注册，且不依赖插件是否已加载（见 pack/build.lua）
+do
+  local build = require('pack.build')
+  for _, s in ipairs(active_specs) do
+    if s.build then
+      build.setup_listener(spec_mod.resolve_name(s), s.build, disabled_set, loader.is_loaded)
+    end
+  end
+end
 
 -- 安装 GitHub 插件；load 置空，只安装不挂 rtp
 -- 默认行为会在启动期把全部插件 packadd! 进 rtp，懒加载插件的 plugin/ 脚本也随之被 source

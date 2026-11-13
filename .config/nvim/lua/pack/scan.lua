@@ -6,6 +6,9 @@ local M = {}
 --   1) <category>/<id>.lua        （单文件 spec）
 --   2) <category>/<id>/init.lua   （目录 spec，<id>/ 下可放辅助模块）
 -- 返回 spec 列表（已补全 id/category）。去重：同一 (category, id) 若两种都存在则目录优先
+-- 第二个返回值表示是否有 spec 文件加载失败：此时列表不完整，调用方不能据此清理孤儿插件
+---@return PackSpec[] specs
+---@return boolean had_errors
 function M.collect()
   local config_root = vim.fn.stdpath('config')
   local root = config_root .. '/lua/plugins/specs/'
@@ -48,6 +51,7 @@ function M.collect()
   table.sort(keys)
 
   local specs = {}
+  local had_errors = false
   for _, k in ipairs(keys) do
     local c = picked[k]
     -- 用 loadfile 而非 require：同名 foo.lua 与 foo/init.lua 并存时
@@ -57,13 +61,16 @@ function M.collect()
       .. (c.rank == 1 and '/init.lua' or '.lua'))
     local chunk, load_err = loadfile(file)
     if not chunk then
-      vim.notify('[pack] 加载 spec 失败: ' .. c.mod .. '\n' .. tostring(load_err), vim.log.levels.ERROR)
+      had_errors = true
+      vim.notify('[pack] failed to load spec: ' .. c.mod .. '\n' .. tostring(load_err), vim.log.levels.ERROR)
     else
       local ok, spec = pcall(chunk)
       if not ok then
-        vim.notify('[pack] 加载 spec 失败: ' .. c.mod .. '\n' .. tostring(spec), vim.log.levels.ERROR)
+        had_errors = true
+        vim.notify('[pack] failed to load spec: ' .. c.mod .. '\n' .. tostring(spec), vim.log.levels.ERROR)
       elseif type(spec) ~= 'table' then
-        vim.notify('[pack] spec 必须 return table: ' .. c.mod, vim.log.levels.ERROR)
+        had_errors = true
+        vim.notify('[pack] spec must return a table: ' .. c.mod, vim.log.levels.ERROR)
       else
         package.loaded[c.mod] = spec
         spec.id = spec.id or c.id
@@ -74,7 +81,7 @@ function M.collect()
     end
   end
 
-  return specs
+  return specs, had_errors
 end
 
 return M
