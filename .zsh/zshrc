@@ -1,4 +1,6 @@
-# 环境变量与密钥：在所有 shell 中加载（脚本、cron、GUI 子进程等也能用到 PATH 等）
+# 环境变量与密钥：放在交互判断之前，显式 source 本文件的非交互场景也能拿到
+# zsh 只在交互式 shell 中自动读取 .zshrc；脚本、非交互登录 shell（如 niri-session 的 $SHELL -l）、cron 都不会加载
+# 图形会话的 PATH 由 ~/.zprofile 提供
 source ~/.zsh/env.zsh
 [[ -f ~/.zsh/secret.zsh ]] && source ~/.zsh/secret.zsh
 

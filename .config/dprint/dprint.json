@@ -19,7 +19,8 @@
   },
   "stylua": {
     "quoteStyle": "AutoPreferSingle",
-    "callParentheses": "Always"
+    "callParentheses": "Always",
+    "collapseSimpleStatement": "Always"
   },
   "json": {
   },

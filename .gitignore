@@ -62,6 +62,9 @@
 !.local/share/fcitx5/
 !.local/share/fcitx5/rime/
 !.local/share/fcitx5/rime/default.custom.yaml
+!.local/share/applications/
+!.local/share/applications/browser-open.desktop
+!.local/share/applications/mpv-media.desktop
 
 
 # ── Yazi ──
@@ -71,6 +74,7 @@
 
 # ── Zsh ──
 !.zshrc
+!.zprofile
 !.zsh/
 !.zsh/**
 

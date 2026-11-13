@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=mpv (Images & Videos)
+GenericName=Media Player
+Icon=mpv
+TryExec=mpv
+Exec=mpv --player-operation-mode=pseudo-gui --image-display-duration=inf --autocreate-playlist=same -- %U
+Terminal=false
+NoDisplay=true
+Categories=AudioVideo;Video;Player;
+MimeType=image/avif;image/bmp;image/gif;image/heif;image/jp2;image/jpeg;image/jxl;image/png;image/qoi;image/x-tga;image/tiff;image/webp;video/mpeg;video/x-mpeg2;video/x-mpeg3;video/mp4v-es;video/x-m4v;video/mp4;video/divx;video/vnd.divx;video/msvideo;video/x-msvideo;video/ogg;video/quicktime;video/vnd.rn-realvideo;video/x-ms-afs;video/x-ms-asf;video/x-ms-wmv;video/x-ms-wmx;video/x-ms-wvxvideo;video/x-avi;video/avi;video/x-flic;video/fli;video/x-flc;video/flv;video/x-flv;video/x-theora;video/x-theora+ogg;video/x-matroska;video/mkv;video/webm;video/x-ogm;video/x-ogm+ogg;video/mp2t;video/vnd.mpegurl;video/3gp;video/3gpp;video/3gpp2;video/dv;video/vnd.avi;
