@@ -45,12 +45,13 @@ API 与边界见 [async](vendors/vv-utils.nvim/lua/vv-utils/async/README.md)、[
 - 不把扫描失败／取消当作空结果来判断 unused；部分索引不能作为删除依据
 - 用户内容和恢复元数据不能按缓存降低持久化保证；同目录 rename 原子性不等于断电持久
 - 懒加载调整须检查 plugin/config、ftdetect、after/plugin、首次事件及 VSCode／build 路径；不机械替换 `packadd`
+- 远程 lazy 插件触发前不在 rtp 上，require／未定义命令／`:help` 由 `pack.ondemand` 兜底，边界见 pack README
 
 ## 验证入口
 
 - 根配置或对应 vendor 中运行 `sh tests/run.sh [过滤词]`；测试隔离与依赖声明见 [共享测试规范](vendors/vv-utils.nvim/dev/test/README.md)
 - spec／pack 改动运行 `:lua require('pack.smoke').run()`；它只验证加载与结构，不验证交互
 - 窗口／键位改动重点复验同 buffer 多窗、关闭重开、后来 owner；预览检查确认／取消与过期回调；Loading 检查窄窗可见性及失败收尾
-- headless 不替代完整配置中的鼠标、滚动和视觉验收；0.13 测试不代表最低要求 0.12 已通过
+- headless 不替代完整配置中的鼠标、滚动和视觉验收
 - `:PluginManager` 管理插件；`:PackDev [name]` 查看开发重定向；`:PackStats`／`:PackStatsEcho` 查看加载统计
 - 类型路径：`bun run scripts/gen-luarc.ts` 或 `:PackGenTypes`

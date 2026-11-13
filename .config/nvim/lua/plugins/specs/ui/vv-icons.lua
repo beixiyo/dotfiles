@@ -6,4 +6,6 @@ return {
   url  = 'beixiyo/vv-icons.nvim',
   main = false,
   priority = 1000,
+  -- VSCode 白名单 spec 的 keys() 与 config/keymaps 在启动期就读图标
+  loadInVSCode = true,
 }

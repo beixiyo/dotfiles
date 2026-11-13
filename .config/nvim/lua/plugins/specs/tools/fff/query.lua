@@ -80,8 +80,9 @@ local function merge_patterns(patterns, negated)
   if #patterns == 0 then return nil end
   local list = vim.tbl_map(function(p) return (p:gsub('^/', '')) end, patterns)
   local token = #list == 1 and list[1] or ('{' .. table.concat(list, ',') .. '}')
-  -- 不含 `/` 的单个 pattern 在 grep 模式不会被识别为 glob
-  if #list == 1 and not token:find('/', 1, true) then token = './' .. token end
+  -- 不含 `/` 的单个 pattern：grep 模式不识别为 glob，且 fff 会按文件名在任意深度匹配
+  -- 补成 `{p,p/**}`：含 `/` 即以索引根锚定，brace 让 grep 模式识别；`./p` 在新版 glob 引擎下不匹配任何路径
+  if #list == 1 and not token:find('/', 1, true) then token = ('{%s,%s/**}'):format(token, token) end
   return (negated and '!' or '') .. token
 end
 
@@ -138,8 +139,9 @@ local function canonical(path)
   return (abs:gsub('/+$', ''))
 end
 
---- 把一组绝对路径翻译成 fff glob token（相对 root 锚定：目录 `./a/**`，文件 `./a/b.lu[a]`）
---- 文件名的一个字符包进 `[]`：纯路径不含通配符，grep 模式不会把它识别为 glob；`./` 前缀让顶层文件也含 `/`
+--- 把一组绝对路径翻译成单个 fff glob token，每个路径展开为 `{a,a/**}`（本体与后代，相对 root 锚定）
+--- 与 fff 自身的字面路径范围写法一致：含 `/` 的 pattern 以索引根锚定，brace 让 grep 模式识别为 glob，
+--- 文件与目录同一种写法。不用 `./a`：fff 换用 zlob 1.8 后带 `./` 前缀的 glob 不再匹配任何路径
 --- 返回 nil 表示无法安全表达（在 root 之外、含空白或 glob 元字符），调用方应回退到 cwd 方案
 ---@param paths string[]
 ---@param root string 当前索引根（fff 每次 open 会切到 nvim cwd）
@@ -155,18 +157,11 @@ function M.scope_glob(paths, root)
     local rel = vim.startswith(abs, base .. '/') and abs:sub(#base + 2) or nil
     if not rel or rel:find('[%s%*%?%[%]{},!\\]') then return nil end
 
-    if vim.fn.isdirectory(abs) == 1 then
-      globs[#globs + 1] = rel .. '/**'
-    else
-      -- 包最后一个 ASCII 字母数字而非末字节：末尾可能是多字节字符（中文文件名）
-      local pos = rel:match('.*()%w')
-      if not pos then return nil end
-      globs[#globs + 1] = rel:sub(1, pos - 1) .. '[' .. rel:sub(pos, pos) .. ']' .. rel:sub(pos + 1)
-    end
+    globs[#globs + 1] = rel
+    globs[#globs + 1] = rel .. '/**'
   end
 
   if #globs == 0 then return nil end
-  if #globs == 1 then return './' .. globs[1] end
   return '{' .. table.concat(globs, ',') .. '}'
 end
 

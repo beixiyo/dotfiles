@@ -168,7 +168,9 @@ function M.open(opts)
         local session = {
           cwd = log_cwd,
           default_text = picker:_get_prompt(),
-          default_selection_index = entry.index,
+          -- 取结果列表中的显示位置，而非 entry.index：后者是 finder 的原始序号，
+          -- 带搜索词时两者不一致，恢复后会落到别的 commit 上
+          default_selection_index = picker:get_index(picker:get_selection_row()),
           git_log_limit = log_limit,
         }
         actions.close(prompt_bufnr)

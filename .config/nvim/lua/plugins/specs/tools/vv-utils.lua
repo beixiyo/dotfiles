@@ -7,8 +7,13 @@ return {
   url  = 'beixiyo/vv-utils.nvim',
   main = 'vv-utils',
   priority = 1000,
+  -- config/keymaps 等核心配置在 VSCode 下同样 require('vv-utils.*')
+  loadInVSCode = true,
 
   config = function()
+    -- VSCode 接管滚动、粘贴与文件加载，只需库挂上 rtp，不启用任何带副作用的子模块
+    if vim.g.vscode then return end
+
     -- 启用带副作用的子模块；纯函数模块（path / fs / hl ...）无需在此声明
     ---@type vv-utils.Opts
     require('vv-utils').setup({

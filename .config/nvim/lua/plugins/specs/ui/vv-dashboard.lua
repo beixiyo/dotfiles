@@ -30,14 +30,14 @@ return {
         local loaded = #(s.plugins or {})
         local total = s.registered or loaded
         return {
-          { '⚡ ',                               'Special' },
+          { '⚡ ',                              'Special' },
           { 'NeoVim',                           'Keyword' },
           { ' loaded ',                         'Comment' },
           { tostring(loaded),                   'Constant' },
           { '/',                                'Comment' },
           { tostring(total),                    'Number' },
           { ' plugins in ',                     'Comment' },
-          { ('%.2fms'):format(s.total_ms or 0), 'Constant' },
+          { ('%.2fms'):format(require('pack.stats').startup_ms()), 'Constant' },
         }
       end,
     }

@@ -15,6 +15,7 @@ local loader = require('pack.loader')
 local lazy = require('pack.lazy')
 local stats = require('pack.stats')
 local dev = require('pack.dev')
+local ondemand = require('pack.ondemand')
 
 -- 在 wrap loader.load 之前完成 scan；stats.setup 会 monkey-patch loader.load
 stats.setup(loader)
@@ -119,9 +120,11 @@ end
 local disabled_set = {}
 sync.sync(active_urls, disabled_urls, disabled_set)
 
--- 下载 GitHub 插件
+-- 安装 GitHub 插件；load 置空，只安装不挂 rtp
+-- 默认行为会在启动期把全部插件 packadd! 进 rtp，懒加载插件的 plugin/ 脚本也随之被 source
+-- 挂载统一交给 loader.load 的 packadd；触发器之外的使用路径由 pack.ondemand 兜底
 if #active_urls > 0 then
-  vim.pack.add(active_urls)
+  vim.pack.add(active_urls, { load = function() end })
 end
 
 -- 按 priority 降序排序（大的先加载）；相同 priority 时保持 scan 顺序
@@ -134,14 +137,21 @@ table.sort(active_specs, function(a, b)
 end)
 
 -- ============ 分发加载 ============
+local deferred = {}
+local function load_deferred(s)
+  ondemand.forget(s)
+  loader.load(s, disabled_set)
+end
+
 for _, s in ipairs(active_specs) do
   if s.lazy == 'manual' then
+    table.insert(deferred, s)
     -- 逃生舱：启动期立即调 config(plugin, { load = fn })，由 spec 自己决定加载时机
     -- 主要用于 treesitter 这类需要在 FileType 回调里按需安装 parser 的场景
     -- 不在此处记 stats：真正 packadd/加载发生在 ctx.load() 被触发时（loader wrap 会记一次）
     if type(s.config) == 'function' then
       local ok, err = pcall(s.config, s, {
-        load = function() loader.load(s, disabled_set) end,
+        load = function() load_deferred(s) end,
       })
       if not ok then
         vim.notify('[pack] ' .. (s.id or '?') .. ' manual config failed: ' .. tostring(err), vim.log.levels.ERROR)
@@ -149,12 +159,15 @@ for _, s in ipairs(active_specs) do
     end
   elseif lazy.has_triggers(s) then
     -- 声明式懒加载
-    lazy.register(s, function() loader.load(s, disabled_set) end)
+    table.insert(deferred, s)
+    lazy.register(s, function() load_deferred(s) end)
   else
     -- eager：立即加载
     loader.load(s, disabled_set)
   end
 end
+
+ondemand.setup({ specs = deferred, load = load_deferred })
 
 stats.finalize(#all_specs)
 

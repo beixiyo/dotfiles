@@ -4,33 +4,34 @@
 
 ## 处理流程
 
-1. `scan.collect()` 扫描 `lua/plugins/specs/<category>/<id>.lua` 和 `<id>/init.lua`
+1. `scan.collect()` 扫描 `lua/plugins/specs/<category>/<id>.lua` 和 `<id>/init.lua`，按 `category/id` 排序，同 `priority` 的加载顺序固定
 2. 路径补齐 `id`、`category`，同名时目录 spec 优先
 3. `dev.redirect()` 在下载前把匹配的远程 spec 重定向到 `vendors/`
 4. 根据 user-picks、VSCode 白名单和 `cond` 分成 active/disabled
-5. URL 去重后调用 `vim.pack.add`
+5. URL 去重后调用 `vim.pack.add`，只安装、不挂 rtp；挂载统一由 `loader.load()` 的 `packadd` 完成
 6. spec 按 `priority` 降序分发到 eager、声明式 lazy 或 manual
 7. `loader.load()` 依次处理 rtp、build、init、dependencies、packadd、main、opts 和 config
+8. `ondemand.setup()` 为尚未加载的远程 lazy 插件注册按需兜底
 
 ## Spec 字段
 
-| 字段 | 契约 |
-|---|---|
-| `desc` | PluginManager 描述；项目规范要求填写，引擎类型仍允许缺省 |
-| `url` / `dir` | 二选一；smoke 会拒绝同时存在或同时缺失 |
-| `main` | 主 Lua 模块；缺省时按仓库名和 `lua/` 顶层目录推断；`false` 跳过 require |
-| `id` / `category` | 缺省时由路径补齐 |
-| `name` | 覆盖 `packadd` 名称 |
-| `dependencies` | URL 字符串或 `{ src, version? }` 数组；先于主插件 `packadd` |
-| `priority` | 默认 0，数值越大越早分发 |
-| `init` | `function(plugin)`，在主插件 `packadd` 前执行 |
-| `opts` | table 或 `function(plugin): table` |
-| `config` | `function(plugin, opts)`；缺省时调用 `require(main).setup(opts)` |
-| `build` | Ex 命令字符串、shell 命令字符串或 argv 字符串数组 |
-| `version` / `branch` / `tag` / `commit` | 按 `commit > tag > version > branch` 归一化到 `vim.pack.Spec.version` |
-| `cond` | false 或返回 false 的函数会禁用 spec |
-| `loadInVSCode` | VSCode-Neovim 白名单，默认 false |
-| `dev` | true 强制尝试本地，false 禁止自动本地重定向 |
+| 字段                                    | 契约                                                                    |
+| --------------------------------------- | ----------------------------------------------------------------------- |
+| `desc`                                  | PluginManager 描述；项目规范要求填写，引擎类型仍允许缺省                |
+| `url` / `dir`                           | 二选一；smoke 会拒绝同时存在或同时缺失                                  |
+| `main`                                  | 主 Lua 模块；缺省时按仓库名和 `lua/` 顶层目录推断；`false` 跳过 require |
+| `id` / `category`                       | 缺省时由路径补齐                                                        |
+| `name`                                  | 覆盖 `packadd` 名称                                                     |
+| `dependencies`                          | URL 字符串或 `{ src, version? }` 数组；先于主插件 `packadd`             |
+| `priority`                              | 默认 0，数值越大越早分发                                                |
+| `init`                                  | `function(plugin)`，在主插件 `packadd` 前执行                           |
+| `opts`                                  | table 或 `function(plugin): table`                                      |
+| `config`                                | `function(plugin, opts)`；缺省时调用 `require(main).setup(opts)`        |
+| `build`                                 | Ex 命令字符串、shell 命令字符串或 argv 字符串数组                       |
+| `version` / `branch` / `tag` / `commit` | 按 `commit > tag > version > branch` 归一化到 `vim.pack.Spec.version`   |
+| `cond`                                  | false 或返回 false 的函数会禁用 spec                                    |
+| `loadInVSCode`                          | VSCode-Neovim 白名单，默认 false                                        |
+| `dev`                                   | true 强制尝试本地，false 禁止自动本地重定向                             |
 
 `vim.pack.Spec.version` 接受 branch、tag、commit 字符串或 `vim.VersionRange`。已有插件不会因再次 `vim.pack.add` 自动切到新 revision，需要执行 `vim.pack.update`
 
@@ -65,6 +66,23 @@
 - rhs 缺省时，加载后由插件自己的映射接管
 - rhs 为 `'<Nop>'` 或空串时直接安装真实映射，不触发加载
 - 首次触发会删除占位、加载插件、安装真实 rhs，再以 `<Ignore>` 前缀重放 lhs
+
+## 未加载期间的可见性
+
+远程 lazy 插件在触发前不在 rtp 上：它的 `plugin/` 脚本不会在启动期执行，`ftplugin/`、`syntax/`、`queries/`、`autoload/` 也要到加载后才可见。除声明的触发器外，`ondemand.lua` 兜住三条使用路径：
+
+| 路径                    | 行为                                                                                     |
+| ----------------------- | ---------------------------------------------------------------------------------------- |
+| `require('<插件模块>')` | 先完整加载所属 spec（含 `config`）再解析模块；只作为 `dependencies` 出现的库仅 `packadd` |
+| 未定义的用户命令        | 命令名前缀与插件名匹配（最长匹配）时加载该插件，如 `:ConformInfo` → conform.nvim         |
+| `:help`                 | 首次进入命令行时把未加载插件追加到 rtp 末尾，`doc/tags` 可查；不执行其 `plugin/`         |
+
+边界：
+
+- 用 `pcall(require, 'x')` 探测 lazy 插件是否存在会触发加载；判断是否已加载用 `require('pack.loader').is_loaded(name)`
+- 命令名与插件名对不上的命令需写进 spec 的 `cmd`
+- 依赖插件自带 `ftplugin/`、`syntax/` 等运行时文件、且要在加载前生效的场景，需加对应的 `ft` 触发器
+- 本地 vendor（`dir`）不在兜底范围，仍只由自己的触发器加载
 
 ## 本地开发重定向
 

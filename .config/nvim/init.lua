@@ -2,6 +2,9 @@
 -- 限制：会话中途新建「顶层」模块（rtp 下新的 lua/<name>.lua 或 lua/<name>/）需重启或 vim.loader.reset()
 vim.loader.enable()
 
+-- 启动计时起点，供 pack.stats.startup_ms() 使用；只漏掉此前 Neovim 自身的初始化（约 4ms）
+_G.NvimStartHr = vim.uv.hrtime()
+
 -- 将当前配置根目录插入到 runtimepath 最前端
 -- 如果不添加此行，Neovim 将无法在当前配置目录下识别并加载 lua/ 目录中的模块，导致 require("config...") 等调用失败
 vim.opt.rtp:prepend(vim.fn.stdpath("config"))

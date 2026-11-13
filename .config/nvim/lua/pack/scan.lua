@@ -43,8 +43,13 @@ function M.collect()
     if not cur or c.rank < cur.rank then picked[k] = c end
   end
 
+  -- pairs 的哈希顺序每次启动都不同；按 category/id 排序，保证同 priority 的加载顺序可复现
+  local keys = vim.tbl_keys(picked)
+  table.sort(keys)
+
   local specs = {}
-  for _, c in pairs(picked) do
+  for _, k in ipairs(keys) do
+    local c = picked[k]
     -- 用 loadfile 而非 require：同名 foo.lua 与 foo/init.lua 并存时
     -- Lua require 总是先命中 foo.lua，但 dedup 优选 init.lua（rank 更低）；
     -- loadfile 直接指定路径，确保 dedup 结果生效
