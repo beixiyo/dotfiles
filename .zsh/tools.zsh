@@ -19,46 +19,11 @@ _clear_kitty_nvim_var() {
 add-zsh-hook precmd _clear_kitty_nvim_var
 
 
-# ── init 缓存：shell 集成脚本只在工具升级时重建，平时直接 source ──
-# 失效条件：缓存文件不存在，或工具 binary 比缓存新
-# 手动强制刷新：zsh-cache-flush
-_init_cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/init"
-mkdir -p "$_init_cache_dir"
-
-_cached_eval() {
-  local name=$1; shift
-  local bin
-  bin=$(command -v "$name" 2>/dev/null) || return 0
-  local cache="$_init_cache_dir/${name}.zsh"
-  if [[ ! -f $cache || $bin -nt $cache ]]; then
-    "$bin" "$@" > "$cache" 2>/dev/null
-  fi
-  [[ -s $cache ]] && source "$cache"
-}
-
-zsh-cache-flush() {
-  rm -f "$_init_cache_dir"/*.zsh
-  print "zsh init cache flushed — reopen shell to rebuild"
-}
-
-
-# Homebrew（Apple Silicon / Intel / Linux 常见路径，未安装则跳过）
-for _brew in /opt/homebrew/bin/brew /usr/local/bin/brew /home/linuxbrew/.linuxbrew/bin/brew; do
-  if [[ -x $_brew ]]; then
-    _brew_cache="$_init_cache_dir/brew.zsh"
-    if [[ ! -f $_brew_cache || $_brew -nt $_brew_cache ]]; then
-      "$_brew" shellenv zsh > "$_brew_cache" 2>/dev/null
-    fi
-    [[ -s $_brew_cache ]] && source "$_brew_cache"
-    break
-  fi
-done
-unset _brew _brew_cache
-
-# Prompt 美化 / 运行时管理 / 智能 cd（未安装则跳过，不报错）
+# Prompt 美化 / 运行时管理 / 智能 cd（未安装则跳过，不报错）；缓存机制见 cache.zsh
 _cached_eval starship init zsh
 _cached_eval zoxide   init --cmd cd zsh
-_cached_eval mise     activate zsh
+# mise activate 的输出带有生成时的整份 PATH 快照，缓存后会覆盖之后新增的 PATH 项，所以不走缓存
+command -v mise &>/dev/null && eval "$(mise activate zsh)"
 _cached_eval fzf      --zsh
 
 # mise 的 precmd hook 会重新整理 PATH，保持用户入口优先

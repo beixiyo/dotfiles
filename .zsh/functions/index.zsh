@@ -34,7 +34,7 @@ source "$_zsh_functions_dir/mihomo.zsh"
 source "$_zsh_functions_dir/sys.zsh"
 
 source "$_zsh_functions_dir/pkg/_common.zsh"
-source "$_zsh_functions_dir/pkg/install.zsh"
+source "$_zsh_functions_dir/pkg/install/index.zsh"
 source "$_zsh_functions_dir/pkg/update.zsh"
 source "$_zsh_functions_dir/pkg/uninstall.zsh"
 source "$_zsh_functions_dir/pkg/viewer.zsh"

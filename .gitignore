@@ -74,7 +74,7 @@
 
 # ── Zsh ──
 !.zshrc
-!.zprofile
+!.zshenv
 !.zsh/
 !.zsh/**
 

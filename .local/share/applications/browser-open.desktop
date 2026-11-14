@@ -3,7 +3,7 @@ Name=Default Browser (Niri focus)
 Type=Application
 NoDisplay=true
 Terminal=false
-# Niri 下 xdg-open 用 shell eval 粗略解析 Exec，不支持引号转义，只写命令名；~/.local/bin 由 ~/.zprofile 加入登录环境 PATH
+# Niri 下 xdg-open 用 shell eval 粗略解析 Exec，不支持引号转义，只写命令名；~/.local/bin 由 ~/.zshenv 加入登录环境 PATH
 # TryExec：PATH 中找不到 browser-open 的电脑会跳过本入口，回退到系统默认浏览器（链接照常打开，仅不跳屏）
 TryExec=browser-open
 Exec=browser-open %U

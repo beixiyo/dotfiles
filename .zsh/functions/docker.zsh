@@ -1,4 +1,4 @@
-# Docker: zsh as shell glue (fzf / execute), bun as core (list, Docker Hub API)
+# Docker：zsh 负责 shell 胶水（fzf / 执行），bun 负责核心逻辑（列表、Docker Hub API）
 
 () {
   local dir="${${(%):-%x}:A:h}"
@@ -29,6 +29,39 @@ _docker_has_cli() {
 
 _docker_can_use_sudo() {
   [[ "$(_docker_endpoint)" == unix:///var/run/docker.sock ]]
+}
+
+# 当前 endpoint 是否为 Kiri：macOS 为 ~/.kiri*/run/docker.sock，Linux 为 /run/kiri/docker.sock
+_docker_is_kiri() {
+  local endpoint="$(_docker_endpoint)"
+
+  case "$endpoint" in
+    "unix://$HOME/.kiri/run/docker.sock"|"unix://$HOME/.kiri-dev/run/docker.sock"|unix:///run/kiri/docker.sock)
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+# 定位 kiri 可执行文件
+# Dev 版与正式版是同一个二进制，靠所在 bundle 区分 flavor，所以 Dev endpoint 只能用 Dev 自己的 kiri，
+# 用 PATH 里的正式版会起错 daemon（服务 ~/.kiri 而不是 ~/.kiri-dev）
+_docker_kiri_bin() {
+  local -a candidates
+  local bin
+
+  if [[ "$(_docker_endpoint)" == "unix://$HOME/.kiri-dev/run/docker.sock" ]]; then
+    candidates=("$HOME/.kiri-dev/bin/kiri" '/Applications/Kiri Dev.app/Contents/MacOS/kiri')
+  else
+    candidates=(${commands[kiri]} "$HOME/.kiri/bin/kiri" /Applications/Kiri.app/Contents/MacOS/kiri)
+  fi
+
+  for bin in "${candidates[@]}"; do
+    [[ -x "$bin" ]] && { print -r -- "$bin"; return 0; }
+  done
+
+  return 1
 }
 
 _docker_can_start_mac() {
@@ -127,8 +160,46 @@ _docker_wait_ready() {
   return 1
 }
 
+# Kiri 引擎启动：系统级 socket（Linux）是 systemd 服务，需要 sudo；用户级 socket（macOS）后台起 daemon（无 GUI）
+_docker_start_kiri() {
+  local socket="$(_docker_desktop_socket)"
+
+  if [[ "$socket" == /run/kiri/docker.sock ]]; then
+    # 服务已在跑但当前用户连不上：再启动也没用，直接提示授权
+    if [[ -S "$socket" && ! -w "$socket" ]]; then
+      log_err "Kiri engine is running but $socket is not accessible. Grant access: sudo kiri host-access $USER"
+      return 1
+    fi
+
+    if has systemctl && [[ -d /run/systemd/system ]] && has sudo; then
+      log_warn 'Kiri engine is not ready, starting kiri service...'
+      _docker_sudo systemctl start kiri 2>/dev/null && return 0
+    fi
+
+    log_err 'Kiri engine is not ready. Start it manually: sudo systemctl start kiri'
+    return 1
+  fi
+
+  is_mac || {
+    log_err "Kiri engine is not ready for endpoint: $(_docker_endpoint). Start it manually: kiri daemon"
+    return 1
+  }
+
+  local bin
+  bin="$(_docker_kiri_bin)" || {
+    log_err 'Kiri endpoint is selected but the kiri binary was not found'
+    return 1
+  }
+
+  log_warn 'Kiri engine is not ready, starting kiri daemon...'
+  nohup "$bin" daemon </dev/null >/dev/null 2>&1 &!
+}
+
 _docker_start_mac() {
-  [[ -d /Applications/Docker.app ]] || return 1
+  [[ -d /Applications/Docker.app ]] || {
+    log_err "Docker daemon is not ready for endpoint: $(_docker_endpoint) (Docker.app is not installed, start the engine manually)"
+    return 1
+  }
   _docker_can_start_mac || {
     log_err "Docker daemon is not ready for endpoint: $(_docker_endpoint)"
     return 1
@@ -193,7 +264,9 @@ _docker_ensure_ready() {
 
   _docker_select_ready_cli && return 0
 
-  if is_mac; then
+  if _docker_is_kiri; then
+    _docker_start_kiri || return 1
+  elif is_mac; then
     _docker_start_mac || return 1
   else
     _docker_start_linux || return 1
@@ -214,6 +287,7 @@ _docker_ensure_ready() {
   return 1
 }
 
+# docker 命令包装：执行前确保引擎就绪（必要时自动拉起 Kiri / Docker Desktop / Docker 服务），再转发全部参数
 docker() {
   if _docker_should_skip_ready "$@"; then
     _docker_has_cli || {
@@ -229,16 +303,19 @@ docker() {
   _docker_run "$@"
 }
 
+# 查询 Docker Hub 镜像信息：dinfo <repo> <tag> [arch] [os]
 dinfo() {
   require bun || return 1
   bun run "$DOCKER_BUN_SCRIPT" dinfo "$@"
 }
 
+# 容器与镜像的 fzf 面板：日志、exec、复制 ID、停止、运行、重启、删除，支持多选
 dd() {
   _docker_ensure_ready || return 1
   DOCKER_USE_SUDO="$_DOCKER_USE_SUDO" bun run "$_DD_BUN/dd-cmd.ts" "$@"
 }
 
+# fzf 选择一个运行中的容器并进入 shell（优先 bash，回退 sh）
 dex() {
   require docker || return 1
   require fzf || return 1
@@ -252,6 +329,7 @@ dex() {
   _docker_run exec -it "$id" bash 2>/dev/null || _docker_run exec -it "$id" sh
 }
 
+# fzf 选择容器（含已退出）并持续跟踪日志
 dlogs() {
   require docker || return 1
   require fzf || return 1
@@ -265,6 +343,7 @@ dlogs() {
   _docker_run logs -f "$id"
 }
 
+# 跟踪指定容器的日志，默认只看本次启动之后的，加 --no-since 看全部：dlog <container-name> [--no-since]
 dlog() {
   require docker || return 1
   _docker_ensure_ready || return 1
@@ -281,6 +360,7 @@ dlog() {
   fi
 }
 
+# fzf 选择容器并复制其 ID（有 clip.exe 时写入剪贴板，否则直接输出）
 dcp() {
   require docker || return 1
   require fzf || return 1
@@ -299,6 +379,7 @@ dcp() {
   fi
 }
 
+# 创建一组 dtest-* 测试容器，用来试 dd / dex / dlogs / dcp
 dtest() {
   require docker || return 1
   _docker_ensure_ready || return 1
@@ -311,6 +392,7 @@ dtest() {
   echo "Try: dd (panel, add --all for exited) | dex/dlogs/dcp on dtest-run"
 }
 
+# 删除所有 dtest-* 测试容器
 dclean-test() {
   require docker || return 1
   _docker_ensure_ready || return 1

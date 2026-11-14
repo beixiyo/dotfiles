@@ -29,11 +29,17 @@ zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
 # zsh/complist 必须在 compinit 之前加载，否则 menu-select widget 不会被重定义
 zmodload zsh/complist
 
-# 加载补全系统：超过 24h 才重新扫描 fpath，否则直接读 .zcompdump 缓存（-C）
+# 加载补全系统：.zcompdump 超过 24h 才完整重新扫描 fpath，否则跳过检查直接读缓存（-C）
 # -i 忽略不安全目录检查，避免因权限问题跳过补全
+# (#q...) 需要 extended_glob，用匿名函数限定作用域，不影响交互 shell 的选项
+# 新装工具的补全最多延迟 24h 出现，想立刻生效：rm ~/.zcompdump 后重开 shell
 autoload -Uz compinit
-if [[ -n ${ZDOTDIR:-$HOME}/.zcompdump(#qN.mh+24) ]]; then
-  compinit -i
-else
-  compinit -i -C
-fi
+() {
+  setopt local_options extended_glob
+  local -a stale=(${ZDOTDIR:-$HOME}/.zcompdump(N.mh+24))
+  if (( $#stale )); then
+    compinit -i
+  else
+    compinit -i -C
+  fi
+}

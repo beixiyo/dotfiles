@@ -7,7 +7,7 @@
 **配置编写约定**：
 - 配置需在 macOS 与 Linux（跨平台工具如 WezTerm 还包括 Windows）之间通用；平台差异用条件判断或独立文件隔离，不假设特定发行版、桌面环境或包管理器
 - 不写死目录和用户名，优先用 `~`；不展开 `~` 的位置改用 `$HOME`、XDG 变量（`$XDG_CONFIG_HOME` 等）或工具自带占位符
-- 用户级 PATH 统一由 `~/.zprofile` 等登录环境提供，不在各程序配置里重复写死
+- 用户级 PATH 统一由 `~/.zshenv` 等环境文件提供（所有 zsh 实例都读，覆盖 ssh 非交互命令和 agent 的 shell）
 - 无法避免绝对路径时注释说明原因
 
 ---
@@ -31,7 +31,7 @@
 
 **入口**：`~/.zshrc` → `~/.zsh/zshrc`（按顺序 source 各模块）
 
-**加载顺序**：`env.zsh` → `secret.zsh` →（交互式 shell 限定）→ tmux 交互入口 → `options.zsh` → `plugins.zsh` → `completions.zsh` → `tools.zsh` → `aliases.zsh` → `functions/index.zsh` → `keybindings.zsh` → `notify.zsh`
+**加载顺序**：`env.zsh` → `secret.zsh` →（交互式 shell 限定）→ tmux 交互入口 → `cache.zsh`（init 缓存 + Homebrew 环境，须在 compinit 之前） → `options.zsh` → `plugins.zsh` → `completions.zsh` → `tools.zsh` → `aliases.zsh` → `functions/index.zsh` → `keybindings.zsh` → `notify.zsh`
 
 **核心架构："Zsh 为壳，Bun 为核"**
 - Zsh 负责 TTY 交互与 UI（fzf）

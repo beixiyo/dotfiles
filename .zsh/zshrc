@@ -1,6 +1,6 @@
 # 环境变量与密钥：放在交互判断之前，显式 source 本文件的非交互场景也能拿到
 # zsh 只在交互式 shell 中自动读取 .zshrc；脚本、非交互登录 shell（如 niri-session 的 $SHELL -l）、cron 都不会加载
-# 图形会话的 PATH 由 ~/.zprofile 提供
+# 图形会话的 PATH 由 ~/.zshenv 提供
 source ~/.zsh/env.zsh
 [[ -f ~/.zsh/secret.zsh ]] && source ~/.zsh/secret.zsh
 
@@ -60,6 +60,7 @@ if command -v tmux &>/dev/null \
   echo ""
 fi
 
+source ~/.zsh/cache.zsh       # init 缓存与 Homebrew 环境（brew 的补全目录必须在 compinit 之前进 fpath）
 source ~/.zsh/options.zsh     # setopt + history + compinit（必须在 plugins 之前）
 
 source ~/.zsh/plugins.zsh
