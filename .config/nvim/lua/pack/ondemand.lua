@@ -20,6 +20,9 @@ local M = {}
 ---@type table<string, PackOndemandEntry> 插件目录名 → 条目；加载后移除
 local pending = {}
 
+---@type table<string, PackOndemandEntry> 登记过的全部条目，加载后仍保留，供 searcher 判断模块归属
+local known = {}
+
 ---@type table<string, string[]>|nil 顶层 Lua 模块名 → 插件目录名列表；首次 require 时构建
 local topmods
 
@@ -59,7 +62,24 @@ local function searcher(modname)
   if next(pending) == nil then return nil end
   if not topmods then build_topmods() end
 
-  for _, name in ipairs(topmods[modname:match('^[^.]+')] or {}) do
+  local candidates = topmods[modname:match('^[^.]+')] or {}
+
+  -- 多个主插件共享顶层目录时（mini.pairs / mini.surround 都在 lua/mini/ 下）只加载真正含该模块的那个
+  -- 命中的是纯依赖（telescope 扩展等）或谁都不含时退回全部加载：依赖需要主插件先完整加载
+  local exact, only_mains = {}, true
+  if #candidates > 1 then
+    local rel = '/lua/' .. modname:gsub('%.', '/')
+    for _, name in ipairs(candidates) do
+      -- 查 known 而非 pending：模块属于已加载（或正在加载）的插件时，不该连带加载同前缀的其它插件
+      local entry = known[name]
+      if entry and (vim.uv.fs_stat(entry.path .. rel .. '.lua') or vim.uv.fs_stat(entry.path .. rel .. '/init.lua')) then
+        exact[#exact + 1] = name
+        only_mains = only_mains and not entry.is_dep
+      end
+    end
+  end
+
+  for _, name in ipairs((#exact > 0 and only_mains) and exact or candidates) do
     take_and_load(name)
   end
   return nil
@@ -99,6 +119,7 @@ function M.setup(opts)
     local path = opt_root .. name
     if not mounted[path] and vim.uv.fs_stat(path) then
       pending[name] = { name = name, path = path, load = load, is_dep = is_dep }
+      known[name] = pending[name]
     end
   end
 
@@ -145,14 +166,17 @@ function M.setup(opts)
   })
 end
 
----spec 即将加载时调用，停止对它及其依赖的兜底
+---spec 即将加载时调用，停止对它及其纯依赖的兜底
+---依赖同时是另一个 spec 的主体时保留条目：这里只会被 packadd，它自己的 config 还没跑，
+---之后 require 到它仍要走完整加载
 ---@param spec PackSpec
 function M.forget(spec)
   local name = spec.url and spec_mod.resolve_name(spec)
   if name then pending[name] = nil end
   for _, dep in ipairs(spec.dependencies or {}) do
     local dep_name = spec_mod.get_name(dep)
-    if dep_name then pending[dep_name] = nil end
+    local entry = dep_name and pending[dep_name]
+    if entry and entry.is_dep then pending[dep_name] = nil end
   end
 end
 

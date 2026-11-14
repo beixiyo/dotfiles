@@ -17,6 +17,8 @@ return {
     'https://github.com/nvim-lua/plenary.nvim',
     'beixiyo/vv-icons.nvim',
   },
+  -- 只有文件 buffer 需要 hunk 标记；BufWritePre 覆盖「无名 buffer 首次 :w 落盘」
+  event = { 'BufReadPost', 'BufNewFile', 'BufWritePre' },
 
   ---@type UserGitsignsConfig
   opts = {

@@ -15,9 +15,9 @@ return {
       filetype = 'dashboard', -- 与 vv-explorer 的 close_on_filetype 默认对齐
 
       keys = {
-        { icon = icons.find_file,    key = 'f', desc = 'Find File', action = function() require('telescope.builtin').find_files() end },
+        { icon = icons.find_file,    key = 'f', desc = 'Find File', action = function() require('fff').find_files() end },
         { icon = icons.new_file,     key = 'n', desc = 'New File', action = ':ene | startinsert' },
-        { icon = icons.find_text,    key = 'g', desc = 'Find Text', action = function() require('telescope.builtin').live_grep() end },
+        { icon = icons.find_text,    key = 'g', desc = 'Find Text', action = function() require('fff').live_grep({ renderer = require('plugins.specs.tools.fff.grep_renderer') }) end },
         { icon = icons.recent_files, key = 'r', desc = 'Recent Files', action = function() require('telescope.builtin').oldfiles() end },
         { icon = icons.config,       key = 'c', desc = 'Config Files', action = function() require('telescope.builtin').find_files({ cwd = vim.fn.stdpath('config') }) end },
         { icon = icons.tools,        key = 'p', desc = 'Plugin Manager', action = ':PluginManager' },

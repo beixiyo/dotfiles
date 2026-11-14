@@ -4,6 +4,8 @@ return {
   desc = '自动括号/引号配对',
   url = 'https://github.com/nvim-mini/mini.pairs',
   main = 'mini.pairs',
+  -- 与 opts.modes 对应：进入插入 / 命令行 / 终端模式前都不需要配对
+  event = { 'InsertEnter', 'CmdlineEnter', 'TermEnter' },
 
   opts = {
     modes = { insert = true, command = true, terminal = true },

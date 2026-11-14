@@ -3,6 +3,10 @@
 -- 超过该行数的 buffer 不启用彩虹括号
 local MAX_LINES = 10000
 
+-- 达到该行数改用 local 策略：只给光标所在语法子树的括号上色
+-- global 每次编辑都重算整棵树，千行文件单次 20–80ms
+local LOCAL_STRATEGY_LINES = 1000
+
 ---@type PackSpec
 return {
   desc = '彩虹括号',
@@ -27,7 +31,11 @@ return {
         return vim.api.nvim_buf_line_count(buf) < MAX_LINES
       end,
       strategy = {
-        [''] = rd.strategy['global'],
+        -- attach 时按当时行数决定，之后不随文件增减切换
+        [''] = function(buf)
+          return vim.api.nvim_buf_line_count(buf) >= LOCAL_STRATEGY_LINES
+            and rd.strategy['local'] or rd.strategy['global']
+        end,
         vim = rd.strategy['local'],
       },
       query = {

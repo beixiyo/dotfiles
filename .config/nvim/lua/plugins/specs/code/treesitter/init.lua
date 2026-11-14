@@ -77,6 +77,30 @@ local function start_treesitter(buf, lang)
   return true
 end
 
+-- 已启动过高亮的语言：highlights query 编译结果由 Neovim 缓存，再次启动只要几毫秒
+---@type table<string, true>
+local warmed = {}
+
+-- 每种语言首次启动要编译 highlights query（ts/tsx 约 140ms），推到当前这次重绘之后，
+-- 让文件内容先出现、高亮晚一帧；之后同语言的 buffer 直接同步启动，不闪
+local function start_after_first_frame(buf, lang)
+  if warmed[lang] then
+    start_treesitter(buf, lang)
+    return
+  end
+
+  vim.schedule(function()
+    if not should_attach(buf) or vim.treesitter.highlighter.active[buf] then return end
+
+    local ft = vim.bo[buf].filetype
+    if (vim.treesitter.language.get_lang(ft) or ft) ~= lang then return end
+
+    -- schedule 的回调可能排在重绘之前，先把不带 treesitter 的这一帧画出来
+    vim.cmd.redraw()
+    if start_treesitter(buf, lang) then warmed[lang] = true end
+  end)
+end
+
 -- parser 异步装完后，把所有匹配该语言、尚未启动的缓冲区补上高亮
 local function start_pending_buffers(lang)
   local started = 0
@@ -168,7 +192,7 @@ return {
 
         -- parser 已就绪：直接启动，不受白名单限制
         if parser_state(lang) == 'ok' then
-          start_treesitter(buf, lang)
+          start_after_first_frame(buf, lang)
         end
 
         if not vim.list_contains(auto_install_allowlist, lang) then return end
