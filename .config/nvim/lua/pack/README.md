@@ -116,7 +116,7 @@ shell 字符串不会经过 shell 解析，因此不要依赖管道、重定向�
 
 ## 命令
 
-- `:PackUpdate [name ...]`
+- `:packupdate [name ...]`（Neovim 内置）
 - `:PackStats`
 - `:PackStatsEcho`
 - `:PackDev [name]`

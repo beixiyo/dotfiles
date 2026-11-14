@@ -11,7 +11,6 @@ return {
   url = 'https://github.com/akinsho/bufferline.nvim',
   main = 'bufferline',
   dependencies = {
-    'https://github.com/nvim-tree/nvim-web-devicons',
     'beixiyo/vv-utils.nvim',  -- bufdel
     'beixiyo/vv-icons.nvim',
   },

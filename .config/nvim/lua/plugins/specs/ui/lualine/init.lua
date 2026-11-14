@@ -7,7 +7,6 @@ return {
   url = 'https://github.com/nvim-lualine/lualine.nvim',
   main = 'lualine',
   dependencies = {
-    'https://github.com/nvim-tree/nvim-web-devicons',
     'beixiyo/vv-icons.nvim',  -- components.lua 顶部 require
     'beixiyo/vv-utils.nvim',  -- components.lua 用 path / hl
   },

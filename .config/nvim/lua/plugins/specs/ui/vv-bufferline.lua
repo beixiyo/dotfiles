@@ -41,7 +41,6 @@ return {
   dependencies = {
     'beixiyo/vv-utils.nvim',
     'beixiyo/vv-icons.nvim',
-    'https://github.com/nvim-tree/nvim-web-devicons',
   },
 
   event = { 'UIEnter' },

@@ -1,38 +1,7 @@
 -- pack 引擎命令注册：
---   :PackUpdate [name ...]   无参更新全部；有参只更新指定插件，支持 tab 补全
 --   :PackStats               打开性能分析浮窗（GUI）
 --   :PackStatsEcho           在 :messages 打印性能文本（headless / 脚本用）
-
-local function managed_names()
-  local ok, list = pcall(vim.pack.get, nil, { info = false })
-  if not ok or type(list) ~= 'table' then return {} end
-  local names = {}
-  for _, entry in ipairs(list) do
-    local n = entry.spec and entry.spec.name
-    if n then table.insert(names, n) end
-  end
-  table.sort(names)
-  return names
-end
-
-local function complete_names(arglead)
-  local out = {}
-  for _, n in ipairs(managed_names()) do
-    if arglead == '' or n:find(arglead, 1, true) == 1 then
-      table.insert(out, n)
-    end
-  end
-  return out
-end
-
-vim.api.nvim_create_user_command('PackUpdate', function(opts)
-  local names = #opts.fargs > 0 and opts.fargs or nil
-  vim.pack.update(names)
-end, {
-  nargs = '*',
-  complete = complete_names,
-  desc = 'Update plugins (no args: update all; or pass one or more pack-managed names)',
-})
+-- 更新插件用内置的 :packupdate [name ...]
 
 vim.api.nvim_create_user_command('PackStats', function()
   require('plugins.manager.stats').open()

@@ -6,7 +6,6 @@ return {
   main = 'render-markdown',
   dependencies = {
     'https://github.com/nvim-treesitter/nvim-treesitter',
-    'https://github.com/nvim-tree/nvim-web-devicons',
   },
   ft = { 'markdown', 'AgenticChat' },
 

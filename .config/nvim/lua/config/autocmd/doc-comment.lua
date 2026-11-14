@@ -28,7 +28,8 @@ vim.api.nvim_create_autocmd("FileType", {
         return
       end
 
-      vim.api.nvim_feedkeys("*", "n", false)
+      -- i：插到 typeahead 最前面。默认是追加到末尾，粘贴 / 宏 / 快速输入时会排到后续按键之后
+      vim.api.nvim_feedkeys("*", "in", false)
     end, { buffer = ev.buf })
   end,
 })
@@ -55,7 +56,7 @@ vim.api.nvim_create_autocmd("FileType", {
       end
 
       -- 让 mini.pairs 处理：在 {} [] () 之间按 Enter 时自动缩进展开
-      vim.api.nvim_feedkeys(require('mini.pairs').cr(), 'n', false)
+      vim.api.nvim_feedkeys(require('mini.pairs').cr(), 'in', false)
     end, { buffer = ev.buf })
   end,
 })

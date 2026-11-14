@@ -164,9 +164,19 @@ local function load_deferred(s)
   loader.load(s, disabled_set)
 end
 
+-- 兜底必须先于任何 config 执行：eager / manual 的 config 里 require 懒加载插件时要能触发加载
+local eager = {}
+for _, s in ipairs(active_specs) do
+  if s.lazy == 'manual' or lazy.has_triggers(s) then
+    table.insert(deferred, s)
+  else
+    table.insert(eager, s)
+  end
+end
+ondemand.setup({ specs = deferred, eager = eager, load = load_deferred })
+
 for _, s in ipairs(active_specs) do
   if s.lazy == 'manual' then
-    table.insert(deferred, s)
     -- 逃生舱：启动期立即调 config(plugin, { load = fn })，由 spec 自己决定加载时机
     -- 主要用于 treesitter 这类需要在 FileType 回调里按需安装 parser 的场景
     -- 不在此处记 stats：真正 packadd/加载发生在 ctx.load() 被触发时（loader wrap 会记一次）
@@ -180,15 +190,12 @@ for _, s in ipairs(active_specs) do
     end
   elseif lazy.has_triggers(s) then
     -- 声明式懒加载
-    table.insert(deferred, s)
     lazy.register(s, function() load_deferred(s) end)
   else
     -- eager：立即加载
     loader.load(s, disabled_set)
   end
 end
-
-ondemand.setup({ specs = deferred, load = load_deferred })
 
 stats.finalize(#all_specs)
 
@@ -200,7 +207,7 @@ _G.Pack.picks = picks
 -- 兼容/伪装 lazy.nvim 接口，使得第三方插件（tokyonight、which-key 等）能正常加载
 require('pack.lazy-compat')
 
--- 注册 :PackUpdate / :PackStats / :PackGenTypes
+-- 注册 :PackStats / :PackDev / :PackGenTypes
 require('pack.commands')
 
 -- 监听 PackChanged，插件安装/更新后自动重新生成 .luarc.json

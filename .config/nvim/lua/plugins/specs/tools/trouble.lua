@@ -10,7 +10,6 @@ return {
   desc = 'LSP/diagnostic list (grouped by file)',
   url = 'https://github.com/folke/trouble.nvim',
   main = 'trouble',
-  dependencies = { 'https://github.com/nvim-tree/nvim-web-devicons' },
 
   cmd = { 'Trouble' },
   event = { 'UIEnter' },

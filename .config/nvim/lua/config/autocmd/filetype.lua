@@ -41,7 +41,14 @@ vim.api.nvim_create_autocmd("FileType", {
       if not vim.api.nvim_buf_is_valid(event.buf) then return end
       for _, key in ipairs({ "q", "<Esc>" }) do
         vim.keymap.set("n", key, function()
-          vim.cmd("close")
+          -- 本映射覆盖了 man 自带的 q（:lclose 后关窗），gO 打开的目录要一并关掉
+          if vim.bo[event.buf].filetype == "man" then pcall(vim.cmd.lclose) end
+
+          -- 最后一个窗口关不掉（E444）：没有别的文件可回就退出，如 MANPAGER="nvim +Man!"
+          if not pcall(vim.cmd.close) and #vim.fn.getbufinfo({ buflisted = 1 }) == 0 then
+            vim.cmd.quit()
+            return
+          end
           pcall(vim.api.nvim_buf_delete, event.buf, { force = true })
         end, {
           buffer = event.buf,

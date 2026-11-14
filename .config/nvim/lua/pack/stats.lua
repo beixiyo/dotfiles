@@ -16,15 +16,26 @@ function M.setup(loader_mod)
 
   -- 包装 loader.load 记录每个插件加载耗时
   -- 已加载的 spec 直接让 raw_load 幂等退出，不重复计入 stats
+  -- 加载会嵌套：A 的 config 里 require 懒加载的 B 时，B 在 A 的计时区间内完成
+  -- 每层只记自身耗时（总耗时减去内层），各插件相加才等于真实开销
   local raw_load = loader_mod.load
   local resolve_name = require('pack.spec').resolve_name
+  local inner_ns = {} ---@type number[] 栈：每一层已被内层加载占用的纳秒数
   loader_mod.load = function(spec, disabled_set)
     if loader_mod.is_loaded(resolve_name(spec)) then return end
+    local depth = #inner_ns + 1
+    inner_ns[depth] = 0
     local t0 = vim.uv.hrtime()
-    local r = raw_load(spec, disabled_set)
+    local ok, r = pcall(raw_load, spec, disabled_set)
+    local elapsed = vim.uv.hrtime() - t0
+    local self_ns = elapsed - inner_ns[depth]
+    inner_ns[depth] = nil
+    if depth > 1 then inner_ns[depth - 1] = inner_ns[depth - 1] + elapsed end
+    if not ok then error(r, 0) end
+
     table.insert(_G.PackStats.plugins, {
       name = spec.id or '?',
-      ms = (vim.uv.hrtime() - t0) / 1e6,
+      ms = self_ns / 1e6,
       lazy = not not (spec.event or spec.ft or spec.cmd or spec.keys or spec.lazy == 'manual'),
     })
     return r

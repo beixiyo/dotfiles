@@ -20,7 +20,7 @@ local M = {}
 ---@type table<string, PackOndemandEntry> 插件目录名 → 条目；加载后移除
 local pending = {}
 
----@type table<string, PackOndemandEntry> 登记过的全部条目，加载后仍保留，供 searcher 判断模块归属
+---@type table<string, PackOndemandEntry> 登记过的全部条目（含 eager 插件），加载后仍保留，供 searcher 判断模块归属
 local known = {}
 
 ---@type table<string, string[]>|nil 顶层 Lua 模块名 → 插件目录名列表；首次 require 时构建
@@ -30,14 +30,15 @@ local topmods
 -- 主插件排在纯依赖前面：先完整加载主插件，它的 dependencies 随之挂载
 local function build_topmods()
   topmods = {}
-  local names = vim.tbl_keys(pending)
+  -- 遍历 known 而非 pending：eager 插件的模块也要能认出归属，否则会被当成同前缀懒加载插件的模块
+  local names = vim.tbl_keys(known)
   table.sort(names, function(x, y)
-    if pending[x].is_dep ~= pending[y].is_dep then return not pending[x].is_dep end
+    if known[x].is_dep ~= known[y].is_dep then return not known[x].is_dep end
     return x < y
   end)
 
   for _, name in ipairs(names) do
-    local handle = vim.uv.fs_scandir(pending[name].path .. '/lua')
+    local handle = vim.uv.fs_scandir(known[name].path .. '/lua')
     while handle do
       local item = vim.uv.fs_scandir_next(handle)
       if not item then break end
@@ -70,7 +71,7 @@ local function searcher(modname)
   if #candidates > 1 then
     local rel = '/lua/' .. modname:gsub('%.', '/')
     for _, name in ipairs(candidates) do
-      -- 查 known 而非 pending：模块属于已加载（或正在加载）的插件时，不该连带加载同前缀的其它插件
+      -- 查 known 而非 pending：模块属于 eager 或已加载（正在加载）的插件时，不该连带加载同前缀的其它插件
       local entry = known[name]
       if entry and (vim.uv.fs_stat(entry.path .. rel .. '.lua') or vim.uv.fs_stat(entry.path .. rel .. '/init.lua')) then
         exact[#exact + 1] = name
@@ -102,12 +103,13 @@ local function plugin_for_cmd(cmd)
 end
 
 ---@class PackOndemandOpts
----@field specs PackSpec[] 已注册触发器、尚未加载的 spec
+---@field specs PackSpec[] 懒加载的 spec（声明式触发器或 manual）
+---@field eager? PackSpec[] 启动期直接加载的 spec，只登记模块归属，不参与兜底
 ---@field load fun(spec: PackSpec) 加载一个 spec（幂等）
 
 ---@param opts PackOndemandOpts
 function M.setup(opts)
-  -- 启动期已被 eager spec 挂载的目录（含共享依赖）不需要兜底
+  -- 已在 rtp 上的目录不需要兜底
   local mounted = {}
   for _, p in ipairs(vim.api.nvim_list_runtime_paths()) do mounted[p] = true end
 
@@ -133,6 +135,23 @@ function M.setup(opts)
     for _, dep in ipairs(s.dependencies or {}) do
       local dep_name = spec_mod.get_name(dep)
       add(dep_name, function() pcall(vim.cmd.packadd, dep_name) end, true)
+    end
+  end
+
+  -- eager 插件及其依赖：不进 pending，只让 searcher 知道这些模块有主
+  -- 与懒加载插件同名时上面已登记，以懒加载条目为准
+  local function add_owned(name, path)
+    if not name or known[name] or not vim.uv.fs_stat(path) then return end
+    known[name] = { name = name, path = path, load = function() end, is_dep = false }
+  end
+
+  for _, s in ipairs(opts.eager or {}) do
+    local name = spec_mod.resolve_name(s)
+    if name then add_owned(name, s.dir or opt_root .. name) end
+
+    for _, dep in ipairs(s.dependencies or {}) do
+      local dep_name = spec_mod.get_name(dep)
+      if dep_name then add_owned(dep_name, opt_root .. dep_name) end
     end
   end
 

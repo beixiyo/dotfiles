@@ -84,7 +84,7 @@ nvim
 1. 启动 nvim 进入 Dashboard（首页）
 2. 按下 **p** 打开 `:PluginManager`，用 `<CR>` 或 `x` 启用/禁用插件；每次切换都会立即写入配置
 3. 用 `q` 或 `<Esc>` 关闭面板，然后重新启动 nvim，引擎会自动 `vim.pack.add` 下载新启用的插件
-4. 更新插件：`:PackUpdate [name ...]`（无参数则全量更新；有参支持 tab 补全）
+4. 更新插件：内置的 `:packupdate [name ...]`（无参数则全量更新；有参支持 tab 补全，加 `!` 跳过确认）
 5. 查看加载性能：`:PackStats` 打开浮窗（`s` 按耗时 / `n` 按名称 / `e` 仅 eager / `a` 全部 / `q` 关闭）；脚本场景用 `:PackStatsEcho` 打印到 `:messages`
 
 插件添加/删除的完整流程见 [AGENTS.md](AGENTS.md)
@@ -136,7 +136,7 @@ rm -rf ~/.local/share/nvim/site/pack/core/opt/<plugin-name>
 nvim
 ```
 
-4. 也可用 `:PackUpdate <plugin-name>` 触发重新拉取
+4. 也可用 `:packupdate <plugin-name>` 触发重新拉取
 
 ### 代码着色不正确 / TreeSitter parser 编译失败
 
