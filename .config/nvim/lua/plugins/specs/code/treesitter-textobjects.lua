@@ -1,6 +1,13 @@
--- nvim-treesitter-textobjects：结构化跳转
---   ]f/[f 函数调用、]v/[v 变量声明、]s/[s 字符串、]t/[t 标签、]p/[p 属性
+-- nvim-treesitter-textobjects：结构化跳转与文本对象
+--   跳转：]f/[f 函数调用、]v/[v 变量声明、]s/[s 字符串、]t/[t 标签、]p/[p 属性
+--   选择：af/if 函数、ac/ic 类、aa/ia 参数；配合 d / c / y / v 使用，如 daf 删整个函数、cia 改当前参数
 -- 🔗 https://github.com/nvim-treesitter/nvim-treesitter-textobjects
+
+---@param capture string 如 '@function.outer'
+local function select(capture)
+  return function() require('nvim-treesitter-textobjects.select').select_textobject(capture, 'textobjects') end
+end
+
 ---@type PackSpec
 return {
   desc = '结构化文本对象与跳转',
@@ -9,6 +16,13 @@ return {
   dependencies = { 'nvim-treesitter/nvim-treesitter' },
 
   keys = {
+    { 'af', select('@function.outer'),  mode = { 'x', 'o' }, desc = 'Around function' },
+    { 'if', select('@function.inner'),  mode = { 'x', 'o' }, desc = 'Inside function' },
+    { 'ac', select('@class.outer'),     mode = { 'x', 'o' }, desc = 'Around class' },
+    { 'ic', select('@class.inner'),     mode = { 'x', 'o' }, desc = 'Inside class' },
+    { 'aa', select('@parameter.outer'), mode = { 'x', 'o' }, desc = 'Around argument' },
+    { 'ia', select('@parameter.inner'), mode = { 'x', 'o' }, desc = 'Inside argument' },
+
     { ']f', function() require('nvim-treesitter-textobjects.move').goto_next_start('@call.outer') end, mode = { 'n', 'x', 'o' },       desc = 'Next call' },
     { '[f', function() require('nvim-treesitter-textobjects.move').goto_previous_start('@call.outer') end, mode = { 'n', 'x', 'o' },  desc = 'Previous call' },
     { ']F', function() require('nvim-treesitter-textobjects.move').goto_next_end('@call.outer') end, mode = { 'n', 'x', 'o' },         desc = 'Next call end' },
@@ -32,6 +46,10 @@ return {
   },
 
   opts = {
+    select = {
+      -- 光标不在目标内时向后找最近的一个，如在函数名上直接 cia 改第一个参数
+      lookahead = true,
+    },
     move = {
       set_jumps = true,
     },
