@@ -1,11 +1,11 @@
 -- pack 引擎命令注册：
---   :PackStats               打开性能分析浮窗（GUI）
+--   :PackStats               打开插件管理界面的耗时标签
 --   :PackStatsEcho           在 :messages 打印性能文本（headless / 脚本用）
 -- 更新插件用内置的 :packupdate [name ...]
 
 vim.api.nvim_create_user_command('PackStats', function()
-  require('plugins.manager.stats').open()
-end, { desc = 'Open the plugin load performance float' })
+  require('plugins.manager').open('stats')
+end, { desc = 'Open the plugin manager on the load stats tab' })
 
 vim.api.nvim_create_user_command('PackDev', function(opts)
   local dev = require('pack.dev')
