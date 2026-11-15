@@ -28,6 +28,15 @@
 
 订阅 autocmd、业务 debounce、调用 render 和持有业务 state 通常留在 vendor 的薄适配层
 
+## 全局状态与跨插件约定
+
+- `setup()` 只归一化配置、注册命令和触发器；不改全局选项、不建窗口。全局选项只在功能实际生效期间持有（如存在 diff 窗口时），结束后还原，且仅还原当前仍为自己所设的值
+- 多个插件都会用到的全局开关（`mousemoveevent` 等）走 vv-utils 的持有计数（`vv-utils.mouse.hold_move_events`），不各自「保存原值、退出时写回」：先退出的会关掉还在用的
+- 插件之间不互相 `require`（包括 `pcall(require, ...)` 取对方内部模块），也不写死对方的变量名、事件名。生产方与消费方共用的约定（buffer 变量、事件、数据结构）放进 vv-utils 的单一出处，双方只依赖它，例：`vv-utils.git.diff_source`
+- 插件自己的公开事件（如 `User VVGitStatusChanged`）写进 README 才算契约，消费方可以直接监听；可选集成对象缺失时静默降级
+- 「没有结果」「失败」「超时」「被取消」是四种结果，不合并成空值向上返回
+- 判断映射是否仍归自己所有，按 `lhsraw` 比较：`nvim_get_keymap` 返回规范化后的 lhs（`<C-k>` 记为 `<C-K>`，`<leader>` 被展开）
+
 ## 配置与类型
 
 - 解析后的配置类型为 `VVXxxConfig`，字段必填，读取处不写 `or DEFAULT`
@@ -77,7 +86,8 @@
 
 - timer、autocmd、listener、buffer、window 由创建者清理
 - `open/close`、`attach/detach`、`enable/disable` 保持幂等
-- 异步结果写回前验证资源仍有效，并丢弃过期请求结果
+- 异步结果写回前验证资源仍有效，并丢弃过期请求结果；防抖和 `vim.schedule` 回调里先确认 buffer／窗口有效再读它的选项
+- 会话的每条结束路径都要结算自己占用的窗口：确认、取消、在别处打开、目标被删除。一次性 scratch（属性页、占位页）脱离 owner 后必须能被回收或被下一次使用替换，不能成为没有入口可关的窗口
 - 不用全局 `BufHidden` 一类高频 hook 猜测具体业务生命周期
 - 重要副作用通过命名、返回 handle、类型或 README 明确
 
