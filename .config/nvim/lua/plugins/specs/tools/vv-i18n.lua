@@ -22,7 +22,7 @@ return {
   -- 源码 / locale 文件打开即生效
   ft  = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact', 'json', 'jsonc' },
   cmd = {
-    'VVI18nInfo', 'VVI18nJump', 'VVI18nSetValue', 'VVI18nEdit', 'VVI18nKeys',
+    'VVI18nJump', 'VVI18nSetValue', 'VVI18nEdit', 'VVI18nKeys',
     'VVI18nMissing', 'VVI18nReferences', 'VVI18nUnused', 'VVI18nAddKey', 'VVI18nReload',
     'VVI18n', 'VVI18nEnable', 'VVI18nDisable', 'VVI18nToggle',
   },
@@ -30,9 +30,8 @@ return {
     local icon = '󰗊 '
     return {
       { '<leader>ik', '<cmd>VVI18nKeys<cr>',   desc = icon .. 'Browse keys' },
-      { '<leader>ip', '<cmd>VVI18nInfo<cr>',   desc = icon .. 'Show translations' },
+      { '<leader>ie', '<cmd>VVI18nEdit<cr>',   desc = icon .. 'Show and edit translations' },
       { '<leader>id', '<cmd>VVI18nJump<cr>',   desc = icon .. 'Go to translation' },
-      { '<leader>ie', '<cmd>VVI18nEdit<cr>',   desc = icon .. 'Edit translations' },
       { '<leader>ia', '<cmd>VVI18nAddKey<cr>', desc = icon .. 'Add translation' },
       { '<leader>iu', '<cmd>VVI18nReferences<cr>', desc = icon .. 'Show references' },
       { '<leader>io', '<cmd>VVI18nUnused<cr>', desc = icon .. 'Potentially unused keys' },
