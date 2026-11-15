@@ -25,6 +25,11 @@ local function close_hover()
   return false
 end
 
+---关闭已打开的 hover 文档；供通用的「关闭浮窗」键位复用
+---noice 的 hover 由内容窗口和不可聚焦的边框窗口组成，必须经 noice 自己隐藏才能一并收掉
+---@return boolean closed
+function M.close() return close_hover() end
+
 ---切换当前 LSP buffer 的 hover 文档
 function M.toggle()
   if close_hover() then

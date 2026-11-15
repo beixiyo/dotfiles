@@ -216,6 +216,7 @@ function M.open(opts)
 
       vim.schedule(function()
         M.open({
+          cwd = log_cwd,
           git_log_limit = next_limit,
           default_text = default_text,
         })
