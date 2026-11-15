@@ -17,17 +17,29 @@ function M.setup()
   end
 
   -- 两个后端共用文件类型、根目录规则与编辑偏好，彼此不继承
+  -- server 只负责「能给出哪些提示」，是否显示由 <leader>ch 控制（见 lsp/keymaps.lua）
+  local inlay_hints = {
+    parameterNames = { enabled = 'literals' },
+    parameterTypes = { enabled = true },
+    variableTypes = { enabled = true },
+    propertyDeclarationTypes = { enabled = true },
+    functionLikeReturnTypes = { enabled = true },
+    enumMemberValues = { enabled = true },
+  }
+
   local shared = vim.tbl_deep_extend('force', tsgo_defaults, {
     settings = {
       typescript = {
         preferences = {
           importModuleSpecifier = 'relative',
         },
+        inlayHints = inlay_hints,
       },
       javascript = {
         preferences = {
           importModuleSpecifier = 'relative',
         },
+        inlayHints = inlay_hints,
       },
     },
   })

@@ -1,4 +1,4 @@
--- Test runner UI for Vitest and Jest; nearest tests can reuse nvim-dap
+-- Test runner UI for Vitest, Jest and Go; nearest tests can reuse nvim-dap
 local function discovery_consumer(client)
   local file = vim.api.nvim_buf_get_name(0)
   if file == '' then return {} end
@@ -40,6 +40,7 @@ end
 
 local function is_test_file(path)
   path = path:gsub('\\', '/')
+  if path:match('_test%.go$') then return true end
   if not path:match('%.[jt]sx?$') then return false end
 
   return path:match('%.test%.[jt]sx?$') ~= nil
@@ -72,7 +73,7 @@ end
 
 ---@type PackSpec
 return {
-  desc = 'Vitest/Jest runner and debugger',
+  desc = 'Vitest/Jest/Go test runner and debugger',
   url = 'https://github.com/nvim-neotest/neotest',
   main = 'neotest',
   dependencies = {
@@ -80,6 +81,7 @@ return {
     'https://github.com/nvim-treesitter/nvim-treesitter',
     'https://github.com/marilari88/neotest-vitest',
     'https://github.com/nvim-neotest/neotest-jest',
+    'https://github.com/fredrikaverpil/neotest-golang',
     'https://github.com/mfussenegger/nvim-dap',
     'https://github.com/igorlfs/nvim-dap-view',
     'beixiyo/vv-icons.nvim',
@@ -90,6 +92,8 @@ return {
     'BufReadPost */__tests__/*.{js,jsx,ts,tsx}',
     'BufNewFile *.{test,spec}.{js,jsx,ts,tsx}',
     'BufNewFile */__tests__/*.{js,jsx,ts,tsx}',
+    'BufReadPost *_test.go',
+    'BufNewFile *_test.go',
   },
 
   keys = function()
@@ -126,6 +130,7 @@ return {
             return root and (root .. '/node_modules/.bin/jest') or 'jest'
           end,
         }),
+        require('neotest-golang')({}),
       },
       consumers = { file_discovery = discovery_consumer },
       icons = { test = icons.test },

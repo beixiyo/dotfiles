@@ -26,6 +26,7 @@ return {
   dependencies = {
     'https://github.com/mason-org/mason.nvim',
     'https://github.com/mason-org/mason-lspconfig.nvim',
+    'https://github.com/b0o/SchemaStore.nvim',
     'beixiyo/vv-icons.nvim',
     'beixiyo/vv-utils.nvim',
   },

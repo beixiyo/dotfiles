@@ -13,7 +13,7 @@ function M.setup()
 
   require('mason').setup({})
   require('mason-lspconfig').setup({
-    ensure_installed = { 'dprint' },
+    ensure_installed = { 'cssls', 'dprint', 'jsonls', 'vtsls', 'vue_ls', 'yamlls' },
     automatic_enable = {
       -- ts_ls 是 Node 包装的 tsserver，已被原生 Go 版 tsc 取代
       exclude = { 'ts_ls' },

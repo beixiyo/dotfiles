@@ -5,6 +5,10 @@
       "src": "https://github.com/L3MON4D3/LuaSnip",
       "version": ">=0.0.0"
     },
+    "SchemaStore.nvim": {
+      "rev": "e8c3d2225d6bf5e2cbe414952c247d7a3411849b",
+      "src": "https://github.com/b0o/SchemaStore.nvim"
+    },
     "agentic.nvim": {
       "rev": "f36092681e438af4b4862fc0543c78b2a41586db",
       "src": "https://github.com/carlos-algms/agentic.nvim"
@@ -77,6 +81,10 @@
     "neotest": {
       "rev": "fb84d87285698f7055f618083c351984449119b8",
       "src": "https://github.com/nvim-neotest/neotest"
+    },
+    "neotest-golang": {
+      "rev": "65b2be63c3de00e6f15c05388ebdc8d603dbd727",
+      "src": "https://github.com/fredrikaverpil/neotest-golang"
     },
     "neotest-jest": {
       "rev": "0e7979d51301dfae5ef839d771bd28cf593fde3f",

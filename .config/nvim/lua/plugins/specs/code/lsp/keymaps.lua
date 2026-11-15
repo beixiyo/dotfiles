@@ -99,6 +99,15 @@ function M.setup()
         map({ 'n', 'x' }, 'grx', vim.lsp.codelens.run, bufopts(icons.lsp .. ' Run CodeLens'))
       end
 
+      -- inlay hint（行内的灰色类型 / 参数名提示）默认关闭，读陌生代码时按需打开；开关对所有 buffer 生效
+      if client and client:supports_method('textDocument/inlayHint', { bufnr = event.buf }) then
+        map('n', '<leader>ch', function()
+          local enabled = not vim.lsp.inlay_hint.is_enabled()
+          vim.lsp.inlay_hint.enable(enabled)
+          vim.notify('Inlay hints ' .. (enabled and 'on' or 'off'))
+        end, bufopts(icons.vscode .. ' Toggle inlay hints'))
+      end
+
       -- 签名帮助（官方仅 insert 模式绑 <C-S>，normal 无默认）
       map('n', 'gK', vim.lsp.buf.signature_help, bufopts(icons.vscode .. ' Signature help'))
 
