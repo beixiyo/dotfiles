@@ -8,6 +8,7 @@
 --
 -- 只覆盖远程插件；本地 vendor（spec.dir）保持原有语义，仍由自己的触发器加载
 local spec_mod = require('pack.spec')
+local packadd = require('pack.packadd')
 
 local M = {}
 
@@ -134,7 +135,7 @@ function M.setup(opts)
   for _, s in ipairs(opts.specs) do
     for _, dep in ipairs(s.dependencies or {}) do
       local dep_name = spec_mod.get_name(dep)
-      add(dep_name, function() pcall(vim.cmd.packadd, dep_name) end, true)
+      add(dep_name, function() packadd(dep_name) end, true)
     end
   end
 

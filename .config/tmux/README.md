@@ -1,6 +1,6 @@
 # TMUX
 
-当前项目设置 Prefix = `C-Space`（即 `Ctrl + Space`）
+当前项目设置 Prefix = `C-q`（即 `Ctrl + q`）
 
 ## 安装
 

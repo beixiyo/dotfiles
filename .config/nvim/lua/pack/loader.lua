@@ -5,6 +5,7 @@
 -- 默认 config（没显式写）：require(main).setup(opts)；main = false 时跳过
 local spec_mod = require('pack.spec')
 local build = require('pack.build')
+local packadd = require('pack.packadd')
 
 local M = {}
 
@@ -61,7 +62,7 @@ function M.load(spec, disabled_set)
     for _, dep_url in ipairs(spec.dependencies) do
       local dep_name = spec_mod.get_name(dep_url)
       if dep_name then
-        local ok, err = pcall(vim.cmd.packadd, dep_name)
+        local ok, err = packadd(dep_name)
         if not ok and not tostring(err):match('E919') then
           vim.notify('[pack] ' .. name .. ' dep [' .. dep_name .. '] missing', vim.log.levels.WARN)
         end
@@ -70,7 +71,7 @@ function M.load(spec, disabled_set)
   end
 
   -- 加载主插件
-  local packadd_ok, packadd_err = pcall(vim.cmd.packadd, name)
+  local packadd_ok, packadd_err = packadd(name)
   if not packadd_ok and not tostring(packadd_err):match('E919') then
     vim.notify('[pack] Failed to packadd ' .. name .. ': ' .. tostring(packadd_err), vim.log.levels.WARN)
   end

@@ -1,6 +1,7 @@
 -- 构建命令生命周期：执行 spec.build、监听 PackChanged 更新、健康检查
 -- 通过 .build_done 文件标记记录构建状态，避免重复构建
 local spec = require('pack.spec')
+local packadd = require('pack.packadd')
 
 local M = {}
 
@@ -27,7 +28,8 @@ function M.run(name, build_cmd, disabled_set)
   if is_vim_cmd then
     vim.schedule(function()
       vim.notify('⚙️ Running ' .. name .. ' setup command...', vim.log.levels.INFO)
-      pcall(vim.cmd.packadd, name)
+      packadd(name)
+
       local ok, err = pcall(vim.cmd, vim_cmd_str)
       is_building[name] = false
       if ok then
