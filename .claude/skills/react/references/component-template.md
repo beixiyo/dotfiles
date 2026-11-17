@@ -28,8 +28,15 @@ export const Demo = memo<DemoProps>((props) => {
 
 Demo.displayName = 'Demo'
 
-/** Demo 根元素支持的属性，包含 children；不声明尚未实现的 ref 接口 */
-export type DemoProps = ComponentPropsWithoutRef<'div'>
+/** 包含 children，不声明尚未实现的 ref 接口 */
+export type DemoProps =
+  & ComponentPropsWithoutRef<'div'>
+  & { ... }
 ```
 
-新增业务 props 时先解构消费，避免透传到 DOM；通过 `cn` 合并组件样式与外部 `className`，组件自身的样式类放在 `className` 之前。独立类型文件按项目约定组织
+## 需要暴露 ref 时（React 19）
+
+- 不暴露 ref：`ComponentPropsWithoutRef<'div'>`
+- 暴露原生 DOM ref：`ComponentPropsWithRef<'div'>`
+- 暴露命令式句柄：`ComponentPropsWithoutRef<'div'> & { ref?: Ref<DemoHandle> }`
+- 泛型组件经 `memo` 后会丢失泛型，导出时断言回泛型签名：`memo(InnerX) as <T>(props: XProps<T>) => ReactElement | null`

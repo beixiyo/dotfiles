@@ -32,9 +32,9 @@ description: 编写 React 时必须调用
 
 | 分类 | 覆盖需求 | 代表导出 |
 |------|----------|----------|
-| `dom/` | 元素尺寸、位置、拖拽、视口、焦点 | `useElBounding` `useAutoResize` `useFloatingPosition` `useDragPosition` `useViewportHeight` `useMediaQuery` `useTextOverflow` `useRestoreFocus` |
-| `event/` | 事件监听、快捷键、滚动行为 | `useClickOutside` `useShortCutKey` `useMouse` `useScrollBottom` `useScrollReachBottom` `useScrollRestore` `useScrollIntoView` `useWheelSwipe` `useBindWinEvent` `useOnWinHidden` `useKeyboardLayer` |
-| `state/` | 状态、防抖节流 | `useGetState` `useAutoSave` `useStateWithPromise` `useToggleState` `useDebounceState` `useThrottleState` `useWatchDebounceState` `useWatchThrottleState` `useDebounceFn` `useThrottleFn` `vShow` |
+| `dom/` | 元素尺寸、位置、拖拽、视口、焦点 | `useElBounding` `useAutoResize` `useFloatingPosition` `useDragPosition` `useViewportHeight` `useMediaQuery` `useTextOverflow` `useRestoreFocus` `useFocusScope`（浮层焦点进入 / Tab 循环 / 归还） |
+| `event/` | 事件监听、快捷键、滚动行为 | `useClickOutside` `useShortCutKey` `useMouse` `useScrollBottom` `useScrollReachBottom` `useScrollRestore` `useScrollIntoView` `useWheelSwipe` `useBindWinEvent` `useOnWinHidden` `useKeyboardLayer` `useTypeahead`（列表首字母跳转） |
+| `state/` | 状态、防抖节流、受控/非受控 | `useControllableState` `useGetState` `useAutoSave` `useStateWithPromise` `useToggleState` `useDebounceState` `useThrottleState` `useWatchDebounceState` `useWatchThrottleState` `useDebounceFn` `useThrottleFn` `vShow` |
 | `theme/` | 主题 | `useTheme` `useChangeTheme` `useToggleThemeWithTransition` |
 | `lifecycle.ts` | 生命周期与 effect | `onMounted` `onUnmounted` `useCustomEffect`（可接 async）`useUpdateEffect` `useRefresh` |
 | `net.ts` | 请求与网络状态 | `useReq` `useWatchReq` `useOnlineStatus` |
@@ -46,7 +46,7 @@ description: 编写 React 时必须调用
 
 **comps（packages/comps/src/components）**：一组件一文件夹，`ls` 即得全部；另有 `hooks/`、`utils/`、`icons/`、`i18n/` 子目录
 
-**utils（packages/utils/src，文件名即分类）**：`tool.ts`（`cn` 等）、`reactTool.ts`（`getCompKey` `filterValidComps` `injectReactApp`）、`md.ts` 与 `markdown/`（`mdToHTML`）、`getCursorCoord.ts`、`createSuspenseData.ts`、`styleManager.ts`（`svgStyle` `createZIndexStore`）、`keyboard/`、`handleMask.ts`
+**utils（packages/utils/src，文件名即分类）**：`keyboard/`（`getNextEnabledIndex` 等列表导航纯函数、`getTabbableElements`、`focusElement`）、`tool.ts`（`cn` 等）、`reactTool.ts`（`getCompKey` `filterValidComps` `injectReactApp`）、`md.ts` 与 `markdown/`（`mdToHTML`）、`getCursorCoord.ts`、`createSuspenseData.ts`、`styleManager.ts`（`svgStyle` `createZIndexStore`）、`handleMask.ts`
 
 ### CSS Style
 - TailwindCSS：用根目录设计 Token，无法实现时用行内样式，必须用 CSS 时用 `.module.scss`

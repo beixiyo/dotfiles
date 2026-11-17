@@ -273,6 +273,8 @@
 # synced/ 由 Claude 自动生成，不纳入版本管理
 .claude/skills/synced/
 .claude/skills/answer-with-html/
+.claude/skills/nvim-frame/
+.claude/skills/modern-web-guidance/
 !.claude/agents/
 !.claude/agents/**
 
