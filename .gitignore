@@ -266,17 +266,18 @@
 !.claude/settings.json
 !.claude/statusline.sh
 
-!.claude/skills/
-!.claude/skills/**
-# lark-* skills 不纳入版本管理（符号链接，去尾斜杠才能匹配）
-.claude/skills/lark-*
-# synced/ 由 Claude 自动生成，不纳入版本管理
-.claude/skills/synced/
-.claude/skills/answer-with-html/
-.claude/skills/nvim-frame/
-.claude/skills/modern-web-guidance/
 !.claude/agents/
 !.claude/agents/**
+
+# ── 共享 Skills ──
+!/.agents/
+!/.agents/skills/
+!/.agents/skills/**
+# 排除
+.agents/skills/lark-*
+.agents/skills/answer-with-html/
+.agents/skills/nvim-frame/
+.agents/skills/modern-web-guidance/
 
 # ── ccstatusline ──
 !.config/ccstatusline/
